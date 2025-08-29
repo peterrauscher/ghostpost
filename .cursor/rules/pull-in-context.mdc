@@ -1,0 +1,16 @@
+---
+description: Instruct the agent to pull in context from the docs and codebase as needed.
+globs:
+alwaysApply: true
+---
+There are primary docs in the `docs/` directory that you should read as needed at the start of each task. These are:
+
+- `docs/BUSINESS_CONTEXT.md`: Business context and product requirements.
+- `docs/ARCHITECTURE.md`: App and server codebase architecture, repo layout.
+- `docs/DESIGN_DECISIONS.md`: System design decisions.
+- `docs/BRANDING.md`: Branding and UI/UX design decisions.
+
+
+You should also read the `server/` and `app/` directories as needed to understand the codebase.
+
+If you make a change to the codebase that impacts the docs, you should update the docs to reflect the changes.

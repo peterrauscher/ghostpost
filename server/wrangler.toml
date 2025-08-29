@@ -1,0 +1,15 @@
+name = "ghostpost-api"
+main = "src/index.ts"
+compatibility_date = "2024-06-20"
+
+[vars]
+# Set in dashboard or via `wrangler secret put DATABASE_URL`
+# DATABASE_URL = "postgres://postgres:postgres@localhost:5432/ghostpost?sslmode=disable"
+
+[observability]
+enabled = true
+
+[env.dev]
+[env.dev.vars]
+FACEBOOK_REDIRECT_URI = "http://localhost:8787/auth/facebook/callback"
+TWITTER_REDIRECT_URI = "http://localhost:8787/auth/twitter/callback"

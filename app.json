@@ -33,6 +33,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b62c95ad-4884-4e27-9ae0-563a0d037d65"
+      }
+    },
+    "owner": "peterrauscher"
   }
 }
