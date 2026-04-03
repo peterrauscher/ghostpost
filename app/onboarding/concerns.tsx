@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { FlatList, Pressable, StyleSheet, View as RNView } from "react-native";
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 
 import { Text, View } from "@/components/Themed";
+import Screen from "@/components/Screen";
+import GradientBackground from "@/components/GradientBackground";
+import BackButton from "@/components/BackButton";
+import { spacing } from "@/constants/Tokens";
+import Colors from "@/constants/Colors";
 
 type Concern = { key: string; label: string; icon: string };
 
@@ -29,7 +34,14 @@ export default function ConcernsScreen() {
   const isSelected = Object.values(selected).some(Boolean);
 
   return (
-    <View style={styles.container}>
+    <Screen>
+      <Stack.Screen options={{ headerShown: false }} />
+      <GradientBackground />
+      <BackButton />
+      <RNView style={styles.headerCopy}>
+        <Text style={styles.h1}>What's on the horizon?</Text>
+        <Text style={styles.h2}>Pick anything that you're worried about.</Text>
+      </RNView>
       <FlatList
         data={CONCERNS}
         keyExtractor={(item) => item.key}
@@ -58,7 +70,6 @@ export default function ConcernsScreen() {
           );
         }}
       />
-
       <RNView style={styles.footer}>
         <Pressable
           onPress={onNext}
@@ -68,12 +79,20 @@ export default function ConcernsScreen() {
           <Text style={styles.nextText}>Next</Text>
         </Pressable>
       </RNView>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  headerCopy: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+    backgroundColor: "transparent",
+  },
+  h1: { color: "#FBF9F4", fontSize: 24, fontWeight: "700" },
+  h2: { color: "#FBF9F4", opacity: 0.9 },
   card: {
     flex: 1,
     alignItems: "center",
@@ -81,12 +100,12 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.1)",
-    backgroundColor: "rgba(0,0,0,0.02)",
+    borderColor: Colors.light.background,
+    backgroundColor: Colors.light.background,
   },
   cardActive: {
-    backgroundColor: "rgba(99,102,241,0.15)",
-    borderColor: "rgba(99,102,241,0.5)",
+    backgroundColor: Colors.light.secondary,
+    borderColor: Colors.light.secondary,
   },
   cardIcon: { fontSize: 28, marginBottom: 8 },
   cardLabel: { textAlign: "center", fontWeight: "600" },
@@ -94,7 +113,8 @@ const styles = StyleSheet.create({
   footer: {
     padding: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(0,0,0,0.1)",
+    borderTopColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "transparent",
   },
   nextBtn: {
     backgroundColor: "#111827",
@@ -102,5 +122,5 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
   },
-  nextText: { color: "white", fontWeight: "700" },
+  nextText: { color: "#FBF9F4", fontWeight: "700" },
 });

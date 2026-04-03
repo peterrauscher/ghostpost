@@ -9,6 +9,9 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Wrangler
+server/.wrangler/
+
 # Native
 .kotlin/
 *.orig.*
@@ -31,7 +34,19 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
+.env.*
 .env*.local
+*.local
+server/.dev.vars
+
+# IDE / editor
+.vscode/
+.cursor/
+.idea/
+
+# lock files (using bun)
+package-lock.json
 
 # typescript
 *.tsbuildinfo

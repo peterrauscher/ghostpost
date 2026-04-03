@@ -1,34 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   FlatList,
   Pressable,
   StyleSheet,
-  Switch,
   View as RNView,
+  Animated,
+  Easing,
 } from "react-native";
-import InstagramIcon from "@/assets/icons/Instagram.svg";
-import TikTokIcon from "@/assets/icons/TikTok.svg";
-import FacebookIcon from "@/assets/icons/Facebook.svg";
-import XIcon from "@/assets/icons/X.svg";
-import { router } from "expo-router";
+import * as Haptics from "expo-haptics";
+import { router, Stack } from "expo-router";
 import { apiPost } from "@/lib/api";
 import { getOrCreateUserId } from "@/lib/user";
+import {
+  Platform,
+  PLATFORMS as SOCIAL_PLATFORMS,
+  PLATFORM_ICON,
+  isBackendProvider,
+} from "@/constants/Platforms";
 
 import { Text, View } from "@/components/Themed";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Screen from "@/components/Screen";
+import GradientBackground from "@/components/GradientBackground";
+import BackButton from "@/components/BackButton";
+import Colors from "@/constants/Colors";
+import { spacing, radii, fontFamilies } from "@/constants/Tokens";
 
-type Platform = { key: string; label: string };
+type PlatformItem = { key: Platform; label: string };
 
-const PLATFORMS: Platform[] = [
-  { key: "instagram", label: "Instagram" },
-  { key: "tiktok", label: "TikTok" },
-  { key: "twitter", label: "Twitter/X" },
-  { key: "facebook", label: "Facebook" },
-];
+const PLATFORMS: PlatformItem[] = SOCIAL_PLATFORMS.map(({ key, label }) => ({
+  key,
+  label,
+}));
 
 export default function PlatformsScreen() {
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const { bottom } = useSafeAreaInsets();
+  const [selected, setSelected] = useState<Record<Platform, boolean>>(
+    {} as Record<Platform, boolean>
+  );
 
-  const toggle = (key: string) =>
+  const toggle = (key: Platform) =>
     setSelected((prev) => ({ ...prev, [key]: !prev[key] }));
   const isSelected = Object.values(selected).some(Boolean);
 
@@ -38,11 +49,13 @@ export default function PlatformsScreen() {
 
   async function persistSelection() {
     const userId = await getOrCreateUserId();
-    const selectedProviders = Object.entries(selected)
+    const selectedProviders = (
+      Object.entries(selected) as Array<[Platform, boolean]>
+    )
       .filter(([, v]) => v)
-      .map(([k]) => k) as Array<
-      "instagram" | "tiktok" | "twitter" | "facebook"
-    >;
+      .map(([k]) => k)
+      .filter(isBackendProvider);
+
     await Promise.all(
       selectedProviders.map((provider) =>
         apiPost<{ ok: boolean }>("/connected-accounts", {
@@ -55,28 +68,48 @@ export default function PlatformsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <Screen>
+      <Stack.Screen options={{ headerShown: false }} />
+      <GradientBackground />
+      <BackButton />
+      <RNView style={styles.headerCopy}>
+        <Text style={styles.h1}>Where have you been posting?</Text>
+        <Text style={styles.h2}>Select all platforms you use.</Text>
+      </RNView>
       <FlatList
+        style={{ flex: 1 }}
         data={PLATFORMS}
         keyExtractor={(item) => item.key}
+        numColumns={2}
+        columnWrapperStyle={{ gap: spacing.sm }}
         contentContainerStyle={{
-          padding: 16,
-          gap: 12,
+          padding: spacing.md,
+          gap: spacing.sm,
           flexGrow: 1,
           justifyContent: "center",
+          paddingBottom: bottom + spacing.xl,
         }}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => {
           const active = !!selected[item.key];
           return (
-            <Pressable onPress={() => toggle(item.key)} style={styles.row}>
-              <RNView style={styles.rowLeft}>
-                <RNView style={styles.logoWrap}>{platformSvg(item.key)}</RNView>
-                <RNView>
-                  <Text style={styles.rowTitle}>{item.label}</Text>
-                </RNView>
-              </RNView>
-              <Switch value={active} onValueChange={() => toggle(item.key)} />
-            </Pressable>
+            <PlatformCard
+              key={item.key}
+              label={item.label}
+              iconKey={item.key}
+              active={active}
+              onPress={() => {
+                const next = !active;
+                if (next) {
+                  void Haptics.notificationAsync(
+                    Haptics.NotificationFeedbackType.Success
+                  );
+                } else {
+                  void Haptics.selectionAsync();
+                }
+                toggle(item.key);
+              }}
+            />
           );
         }}
       />
@@ -90,58 +123,161 @@ export default function PlatformsScreen() {
           <Text style={styles.primaryText}>Start Scanning</Text>
         </Pressable>
       </RNView>
-    </View>
+    </Screen>
   );
 }
 
-function platformSvg(key: string) {
-  const size = 22;
-  switch (key) {
-    case "instagram":
-      return <InstagramIcon width={size} height={size} />;
-    case "tiktok":
-      return <TikTokIcon width={size} height={size} />;
-    case "twitter":
-      return <XIcon width={size} height={size} />;
-    case "facebook":
-      return <FacebookIcon width={size} height={size} />;
-    default:
-      return null;
-  }
+function PlatformCard({
+  label,
+  iconKey,
+  active,
+  onPress,
+}: {
+  label: string;
+  iconKey: Platform;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const bg = useRef(new Animated.Value(active ? 1 : 0)).current;
+
+  // Animate background/border on active change
+  useEffect(() => {
+    Animated.timing(bg, {
+      toValue: active ? 1 : 0,
+      duration: 200,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: false,
+    }).start();
+  }, [active, bg]);
+
+  const backgroundColor = bg.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["rgba(0,0,0,0.02)", "rgba(76,114,64,0.12)"], // Success (Fern Green) 12%
+  });
+  const borderColor = bg.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["rgba(0,0,0,0.1)", Colors.light.success],
+  });
+
+  const onPressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.98,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 0,
+    }).start();
+  };
+  const onPressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 6,
+    }).start();
+  };
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      style={{ flex: 1 }}
+    >
+      {/* Outer view handles color/border (JS-driven) */}
+      <Animated.View
+        style={[
+          styles.row,
+          {
+            backgroundColor,
+            borderColor,
+          },
+        ]}
+      >
+        {/* Inner view handles transform (native-driven) */}
+        <Animated.View style={{ transform: [{ scale }] }}>
+          <RNView style={styles.rowLeft}>
+            <RNView style={styles.logoWrap}>{platformSvg(iconKey)}</RNView>
+            <Text style={styles.rowTitle}>{label}</Text>
+          </RNView>
+          {active ? (
+            <RNView style={styles.checkBadge}>
+              <Text style={styles.checkText}>✓</Text>
+            </RNView>
+          ) : null}
+        </Animated.View>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+function platformSvg(key: Platform) {
+  const size = 36;
+  const Icon = PLATFORM_ICON[key];
+  return <Icon width={size} height={size} />;
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  headerCopy: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 72,
+    paddingBottom: spacing.sm,
+    gap: 4,
+    backgroundColor: "transparent",
+  },
+  h1: { color: "#FBF9F4", fontSize: 24, fontFamily: fontFamilies.bold },
+  h2: { color: "#FBF9F4", opacity: 0.9 },
   row: {
-    padding: 16,
-    borderRadius: 12,
+    padding: spacing.md,
+    borderRadius: radii.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(0,0,0,0.1)",
     backgroundColor: "rgba(0,0,0,0.02)",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  rowLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-  logoWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
+    aspectRatio: 1,
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.06)",
   },
-  rowTitle: { fontSize: 16, fontWeight: "600" },
-  footer: {
-    padding: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(0,0,0,0.1)",
+  rowLeft: { flexDirection: "column", alignItems: "center", gap: spacing.sm },
+  logoWrap: {
+    width: 56,
+    height: 56,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  primaryBtn: {
-    backgroundColor: "#111827",
-    paddingVertical: 14,
+  rowTitle: {
+    fontSize: 16,
+    fontFamily: fontFamilies.semibold,
+    textAlign: "center",
+  },
+  checkBadge: {
+    position: "absolute",
+    top: spacing.sm,
+    right: spacing.sm,
+    width: 24,
+    height: 24,
     borderRadius: 12,
     alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.light.success,
   },
-  primaryText: { color: "white", fontWeight: "700" },
+  checkText: { color: "#fff", fontFamily: fontFamilies.bold },
+  footer: {
+    padding: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "transparent",
+  },
+  primaryBtn: {
+    backgroundColor: Colors.light.primary,
+    paddingVertical: 14,
+    borderRadius: radii.md,
+    alignItems: "center",
+  },
+  primaryText: {
+    color: Colors.light.background,
+    fontFamily: fontFamilies.bold,
+  },
 });

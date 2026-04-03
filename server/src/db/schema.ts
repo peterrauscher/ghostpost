@@ -13,6 +13,8 @@ export const providerEnum = pgEnum("provider", [
   "tiktok",
   "twitter",
   "facebook",
+  "threads",
+  "linkedin",
 ]);
 
 export const profiles = pgTable("profiles", {

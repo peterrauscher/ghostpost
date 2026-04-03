@@ -22,7 +22,7 @@
 - `users`: internal user record (id UUID pk, email nullable, created_at)
 - `sessions`: Lucia sessions (id, user_id fk, expires_at, created_at)
 - `user_identities`: social identities linked to users
-  - `provider` enum: `instagram | tiktok | twitter | facebook`
+  - `provider` enum: `instagram | tiktok | twitter | facebook | threads | linkedin`
   - unique on `(provider, provider_user_id)`
 - `profiles`: optional profile (1:1 with users)
 - `connected_accounts`: UX/status per provider; unique `(user_id, provider)`
