@@ -130,7 +130,7 @@ export const PLATFORM_OPTIONS: {
   color: string;
   useImage?: boolean;
 }[] = [
-  { id: 'facebook', label: 'Facebook', glyph: 'f', color: '#1877F2' },
+  { id: 'facebook', label: 'Facebook', glyph: 'f', color: '#0866FF' },
   { id: 'reddit', label: 'Reddit', glyph: '●', color: '#FF4500' },
   { id: 'instagram', label: 'Instagram', glyph: 'ig', color: '#E1306C', useImage: true },
   { id: 'tiktok', label: 'TikTok', glyph: '♪', color: '#111111', useImage: true },

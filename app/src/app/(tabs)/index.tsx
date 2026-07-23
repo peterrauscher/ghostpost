@@ -43,7 +43,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <Screen tone="tint" padded={false} edges={['top', 'bottom']} scroll>
+    <Screen tone="tint" padded={false} edges={['top']} scroll>
       <View style={styles.content}>
         <GreetingHeader
           name={data?.user.greetingName ?? 'jordan'}

@@ -8,7 +8,9 @@ import { PLATFORM_OPTIONS } from '@/domain/types';
 
 const images: Partial<Record<PlatformId, number>> = {
   instagram: require('@/assets/icons/instagram-trim.png'),
-  tiktok: require('@/assets/icons/tiktok-v2.png'),
+  facebook: require('@/assets/icons/facebook-trim.png'),
+  reddit: require('@/assets/icons/reddit-trim.png'),
+  tiktok: require('@/assets/icons/tiktok-trim.png'),
   x: require('@/assets/icons/x-trim.png'),
 };
 

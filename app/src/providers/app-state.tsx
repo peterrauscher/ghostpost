@@ -136,7 +136,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       togglePlatform: (id) => toggleInArray('platforms', id),
       completeOnboarding: () =>
         update({ onboardingComplete: true, onboardingStep: 4, scanComplete: false }),
-      completeScan: () => update({ scanComplete: true }),
+      completeScan: () => update({ scanComplete: true, homeUnlocked: false }),
       unlockHome: () => update({ homeUnlocked: true }),
       beginRescan: () => update({ scanComplete: false, homeUnlocked: false }),
       resetApp,

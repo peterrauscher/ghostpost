@@ -10,7 +10,7 @@ import { colors } from '@/theme';
  * Real OAuth / session wiring will replace the temporary continue action.
  */
 export default function LoginScreen() {
-  const { setHasStarted, unlockHome, completeOnboarding, completeScan } = useAppState();
+  const { setHasStarted, completeOnboarding, completeScan } = useAppState();
 
   return (
     <Screen tone="welcome">
@@ -23,7 +23,7 @@ export default function LoginScreen() {
         </AppText>
         <AppText variant="bodyRegular" color={colors.muted} align="center" style={styles.copy}>
           Authentication is scaffolded but not connected yet. Continue as a returning demo user to
-          jump into the unlocked home experience.
+          jump to the post-scan paywall.
         </AppText>
         <SurfaceCard style={styles.card}>
           <AppText variant="caption" color={colors.muted}>
@@ -41,7 +41,6 @@ export default function LoginScreen() {
             setHasStarted(true);
             completeOnboarding();
             completeScan();
-            unlockHome();
           }}
         />
         <Button

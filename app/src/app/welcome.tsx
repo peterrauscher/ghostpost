@@ -30,21 +30,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   orbit: {
-    width: 268,
-    height: 230,
+    width: 308,
+    height: 264,
     alignItems: 'center',
     justifyContent: 'center',
   },
   mascot: {
-    width: 200,
-    height: 200,
+    width: 240,
+    height: 240,
   },
   orbitIcon: {
     position: 'absolute',
   },
-  ig: { width: 40, height: 40, left: 4, top: 12, transform: [{ rotate: '14deg' }] },
-  tt: { width: 36, height: 36, right: 24, top: 10, transform: [{ rotate: '-11deg' }] },
-  x: { width: 34, height: 34, right: 38, bottom: 18, transform: [{ rotate: '7deg' }] },
+  ig: { width: 44, height: 44, left: -4, top: 6, transform: [{ rotate: '21deg' }] },
+  tt: { width: 44, height: 44, right: -6, top: 0, transform: [{ rotate: '-17deg' }] },
+  x: { width: 44, height: 44, right: -10, bottom: 14, transform: [{ rotate: '9deg' }] },
+  fb: { width: 44, height: 44, left: 2, bottom: 8, transform: [{ rotate: '-13deg' }] },
+  reddit: { width: 44, height: 44, left: -14, top: 122, transform: [{ rotate: '5deg' }] },
   connectArt: { width: 160, height: 160 },
   wipeArt: { width: 200, height: 168 },
   headline: { alignItems: 'center' },
@@ -69,7 +71,7 @@ const SLIDE_COPY = [
     eyebrow: null as string | null,
     titleLines: [
       { text: "let's clean", color: colors.fg },
-      { text: 'your slate', color: colors.accent },
+      { text: 'your slate', color: colors.accentDeep },
     ] as const,
     body: "we'll scan your social media and help find and remove posts that could hold you back.",
   },
@@ -77,19 +79,19 @@ const SLIDE_COPY = [
     key: 'connect',
     eyebrow: 'connect & scan',
     titleLines: [
-      { text: 'your footprint,', color: colors.accentDeep },
-      { text: 'one calm audit.', color: colors.accentDeep },
+      { text: 'connect your accounts,', color: colors.fg },
+      { text: 'we\'ll scan for you.', color: colors.accentDeep },
     ] as const,
-    body: 'Link Instagram, TikTok, and X. We surface what admissions, jobs, and rush might notice — before they do.',
+    body: 'link Instagram, TikTok, Reddit, and more. we help you ghost what admissions, jobs, and rush might notice (before they do).',
   },
   {
     key: 'review',
     eyebrow: 'review & wipe',
     titleLines: [
-      { text: 'keep what you love.', color: colors.accentDeep },
-      { text: 'clear the rest.', color: colors.accentDeep },
+      { text: 'keep what you love,', color: colors.fg },
+      { text: 'and clear the rest.', color: colors.accentDeep },
     ] as const,
-    body: 'Swipe keep / delete / unsure on flagged posts, then finish with a simple deletion checklist and wipe streak.',
+    body: 'swipe to keep or delete flagged posts so you can show up as your best self.',
   },
 ] as const;
 
@@ -107,13 +109,23 @@ function BrandArt() {
         contentFit="contain"
       />
       <Image
-        source={require('@/assets/icons/tiktok-v2.png')}
+        source={require('@/assets/icons/tiktok-trim.png')}
         style={[styles.orbitIcon, styles.tt]}
         contentFit="contain"
       />
       <Image
         source={require('@/assets/icons/x-trim.png')}
         style={[styles.orbitIcon, styles.x]}
+        contentFit="contain"
+      />
+      <Image
+        source={require('@/assets/icons/facebook-trim.png')}
+        style={[styles.orbitIcon, styles.fb]}
+        contentFit="contain"
+      />
+      <Image
+        source={require('@/assets/icons/reddit-trim.png')}
+        style={[styles.orbitIcon, styles.reddit]}
         contentFit="contain"
       />
     </View>
@@ -178,7 +190,7 @@ export default function WelcomeScreen() {
               {slide.titleLines.map((line) => (
                 <AppText
                   key={line.text}
-                  variant={slide.key === 'brand' ? 'display' : 'headline'}
+                  variant={'display'}
                   color={line.color}
                   align="center">
                   {line.text}

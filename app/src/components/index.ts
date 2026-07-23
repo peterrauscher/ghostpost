@@ -13,4 +13,3 @@ export { FlaggedPostCard, FlagListRow } from '@/components/FlaggedContent';
 export { RiskSummaryCard, FlaggedPostsCard } from '@/components/DashboardCards';
 export { GreetingHeader, AuditBanner } from '@/components/HomeHeader';
 export { BottomTabBar, ActionRow, HelpStepRow } from '@/components/Chrome';
-export { LockedOverlay } from '@/components/LockedOverlay';
