@@ -1,0 +1,7 @@
+# Ghostpost app TypeScript baseline captured before Plan 001 fixes
+# Planned-at commit: 3625ed1
+# Command: npx tsc --noEmit (cwd app/) via ./node_modules/.bin/tsc
+# Do not delete; used to prove the tree was red and to prevent silent scope creep.
+#
+error: command not found: ./node_modules/.bin/tsc
+EXIT:127

@@ -1,0 +1,143 @@
+# Ghostpost local stack: Postgres 17, MinIO (versioned archives), migrator, combined backend.
+# Operator secrets load from gitignored repo-root `.env` (copy from `.env.example`).
+# Inline values below are local-only defaults — never reuse in production.
+#
+# Publishing: default bind is loopback. Set API_PUBLISH_HOST=0.0.0.0 to expose
+# the API on the LAN for physical devices (pair with EXPO_PUBLIC_API_URL=http://<LAN-IP>:8080).
+name: ghostpost
+
+services:
+  postgres:
+    # postgres:17-bookworm
+    # Digest: sha256:4f736ae292687621d4dbe0d499ffd024a36bd2ee7d8ca6f2ccd4c800f047b394
+    image: postgres:17-bookworm@sha256:4f736ae292687621d4dbe0d499ffd024a36bd2ee7d8ca6f2ccd4c800f047b394
+    environment:
+      POSTGRES_DB: ghostpost
+      POSTGRES_USER: ghostpost
+      POSTGRES_PASSWORD: ghostpost
+    ports:
+      - "${POSTGRES_PUBLISH_HOST:-127.0.0.1}:5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./backend/postgres-init.sql:/docker-entrypoint-initdb.d/001-roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ghostpost -d ghostpost"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  minio:
+    # minio/minio:RELEASE.2024-10-02T17-50-41Z
+    # Digest: sha256:ea15e53e66f96f63e12f45509d2d2d8fad774808debb490f48508b3130bd22d3
+    image: minio/minio:RELEASE.2024-10-02T17-50-41Z@sha256:ea15e53e66f96f63e12f45509d2d2d8fad774808debb490f48508b3130bd22d3
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ghostpost
+      MINIO_ROOT_PASSWORD: ghostpostsecret
+    ports:
+      - "${MINIO_PUBLISH_HOST:-127.0.0.1}:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - minio-data:/data
+    restart: unless-stopped
+
+  minio-init:
+    # minio/mc:RELEASE.2024-10-08T09-37-26Z
+    # Digest: sha256:c0d345a438dcac5677c1158e4ac46637069b67b3cc38e7b04c08cf93bdee4a62
+    image: minio/mc:RELEASE.2024-10-08T09-37-26Z@sha256:c0d345a438dcac5677c1158e4ac46637069b67b3cc38e7b04c08cf93bdee4a62
+    depends_on:
+      minio:
+        condition: service_started
+    environment:
+      MINIO_ROOT_USER: ghostpost
+      MINIO_ROOT_PASSWORD: ghostpostsecret
+      ARCHIVE_BUCKET: ghostpost-archives
+      MINIO_ENDPOINT: http://minio:9000
+    volumes:
+      - ./docker/minio-init.sh:/minio-init.sh:ro
+    entrypoint: ["/bin/sh", "/minio-init.sh"]
+    restart: "no"
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    command: ["migrate"]
+    environment:
+      DATABASE_URL: postgres://ghostpost_migrator:ghostpost_migrator@postgres:5432/ghostpost
+      DATABASE_APP_ROLE: ghostpost_app
+      MIGRATION_MAX_CONNECTIONS: "2"
+      MIGRATION_LOCK_TIMEOUT_SECS: "60"
+      RUST_LOG: ${RUST_LOG:-info}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    command: ["serve", "--role", "all"]
+    ports:
+      - "${API_PUBLISH_HOST:-127.0.0.1}:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL_APP: postgres://ghostpost_app:ghostpost_app@postgres:5432/ghostpost
+      # migrate loader is still consulted for shared fields in development; app URL is authoritative for serve.
+      DATABASE_URL: postgres://ghostpost_app:ghostpost_app@postgres:5432/ghostpost
+      DATABASE_APP_ROLE: ghostpost_app
+      DB_MAX_CONNECTIONS: "10"
+      BIND_ADDR: 0.0.0.0:8080
+      RUST_LOG: ${RUST_LOG:-info}
+      LOG_FORMAT: ${LOG_FORMAT:-pretty}
+      GHOSTPOST_ENV: development
+      CORS_ALLOWED_ORIGINS: http://localhost:8081,http://127.0.0.1:8081
+      AUTH_WEB_ORIGINS: http://localhost:8081,http://127.0.0.1:8081
+      AUTH_WEB_REDIRECT_URI: http://localhost:8081/auth/callback
+      AUTH_NATIVE_REDIRECT_URI: ghostpost://auth/callback
+      # Local HTTP smoke only; production must keep secure cookies (default true).
+      AUTH_SECURE_COOKIES: ${AUTH_SECURE_COOKIES:-false}
+      ARCHIVE_BUCKET: ghostpost-archives
+      ARCHIVE_S3_ENDPOINT: http://minio:9000
+      ARCHIVE_S3_REGION: us-east-1
+      # Plan 004 documented names (compose table). Runtime S3 SDK reads the
+      # standard AWS credential chain — mirror into AWS_* for the default provider.
+      ARCHIVE_S3_ACCESS_KEY_ID: ghostpost
+      ARCHIVE_S3_SECRET_ACCESS_KEY: ghostpostsecret
+      AWS_ACCESS_KEY_ID: ghostpost
+      AWS_SECRET_ACCESS_KEY: ghostpostsecret
+      ARCHIVE_S3_FORCE_PATH_STYLE: "true"
+      # MinIO has no AWS KMS; disable SSE-KMS policy fields for local signed POST.
+      ARCHIVE_S3_REQUIRE_KMS: "false"
+      ARCHIVE_FINGERPRINT_KEYS: ${ARCHIVE_FINGERPRINT_KEYS:?ARCHIVE_FINGERPRINT_KEYS required}
+      WORKOS_API_KEY: ${WORKOS_API_KEY:?WORKOS_API_KEY required — set in gitignored .env}
+      WORKOS_CLIENT_ID: ${WORKOS_CLIENT_ID:?WORKOS_CLIENT_ID required}
+      WORKOS_WEBHOOK_SECRET: ${WORKOS_WEBHOOK_SECRET:?WORKOS_WEBHOOK_SECRET required}
+      WORKOS_COOKIE_PASSWORD: ${WORKOS_COOKIE_PASSWORD:?WORKOS_COOKIE_PASSWORD required}
+      APP_SESSION_KEYS: ${APP_SESSION_KEYS:?APP_SESSION_KEYS required}
+      WORKOS_SEAL_KEY_VERSION: ${WORKOS_SEAL_KEY_VERSION:-workos_v1}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+volumes:
+  postgres-data:
+  minio-data:

@@ -1,0 +1,83 @@
+[workspace]
+members = [".", "crates/scan-text"]
+resolver = "2"
+
+[package]
+name = "ghostpost-backend"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+license = "UNLICENSED"
+publish = false
+
+[lib]
+name = "ghostpost_backend"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ghostpost-backend"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+axum = { version = "0.8", features = ["macros"] }
+chrono = { version = "0.4", features = ["serde", "clock"] }
+clap = { version = "4", features = ["derive", "env"] }
+dotenvy = "0.15"
+hostname = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sqlx = { version = "0.8", default-features = false, features = [
+    "runtime-tokio-rustls",
+    "postgres",
+    "migrate",
+    "uuid",
+    "chrono",
+    "json",
+    "macros",
+] }
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+tower = "0.5"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"] }
+uuid = { version = "1", features = ["serde", "v4"] }
+
+aes-gcm = "0.10"
+async-trait = "0.1"
+axum-extra = { version = "0.10", features = ["cookie"] }
+base64 = "0.22"
+hmac = "0.12"
+rand = "0.9"
+sha2 = "0.10"
+subtle = "2"
+tower-http = { version = "0.6", features = ["trace", "cors"] }
+url = "2"
+workos = "3.0"
+zeroize = { version = "1", features = ["derive"] }
+aws-config = "=1.1.7"
+
+# Pin smithy stack compatible with aws-sdk-s3 1.17 / aws-runtime 1.1.7
+aws-smithy-runtime-api = "=1.7.3"
+aws-smithy-runtime = "=1.7.3"
+aws-smithy-types = "=1.2.13"
+aws-smithy-async = "=1.2.4"
+aws-smithy-http = "=0.60.12"
+aws-runtime = "=1.1.7"
+aws-credential-types = "=1.1.7"
+aws-sdk-s3 = { version = "=1.17.0", default-features = false, features = ["rustls", "rt-tokio"] }
+bytes = "1.12.1"
+csv = "1.4.0"
+zip = "8.6.0"
+unicode-normalization = "0.1.25"
+scan-text = { path = "crates/scan-text" }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+hex = "0.4"
+
+[dev-dependencies]
+http-body-util = "0.1"
+tower = { version = "0.5", features = ["util"] }
+
+[profile.dev]
+debug = 1

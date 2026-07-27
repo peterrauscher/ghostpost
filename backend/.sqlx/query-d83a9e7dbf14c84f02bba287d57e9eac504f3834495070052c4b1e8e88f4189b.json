@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nSELECT\n  count(*)::bigint AS \"count!\",\n  (array_agg(risk_level ORDER BY\n     CASE risk_level WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END\n   ))[1] AS top_risk\nFROM flagged_posts\nWHERE tenant_id = $1\n  AND scan_id = $2\n  AND review_status = 'open'\n  AND hidden_at IS NULL\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "top_risk",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "d83a9e7dbf14c84f02bba287d57e9eac504f3834495070052c4b1e8e88f4189b"
+}

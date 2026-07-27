@@ -1,0 +1,1 @@
+{"schemaVersion":"scan-output.v1","results":[{"itemIndex":0,"decision":"flag","risk":"medium","category":"negativity","confidence":0.91,"reasons":[{"code":"sustained_hostility","summary":"you shared content matching negativity"}],"evidence":[{"text":"I hate you specifically and I will never","supportsReasonCode":"sustained_hostility"}]}]}

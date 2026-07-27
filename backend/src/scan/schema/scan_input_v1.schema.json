@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ghostpost.app/schemas/scan-input.v1.json",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "policy",
+    "items"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "scan-input.v1"
+    },
+    "policy": {
+      "type": "object",
+      "required": [
+        "comingUp",
+        "concerns"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "comingUp": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "rush",
+              "college_apps",
+              "job_interviews",
+              "friends_family",
+              "just_concerned",
+              "something_else"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "concerns": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "inappropriate_language",
+              "drinking_drugs",
+              "political_takes",
+              "controversial_topics",
+              "negativity",
+              "public_image",
+              "other"
+            ]
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "required": [
+          "itemIndex",
+          "platform",
+          "kind",
+          "authorship",
+          "text"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "itemIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 15
+          },
+          "platform": {
+            "enum": [
+              "reddit",
+              "x"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1
+          },
+          "authorship": {
+            "enum": [
+              "authored",
+              "amplified"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

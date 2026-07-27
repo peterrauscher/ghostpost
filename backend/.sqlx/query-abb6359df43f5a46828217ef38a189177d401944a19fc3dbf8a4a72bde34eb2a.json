@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nINSERT INTO work_item_attempts (tenant_id, work_item_id, attempt_number, lease_owner)\nVALUES ($1, $2, $3, $4)\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "abb6359df43f5a46828217ef38a189177d401944a19fc3dbf8a4a72bde34eb2a"
+}

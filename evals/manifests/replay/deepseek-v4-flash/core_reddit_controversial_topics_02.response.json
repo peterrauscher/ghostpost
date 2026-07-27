@@ -1,0 +1,1 @@
+{"schemaVersion":"scan-output.v1","results":[{"itemIndex":0,"decision":"flag","risk":"low","category":"controversial_topics","confidence":0.91,"reasons":[{"code":"polarizing_advocacy","summary":"text matches controversial_topics"}],"evidence":[{"text":"We should ban the opposite view from pub","supportsReasonCode":"polarizing_advocacy"}]}]}

@@ -1,0 +1,131 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nUPDATE work_items wi\nSET status = 'running',\n    lease_owner = $1,\n    lease_expires_at = now() + make_interval(secs => $2),\n    heartbeat_at = now(),\n    attempt_count = attempt_count + 1,\n    updated_at = now()\nWHERE (tenant_id, id) = (\n  SELECT tenant_id, id FROM work_items\n  WHERE status = 'pending'\n    AND run_after <= now()\n    AND cancel_requested_at IS NULL\n    AND attempt_count < max_attempts\n  ORDER BY priority DESC, created_at ASC\n  FOR UPDATE SKIP LOCKED\n  LIMIT 1\n)\nRETURNING wi.tenant_id, wi.subject_user_id, wi.id, wi.kind, wi.payload, wi.dedupe_key, wi.status,\n          wi.priority, wi.run_after, wi.attempt_count, wi.max_attempts, wi.lease_owner,\n          wi.lease_expires_at, wi.heartbeat_at, wi.cancel_requested_at, wi.last_error,\n          wi.created_at, wi.updated_at, wi.finished_at\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "tenant_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "subject_user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "payload",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 5,
+        "name": "dedupe_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "priority",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "run_after",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "attempt_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "max_attempts",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "lease_owner",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "lease_expires_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 13,
+        "name": "heartbeat_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 14,
+        "name": "cancel_requested_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 15,
+        "name": "last_error",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 16,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 17,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 18,
+        "name": "finished_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Float8"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "f114ccb2ecd9a90a1588ce9329cf8bfd39b9b21dfc504a2bd5390e46a37dc14a"
+}

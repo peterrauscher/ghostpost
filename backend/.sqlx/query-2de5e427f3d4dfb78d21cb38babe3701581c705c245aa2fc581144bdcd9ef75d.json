@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nSELECT count(*)::bigint AS \"count!\"\nFROM entitlement_usages\nWHERE tenant_id = $1 AND entitlement_id = $2 AND usage_kind = $3\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "2de5e427f3d4dfb78d21cb38babe3701581c705c245aa2fc581144bdcd9ef75d"
+}

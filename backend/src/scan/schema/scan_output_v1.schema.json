@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ghostpost.app/schemas/scan-output.v1.json",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "results"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": "scan-output.v1"
+    },
+    "results": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/result"
+      }
+    }
+  },
+  "$defs": {
+    "category": {
+      "enum": [
+        "inappropriate_language",
+        "drinking_drugs",
+        "political_takes",
+        "controversial_topics",
+        "negativity",
+        "public_image"
+      ]
+    },
+    "reasonCode": {
+      "enum": [
+        "targeted_insult",
+        "slur_or_dehumanization",
+        "threat_or_incitement",
+        "explicit_sexual_language",
+        "risky_alcohol_or_drug_content",
+        "political_advocacy",
+        "polarizing_advocacy",
+        "sustained_hostility",
+        "admitted_misconduct",
+        "serious_unprofessional_conduct"
+      ]
+    },
+    "reason": {
+      "type": "object",
+      "required": [
+        "code",
+        "summary"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/reasonCode"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "text",
+        "supportsReasonCode"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "supportsReasonCode": {
+          "$ref": "#/$defs/reasonCode"
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "itemIndex",
+        "decision",
+        "risk",
+        "category",
+        "confidence",
+        "reasons",
+        "evidence"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "itemIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15
+        },
+        "decision": {
+          "enum": [
+            "flag",
+            "no_flag"
+          ]
+        },
+        "risk": {
+          "enum": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "category": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/category"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "reasons": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/reason"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        }
+      }
+    }
+  }
+}

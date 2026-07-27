@@ -1,0 +1,131 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nSELECT tenant_id, subject_user_id, id, kind, payload, dedupe_key, status, priority,\n       run_after, attempt_count, max_attempts, lease_owner, lease_expires_at, heartbeat_at,\n       cancel_requested_at, last_error, created_at, updated_at, finished_at\nFROM work_items\nWHERE tenant_id = $1 AND id = $2\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "tenant_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "subject_user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "kind",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "payload",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 5,
+        "name": "dedupe_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "status",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "priority",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "run_after",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "attempt_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "max_attempts",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "lease_owner",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "lease_expires_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 13,
+        "name": "heartbeat_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 14,
+        "name": "cancel_requested_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 15,
+        "name": "last_error",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 16,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 17,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 18,
+        "name": "finished_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "91dc0f0d03382158e6a1bee9c6b02e22240c38293ed3d4369b9cfcbe06d4aa01"
+}

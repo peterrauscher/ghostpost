@@ -1,0 +1,48 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nSELECT request_hash, response_status, response_body, locked_until, resource_id\nFROM idempotency_keys\nWHERE tenant_id = $1 AND scope = $2 AND key = $3\nFOR UPDATE\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "request_hash",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 1,
+        "name": "response_status",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "response_body",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 3,
+        "name": "locked_until",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "resource_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "78566fe97df06ddc4fd0026ca2d401e845ae5a5cfe955bc99707b5663af8b38f"
+}

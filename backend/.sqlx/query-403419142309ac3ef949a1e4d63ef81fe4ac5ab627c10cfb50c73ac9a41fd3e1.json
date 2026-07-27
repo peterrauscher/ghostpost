@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nINSERT INTO entitlement_grants (\n  tenant_id, user_id, product_key, grant_source, review_access, rescan_limit, platform_limit\n)\nVALUES ($1, $2, 'free_beta', 'promotion', true, NULL, 2)\nRETURNING tenant_id, id, user_id, product_key, grant_source, review_access, rescan_limit,\n          platform_limit, scan_scope_id, valid_from, valid_until, revoked_at, created_at\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "tenant_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "product_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "grant_source",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "review_access",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "rescan_limit",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "platform_limit",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "scan_scope_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 9,
+        "name": "valid_from",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "valid_until",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "revoked_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "403419142309ac3ef949a1e4d63ef81fe4ac5ab627c10cfb50c73ac9a41fd3e1"
+}

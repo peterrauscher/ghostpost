@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nUPDATE work_items\nSET heartbeat_at = now(),\n    lease_expires_at = now() + make_interval(secs => $3),\n    updated_at = now()\nWHERE tenant_id = $1\n  AND id = $2\n  AND lease_owner = $4\n  AND status = 'running'\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Float8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "03236fb3aa13dc1ac5b6ac4714700172d2a29a59f1e8ece4ee61d53ac4e3175c"
+}

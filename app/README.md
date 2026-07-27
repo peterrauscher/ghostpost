@@ -41,5 +41,7 @@ Press `i` / `a` / `w` for iOS, Android, or web.
 ```bash
 npm start
 npm run lint
-npx expo export --platform web
+npm run typecheck
+npm test
+npm run export:web
 ```

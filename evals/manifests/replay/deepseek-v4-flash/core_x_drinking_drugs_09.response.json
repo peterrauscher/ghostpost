@@ -1,0 +1,1 @@
+{"schemaVersion":"scan-output.v1","results":[{"itemIndex":0,"decision":"flag","risk":"medium","category":"drinking_drugs","confidence":0.91,"reasons":[{"code":"risky_alcohol_or_drug_content","summary":"you shared content matching drinking_drugs"}],"evidence":[{"text":"Illicit drug sale: ounces available toni","supportsReasonCode":"risky_alcohol_or_drug_content"}]}]}

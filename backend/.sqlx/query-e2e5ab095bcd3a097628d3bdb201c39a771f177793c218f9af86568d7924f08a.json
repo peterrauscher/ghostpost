@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nUPDATE work_items\nSET status = 'succeeded',\n    finished_at = now(),\n    lease_owner = NULL,\n    lease_expires_at = NULL,\n    updated_at = now()\nWHERE tenant_id = $1 AND id = $2 AND lease_owner = $3 AND status = 'running'\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e2e5ab095bcd3a097628d3bdb201c39a771f177793c218f9af86568d7924f08a"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nUPDATE work_items\nSET cancel_requested_at = COALESCE(cancel_requested_at, now()),\n    updated_at = now()\nWHERE tenant_id = $1 AND id = $2\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5234c89488219636469c7adcac7aa8244e257ad262279dbd0b785327e25fed64"
+}

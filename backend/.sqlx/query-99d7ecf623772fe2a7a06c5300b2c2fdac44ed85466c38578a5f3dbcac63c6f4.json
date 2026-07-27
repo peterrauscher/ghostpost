@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nSELECT\n  count(*) FILTER (WHERE true)::bigint AS \"all!\",\n  count(*) FILTER (WHERE risk_level = 'high')::bigint AS \"high!\",\n  count(*) FILTER (WHERE risk_level = 'medium')::bigint AS \"medium!\",\n  count(*) FILTER (WHERE risk_level = 'low')::bigint AS \"low!\"\nFROM flagged_posts\nWHERE tenant_id = $1\n  AND scan_id = $2\n  AND review_status = $3\n  AND hidden_at IS NULL\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "all!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "high!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "medium!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "low!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "99d7ecf623772fe2a7a06c5300b2c2fdac44ed85466c38578a5f3dbcac63c6f4"
+}

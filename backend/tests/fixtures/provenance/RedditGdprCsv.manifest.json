@@ -1,0 +1,11 @@
+{
+  "family": "RedditGdprCsv",
+  "fixture": "reddit/user_redacted_comments_v1.zip",
+  "fixtureSha256": "77afbc67b1c63f1f9f324f3dced16098f9b2ecc861c9ea225301ffb6e1e6d7fe",
+  "exportGenerationDate": "2026-07-23",
+  "redactionTransform": "Irreversible pseudonymization: stable SHA-256-truncated token maps for numeric/string IDs; synthetic handles/subreddits; benign placeholder text; example.invalid URLs; stripped IPs/emails/phones/media/DMs/ads/profile PII.",
+  "approvedForProduction": true,
+  "observedHeaders": [
+    "id,permalink,date,ip,subreddit,gildings,gildings_silver,gildings_supergold,link,parent,body,media"
+  ]
+}

@@ -1,0 +1,1014 @@
+{
+  "model_id": "deepseek-v4-flash",
+  "prompt_sha256": "eb714649864e91415e6c1cc5ba771122b8910623553c326db7a7de4ec3cc0dcd",
+  "cases": {
+    "core_reddit_inappropriate_language_00": {
+      "response_sha256": "7998f3a9dc574d8e0052ecd5e38c87963606735741e80b3d14ab6bbf9d6b6e13",
+      "response_path": "core_reddit_inappropriate_language_00.response.json",
+      "input_tokens": 801,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_inappropriate_language_01": {
+      "response_sha256": "eae57d83e635397b111ca6b4f16584fe9aee9269fbee52e2ec59a3752c9151ba",
+      "response_path": "core_x_inappropriate_language_01.response.json",
+      "input_tokens": 802,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_inappropriate_language_02": {
+      "response_sha256": "6d920160ad73f5e1257b05e8e9eeac5b3bdcdb421627f154346b8e409f7477ec",
+      "response_path": "core_reddit_inappropriate_language_02.response.json",
+      "input_tokens": 803,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_inappropriate_language_03": {
+      "response_sha256": "e97fee73bb3326a71b8eeadbb78a766283c3e08360a05c3c0ba0718373d88a78",
+      "response_path": "core_x_inappropriate_language_03.response.json",
+      "input_tokens": 804,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_inappropriate_language_04": {
+      "response_sha256": "4a6d35737c3bfe573cbde4e40dc07b20930963c6d2f6207ccdcb659d2c5a825d",
+      "response_path": "core_reddit_inappropriate_language_04.response.json",
+      "input_tokens": 805,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_inappropriate_language_05": {
+      "response_sha256": "c59df45d046735ffb365d7b4ad04089888eac774cd021f4e9b992c1495f623d6",
+      "response_path": "core_x_inappropriate_language_05.response.json",
+      "input_tokens": 806,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_inappropriate_language_06": {
+      "response_sha256": "a6cf0b5b23c762e1f1258a658f50f306440d3065051f41622d1b1ebce531cf6c",
+      "response_path": "core_reddit_inappropriate_language_06.response.json",
+      "input_tokens": 807,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_inappropriate_language_07": {
+      "response_sha256": "a4289424f91b299df2b6930c269f572a12a1a0aad3b36274d674be24171fde1e",
+      "response_path": "core_x_inappropriate_language_07.response.json",
+      "input_tokens": 808,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_inappropriate_language_08": {
+      "response_sha256": "51e9952a416a3723b023626d941f00ce080693de83a643d76149982ac4ad341b",
+      "response_path": "core_reddit_inappropriate_language_08.response.json",
+      "input_tokens": 809,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_inappropriate_language_09": {
+      "response_sha256": "082b1d646a1b253bcd19b09fa8f2281aac482d0a315612f4172b6a5047246625",
+      "response_path": "core_x_inappropriate_language_09.response.json",
+      "input_tokens": 810,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_drinking_drugs_00": {
+      "response_sha256": "ed1396057e74c6239d492f023d063e4ee907f59ceb1b4d1b2c67df477ee0da82",
+      "response_path": "core_reddit_drinking_drugs_00.response.json",
+      "input_tokens": 811,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_drinking_drugs_01": {
+      "response_sha256": "a56603cc222b2c4586b3d46b70ac1243a5d5191fbe996b3e62b48d776810d8e7",
+      "response_path": "core_x_drinking_drugs_01.response.json",
+      "input_tokens": 812,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_drinking_drugs_02": {
+      "response_sha256": "5c60d94a3cef74017ce86b6d2f9494e4a1743a6646c62340b97df0b469fcd081",
+      "response_path": "core_reddit_drinking_drugs_02.response.json",
+      "input_tokens": 813,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_drinking_drugs_03": {
+      "response_sha256": "73250a2c650631fa8e6e34e9bf623ef7764de4291b50b4957303f1ec423d01b2",
+      "response_path": "core_x_drinking_drugs_03.response.json",
+      "input_tokens": 814,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_drinking_drugs_04": {
+      "response_sha256": "de738cdd4ec79b9ae23e249822dbf2e67fdefd8354c7cecbf983a3338335f0c5",
+      "response_path": "core_reddit_drinking_drugs_04.response.json",
+      "input_tokens": 815,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_drinking_drugs_05": {
+      "response_sha256": "aab6f8028fad9f27ae4aa03f3f77fcd77cee6cbc391f58bf941d820249c21037",
+      "response_path": "core_x_drinking_drugs_05.response.json",
+      "input_tokens": 816,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_drinking_drugs_06": {
+      "response_sha256": "a0c738eff58a1a5199bee38c56707a1cc8f726c42023bc8242abeab2e57e5ddf",
+      "response_path": "core_reddit_drinking_drugs_06.response.json",
+      "input_tokens": 817,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_drinking_drugs_07": {
+      "response_sha256": "ac5450dcdaecee55dd68ed7f78d0e65e3c4cf4a9b94a1a1b450e1aff7953ba91",
+      "response_path": "core_x_drinking_drugs_07.response.json",
+      "input_tokens": 818,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_drinking_drugs_08": {
+      "response_sha256": "a4c68615bc089b13bb2dc5311ad63d93c859efc29723ea08249423f1ba3bd922",
+      "response_path": "core_reddit_drinking_drugs_08.response.json",
+      "input_tokens": 819,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_drinking_drugs_09": {
+      "response_sha256": "a10c09655aa3e29409bfd8e10098a48de663baf06af87fdfb2399fc8fc629b5b",
+      "response_path": "core_x_drinking_drugs_09.response.json",
+      "input_tokens": 820,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_political_takes_00": {
+      "response_sha256": "3efe81cc1499b5db6bfe4fe3eb055098129927dfd2abfb126ad92f0a7958bee3",
+      "response_path": "core_reddit_political_takes_00.response.json",
+      "input_tokens": 821,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_political_takes_01": {
+      "response_sha256": "27d47933bcb8064e665f7d88a1c25821dd8b73f4de083b6f1ede7058ad2d56d0",
+      "response_path": "core_x_political_takes_01.response.json",
+      "input_tokens": 822,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_political_takes_02": {
+      "response_sha256": "54b48364aba900e8dece5ff56abc7f273d14a96c5ab19fba01fb4f647ca09113",
+      "response_path": "core_reddit_political_takes_02.response.json",
+      "input_tokens": 823,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_political_takes_03": {
+      "response_sha256": "81aaf5581b73476030ecdb294db60ad92c07cf0401e1fd6611d7edcd8268c35c",
+      "response_path": "core_x_political_takes_03.response.json",
+      "input_tokens": 824,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_political_takes_04": {
+      "response_sha256": "270eb4ae4149315cc40b54a86e81b011e4e46d7734472faa3b34794d99445929",
+      "response_path": "core_reddit_political_takes_04.response.json",
+      "input_tokens": 825,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_political_takes_05": {
+      "response_sha256": "6a698ad3619d83afa1bb1da696f99559ce26cba31077c6135629330d39b6b3fd",
+      "response_path": "core_x_political_takes_05.response.json",
+      "input_tokens": 826,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_political_takes_06": {
+      "response_sha256": "e1ed0b6a0a2c80ca49a20252ecc67ca9feee43a93b8c9be68e1a46cd74a4582c",
+      "response_path": "core_reddit_political_takes_06.response.json",
+      "input_tokens": 827,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_political_takes_07": {
+      "response_sha256": "3a265156f4974b1ed65fc0e5b0383365893b82961b328c8150764ec8e0edff89",
+      "response_path": "core_x_political_takes_07.response.json",
+      "input_tokens": 828,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_political_takes_08": {
+      "response_sha256": "d9ea33cfe401f7118b7b8b1a942c345e1bb416274c0df2a90dfde73892e3df80",
+      "response_path": "core_reddit_political_takes_08.response.json",
+      "input_tokens": 829,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_political_takes_09": {
+      "response_sha256": "3b7e7c325cc2b5adcbfb94c1c8fb634cd2f2d26c05e955b04d3bbed2a92b4cd4",
+      "response_path": "core_x_political_takes_09.response.json",
+      "input_tokens": 830,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_controversial_topics_00": {
+      "response_sha256": "23b5778990e728938a495360fa402e96fb2ece043abc109c05038de33919a05b",
+      "response_path": "core_reddit_controversial_topics_00.response.json",
+      "input_tokens": 831,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_controversial_topics_01": {
+      "response_sha256": "d17f1dd1843076e8ba2883d8635c7d719e04c8d10363dc327ed6daf51b3da185",
+      "response_path": "core_x_controversial_topics_01.response.json",
+      "input_tokens": 832,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_controversial_topics_02": {
+      "response_sha256": "5ae8a7aaac4e2f2949210cbc2719647a430498d1cd6c9e00914f4ad9a74da5a7",
+      "response_path": "core_reddit_controversial_topics_02.response.json",
+      "input_tokens": 833,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_controversial_topics_03": {
+      "response_sha256": "8efba5181599999fe005c182a21408193429b8779f6fd49247efc52e8556b193",
+      "response_path": "core_x_controversial_topics_03.response.json",
+      "input_tokens": 834,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_controversial_topics_04": {
+      "response_sha256": "7037a439be1aadcc31bc4b8b5c91ab96800d5e61944a456aa41ef458082de16d",
+      "response_path": "core_reddit_controversial_topics_04.response.json",
+      "input_tokens": 835,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_controversial_topics_05": {
+      "response_sha256": "f923c409d681e3ef54ccfba4213592cad2e02485a07ff1fa77b1433175a597a3",
+      "response_path": "core_x_controversial_topics_05.response.json",
+      "input_tokens": 836,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_controversial_topics_06": {
+      "response_sha256": "c17d2b387c020b4f9e01d3148848ea8a5ac9c27510ffc83d9b50473379ead3bc",
+      "response_path": "core_reddit_controversial_topics_06.response.json",
+      "input_tokens": 837,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_controversial_topics_07": {
+      "response_sha256": "8ab44f9aa0057e3cac4b5d4140a5cc826b84553de0e2b88cff31b1349079b8e4",
+      "response_path": "core_x_controversial_topics_07.response.json",
+      "input_tokens": 838,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_controversial_topics_08": {
+      "response_sha256": "6089f5691d31c5bbe0b6e9086de369e612a7347ed52eb9268f6d150097575324",
+      "response_path": "core_reddit_controversial_topics_08.response.json",
+      "input_tokens": 839,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_controversial_topics_09": {
+      "response_sha256": "553efd759dd8d07e2d87570cfc8c791eec223241bf97686afe678b8c95b1a3c5",
+      "response_path": "core_x_controversial_topics_09.response.json",
+      "input_tokens": 840,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_negativity_00": {
+      "response_sha256": "3bd97fd17282fa673eb6a890be31c886ccdbd39d497c76618e6d891fe07d7d1e",
+      "response_path": "core_reddit_negativity_00.response.json",
+      "input_tokens": 841,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_negativity_01": {
+      "response_sha256": "abf0ed250bffa15f9c27a4e099f9123e820c6677b2d97a9f6de393946951cad2",
+      "response_path": "core_x_negativity_01.response.json",
+      "input_tokens": 842,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_negativity_02": {
+      "response_sha256": "d8f1b8c5d39c0424dbdcab051a03048a7db3f9beeff7e7356a55642a13324df8",
+      "response_path": "core_reddit_negativity_02.response.json",
+      "input_tokens": 843,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_negativity_03": {
+      "response_sha256": "f2fc24c37d75286bd747dead1a9e26c6d4db98dd4da6057dd45070b6cc186454",
+      "response_path": "core_x_negativity_03.response.json",
+      "input_tokens": 844,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_negativity_04": {
+      "response_sha256": "2c2da61c54e79d0526ca5d3d3e12165584da7e5b937109bbd192e3e7d4770b86",
+      "response_path": "core_reddit_negativity_04.response.json",
+      "input_tokens": 845,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_negativity_05": {
+      "response_sha256": "279dcd1874fe29d12ed9a7564c97bd1ec94476b6e979bfa9026a0ba0bbda5730",
+      "response_path": "core_x_negativity_05.response.json",
+      "input_tokens": 846,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_negativity_06": {
+      "response_sha256": "ad4ae17ffdd8d15b2b20e1dcc3a171bbb6821f021608e8323294b22f12648833",
+      "response_path": "core_reddit_negativity_06.response.json",
+      "input_tokens": 847,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_negativity_07": {
+      "response_sha256": "60c8b3ce8f4da40064b11220cf89ee45236c26c170184ff6f572c2f13071e2b7",
+      "response_path": "core_x_negativity_07.response.json",
+      "input_tokens": 848,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_negativity_08": {
+      "response_sha256": "35e233aaa9a8fd61527fbb2d88c77a92376ee28596cfb25d7bc9956b72b03749",
+      "response_path": "core_reddit_negativity_08.response.json",
+      "input_tokens": 849,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_negativity_09": {
+      "response_sha256": "e44d596b619d9a3621d246f5b72e02a2c229423e32ea2d3719323bee44c832b6",
+      "response_path": "core_x_negativity_09.response.json",
+      "input_tokens": 850,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_public_image_00": {
+      "response_sha256": "96be1109133bbc994fe7e9aa7e95cdc03e6192cae630afd5381b465500c9d1b2",
+      "response_path": "core_reddit_public_image_00.response.json",
+      "input_tokens": 851,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_public_image_01": {
+      "response_sha256": "70677ed4f6e0c1682f1c5cf9e9eb50b430a6990e45b2d294f26e138c37c8a7db",
+      "response_path": "core_x_public_image_01.response.json",
+      "input_tokens": 852,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_public_image_02": {
+      "response_sha256": "bf284363dfba26dc751bda89bcc6949e289eb2ed527ac2ce08fba3200bb91439",
+      "response_path": "core_reddit_public_image_02.response.json",
+      "input_tokens": 853,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_public_image_03": {
+      "response_sha256": "64ddcca04e6fd27ec1e578c0b387f9b60c0b630648f2b1ce8bac2bf7b29c3388",
+      "response_path": "core_x_public_image_03.response.json",
+      "input_tokens": 854,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_public_image_04": {
+      "response_sha256": "1a4f42b6efe92df180a3570fcab8b4fe9a9a17b7c7f58eafa3c9a2f266ca371a",
+      "response_path": "core_reddit_public_image_04.response.json",
+      "input_tokens": 855,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_public_image_05": {
+      "response_sha256": "64a753fc50a50390171d056a29ba6a98afe09e3283d2f012bf3f8ea1947aff77",
+      "response_path": "core_x_public_image_05.response.json",
+      "input_tokens": 856,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_public_image_06": {
+      "response_sha256": "5a34d0a40dcf75d84c74830953af450c539423b8f8f7752a4ec301afd095bf32",
+      "response_path": "core_reddit_public_image_06.response.json",
+      "input_tokens": 857,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_public_image_07": {
+      "response_sha256": "b7249d2f2f1a40b129a3f0a1e2ef5e226ef9cd8422340668836f9888aebd7e3f",
+      "response_path": "core_x_public_image_07.response.json",
+      "input_tokens": 858,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_reddit_public_image_08": {
+      "response_sha256": "4bcf9359cb6b89420c42518dbaaed8d5cc526fd0eb3fa5021c1d4e9a1ec04dbb",
+      "response_path": "core_reddit_public_image_08.response.json",
+      "input_tokens": 859,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_x_public_image_09": {
+      "response_sha256": "88adb33452ca2f19216c7c509a8ea34260477e7c96a5a527eb12977d9e07e954",
+      "response_path": "core_x_public_image_09.response.json",
+      "input_tokens": 860,
+      "output_tokens": 180,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_00": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_00.response.json",
+      "input_tokens": 700,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_01": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_01.response.json",
+      "input_tokens": 701,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_02": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_02.response.json",
+      "input_tokens": 702,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_03": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_03.response.json",
+      "input_tokens": 703,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_04": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_04.response.json",
+      "input_tokens": 704,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_05": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_05.response.json",
+      "input_tokens": 705,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_06": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_06.response.json",
+      "input_tokens": 706,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_07": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_07.response.json",
+      "input_tokens": 707,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_08": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_08.response.json",
+      "input_tokens": 708,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_09": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_09.response.json",
+      "input_tokens": 709,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_10": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_10.response.json",
+      "input_tokens": 710,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_11": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_11.response.json",
+      "input_tokens": 711,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_12": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_12.response.json",
+      "input_tokens": 712,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_13": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_13.response.json",
+      "input_tokens": 713,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_14": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_14.response.json",
+      "input_tokens": 714,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_15": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_15.response.json",
+      "input_tokens": 715,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_16": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_16.response.json",
+      "input_tokens": 716,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_17": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_17.response.json",
+      "input_tokens": 717,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_18": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_18.response.json",
+      "input_tokens": 718,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_19": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_19.response.json",
+      "input_tokens": 719,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_20": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_20.response.json",
+      "input_tokens": 720,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_21": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_21.response.json",
+      "input_tokens": 721,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_22": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_22.response.json",
+      "input_tokens": 722,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_23": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_23.response.json",
+      "input_tokens": 723,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_24": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_24.response.json",
+      "input_tokens": 724,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_25": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_25.response.json",
+      "input_tokens": 725,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_26": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_26.response.json",
+      "input_tokens": 726,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_27": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_27.response.json",
+      "input_tokens": 727,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_28": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_28.response.json",
+      "input_tokens": 728,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_29": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_29.response.json",
+      "input_tokens": 729,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_30": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_30.response.json",
+      "input_tokens": 730,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_31": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_31.response.json",
+      "input_tokens": 731,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_32": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_32.response.json",
+      "input_tokens": 732,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_33": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_33.response.json",
+      "input_tokens": 733,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_34": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_34.response.json",
+      "input_tokens": 734,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_35": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_35.response.json",
+      "input_tokens": 735,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_36": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_36.response.json",
+      "input_tokens": 736,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_37": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_37.response.json",
+      "input_tokens": 737,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_38": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_38.response.json",
+      "input_tokens": 738,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_39": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_39.response.json",
+      "input_tokens": 739,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_40": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_40.response.json",
+      "input_tokens": 740,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_41": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_41.response.json",
+      "input_tokens": 741,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_42": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_42.response.json",
+      "input_tokens": 742,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_43": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_43.response.json",
+      "input_tokens": 743,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_44": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_44.response.json",
+      "input_tokens": 744,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_45": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_45.response.json",
+      "input_tokens": 745,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_46": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_46.response.json",
+      "input_tokens": 746,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_47": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_47.response.json",
+      "input_tokens": 747,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_48": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_48.response.json",
+      "input_tokens": 748,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_49": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_49.response.json",
+      "input_tokens": 749,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_50": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_50.response.json",
+      "input_tokens": 750,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_51": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_51.response.json",
+      "input_tokens": 751,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_52": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_52.response.json",
+      "input_tokens": 752,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_53": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_53.response.json",
+      "input_tokens": 753,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_54": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_54.response.json",
+      "input_tokens": 754,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_55": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_55.response.json",
+      "input_tokens": 755,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_56": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_56.response.json",
+      "input_tokens": 756,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_57": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_57.response.json",
+      "input_tokens": 757,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_reddit_58": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_reddit_58.response.json",
+      "input_tokens": 758,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "core_nof_x_59": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "core_nof_x_59.response.json",
+      "input_tokens": 759,
+      "output_tokens": 90,
+      "cache_hit_tokens": 0
+    },
+    "edge_one_item_benign": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "edge_one_item_benign.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_16_all_benign": {
+      "response_sha256": "913b087de1de5eac2f2c066201c2980812670318a2e442be0182b68bc8f95e45",
+      "response_path": "edge_16_all_benign.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_emoji_zwj": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "edge_emoji_zwj.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_evidence_160": {
+      "response_sha256": "7adcbc4f66d73786cfabfbffce16c4e7dd67b7d6ee82d6c37779913d2f8ab44e",
+      "response_path": "edge_evidence_160.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_evidence_161_invalid": {
+      "response_sha256": "9fb8f8d1d8bb707572a186a9a8382de47e3570a357ca4d421540937815c10e60",
+      "response_path": "edge_evidence_161_invalid.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_authored_hostile": {
+      "response_sha256": "3bd97fd17282fa673eb6a890be31c886ccdbd39d497c76618e6d891fe07d7d1e",
+      "response_path": "edge_authored_hostile.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_amplified_hostile": {
+      "response_sha256": "d04e13f4fb20f7a4dc35873e68034e8f3b00fc474f607945c792acaa993ab955",
+      "response_path": "edge_amplified_hostile.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_dup_item_index": {
+      "response_sha256": "d3a6def8bb57be700ac9743b9a6845e8f3bcc0d069565e98770f8e6360863122",
+      "response_path": "edge_dup_item_index.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_trailing_prose": {
+      "response_sha256": "45907faa2387d57613ec176a4da7cd40ebaa8de4978cca8912312ac519bcd222",
+      "response_path": "edge_trailing_prose.response.json",
+      "input_tokens": 400,
+      "output_tokens": 50,
+      "cache_hit_tokens": 0
+    },
+    "edge_prompt_injection": {
+      "response_sha256": "56568953a97d667833ffef3ab73cadba8d1c67910ecba6b4e48a18950782c400",
+      "response_path": "edge_prompt_injection.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_other_only_policy": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "edge_other_only_policy.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_political_left": {
+      "response_sha256": "5b5f96e11e03f0468dad2ecf74c143efd518ee7b1c101d243abfda0e25b37192",
+      "response_path": "edge_political_left.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_political_right": {
+      "response_sha256": "df2577cc58295b83b5be985ef18e5c91859aea416cd4082460acf236e586db16",
+      "response_path": "edge_political_right.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_slur_language_not_politics": {
+      "response_sha256": "77b9bbd6bd469d0ceba4794798fac5a5af6fef1ffb3087dbc25b6170ac07e90e",
+      "response_path": "edge_slur_language_not_politics.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_neutral_quotation": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "edge_neutral_quotation.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_ordinary_disappointment": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "edge_ordinary_disappointment.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_alcohol_mention": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "edge_alcohol_mention.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_risky_alcohol": {
+      "response_sha256": "ed1396057e74c6239d492f023d063e4ee907f59ceb1b4d1b2c67df477ee0da82",
+      "response_path": "edge_risky_alcohol.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_identity_disclosure": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "edge_identity_disclosure.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_platform_reddit": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "edge_platform_reddit.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_platform_x": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "edge_platform_x.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_unknown_summary_key": {
+      "response_sha256": "4f069ae72b716714070b814f3d366ee55a5a9f395578b772608e197648235ef3",
+      "response_path": "edge_unknown_summary_key.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_fenced_markdown": {
+      "response_sha256": "c4ef3073b019c7cbfb56239ca248917480db95f91fea1ffdae10b8486cdb74b3",
+      "response_path": "edge_fenced_markdown.response.json",
+      "input_tokens": 400,
+      "output_tokens": 40,
+      "cache_hit_tokens": 0
+    },
+    "edge_missing_index": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "edge_missing_index.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    }
+  }
+}

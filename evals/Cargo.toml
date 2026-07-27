@@ -1,0 +1,36 @@
+[package]
+name = "ghostpost-evals"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+license = "UNLICENSED"
+publish = false
+
+[[bin]]
+name = "ghostpost-evals"
+path = "src/main.rs"
+
+[lib]
+name = "ghostpost_evals"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = "1"
+async-trait = "0.1"
+chrono = { version = "0.4", features = ["serde", "clock"] }
+clap = { version = "4", features = ["derive", "env"] }
+hex = "0.4"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "io-util"] }
+unicode-normalization = "0.1"
+# Path dep — sibling owns full impl; evals needs pack/batch_id for parity tests.
+uuid = { version = "1", features = ["serde"] }
+
+scan-text = { path = "../backend/crates/scan-text" }
+
+[dev-dependencies]
+tempfile = "3"

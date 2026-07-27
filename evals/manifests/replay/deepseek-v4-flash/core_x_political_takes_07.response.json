@@ -1,0 +1,1 @@
+{"schemaVersion":"scan-output.v1","results":[{"itemIndex":0,"decision":"flag","risk":"low","category":"political_takes","confidence":0.91,"reasons":[{"code":"political_advocacy","summary":"text matches political_takes"}],"evidence":[{"text":"My vote is a weapon against that ideolog","supportsReasonCode":"political_advocacy"}]}]}

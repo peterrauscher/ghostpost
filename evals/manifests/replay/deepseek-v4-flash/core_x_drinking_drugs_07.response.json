@@ -1,0 +1,1 @@
+{"schemaVersion":"scan-output.v1","results":[{"itemIndex":0,"decision":"flag","risk":"low","category":"drinking_drugs","confidence":0.91,"reasons":[{"code":"risky_alcohol_or_drug_content","summary":"text matches drinking_drugs"}],"evidence":[{"text":"I promote hard partying with pills every","supportsReasonCode":"risky_alcohol_or_drug_content"}]}]}

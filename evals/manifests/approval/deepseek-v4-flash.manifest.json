@@ -1,0 +1,43 @@
+{
+  "provider": "deepseek",
+  "modelId": "deepseek-v4-flash",
+  "promptVersion": "scan-v1",
+  "promptSha256": "eb714649864e91415e6c1cc5ba771122b8910623553c326db7a7de4ec3cc0dcd",
+  "modelManifestSha256": "e43a9d67989cee6c7f3773259b1fb7a63bee9b6b4023ef29f411c7ace7d15849",
+  "requestFlags": {
+    "responseFormat": "json_object",
+    "thinking": "disabled",
+    "temperature": 0.0
+  },
+  "dataClassesSent": [
+    "normalized_user_archive_text",
+    "onboarding_audience_context",
+    "onboarding_review_concerns"
+  ],
+  "providerDataHandling": {
+    "termsUrl": null,
+    "reviewedAt": null,
+    "retentionDays": null,
+    "trainingUse": null
+  },
+  "legalReview": {
+    "ticket": null,
+    "reviewer": null,
+    "approvedAt": null,
+    "expiresAt": null
+  },
+  "environments": {
+    "local": {
+      "allowed": false,
+      "requiresApiKey": true
+    },
+    "staging": {
+      "allowed": false,
+      "requiresApiKey": true
+    },
+    "production": {
+      "allowed": false,
+      "requiresApiKey": true
+    }
+  }
+}

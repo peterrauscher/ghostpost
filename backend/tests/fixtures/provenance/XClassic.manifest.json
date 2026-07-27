@@ -1,0 +1,11 @@
+{
+  "family": "XClassic",
+  "fixture": "x/user_redacted_classic_v1.zip",
+  "fixtureSha256": "693fa85cf66eb15bace1ea656ceb15f910463dc34f6507547218c63c16df54f4",
+  "exportGenerationDate": "2026-07-24",
+  "redactionTransform": "Irreversible pseudonymization: stable SHA-256-truncated token maps for numeric/string IDs; synthetic handles/subreddits; benign placeholder text; example.invalid URLs; stripped IPs/emails/phones/media/DMs/ads/profile PII.",
+  "approvedForProduction": true,
+  "observedWrappers": [
+    "window.YTD.tweets.part0"
+  ]
+}

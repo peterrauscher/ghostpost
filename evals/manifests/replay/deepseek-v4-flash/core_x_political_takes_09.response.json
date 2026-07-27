@@ -1,0 +1,1 @@
+{"schemaVersion":"scan-output.v1","results":[{"itemIndex":0,"decision":"flag","risk":"low","category":"political_takes","confidence":0.91,"reasons":[{"code":"political_advocacy","summary":"you shared content matching political_takes"}],"evidence":[{"text":"Political action now: call your senator ","supportsReasonCode":"political_advocacy"}]}]}

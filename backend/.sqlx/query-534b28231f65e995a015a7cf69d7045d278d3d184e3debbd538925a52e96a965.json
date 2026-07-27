@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nUPDATE work_item_attempts\nSET outcome = 'succeeded', finished_at = now()\nWHERE tenant_id = $1\n  AND work_item_id = $2\n  AND lease_owner = $3\n  AND finished_at IS NULL\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "534b28231f65e995a015a7cf69d7045d278d3d184e3debbd538925a52e96a965"
+}

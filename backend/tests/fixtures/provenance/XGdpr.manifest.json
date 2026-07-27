@@ -1,0 +1,13 @@
+{
+  "family": "XGdpr",
+  "fixture": "x/user_redacted_gdpr_v1.zip",
+  "fixtureSha256": "466cd2ccc54a24efee8a0b0cf9a0390c537f30ff2dfa77a9883dac94eab8a752",
+  "exportGenerationDate": "2026-07-24",
+  "redactionTransform": "Irreversible pseudonymization: stable SHA-256-truncated token maps for numeric/string IDs; synthetic handles/subreddits; benign placeholder text; example.invalid URLs; stripped IPs/emails/phones/media/DMs/ads/profile PII.",
+  "approvedForProduction": true,
+  "observedWrappers": [
+    "window.YTD.tweets.part0",
+    "window.YTD.deleted_tweets.part0",
+    "window.YTD.note_tweet.part0"
+  ]
+}

@@ -1,0 +1,16 @@
+target
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+**/*.md
+!prompts/
+!prompts/**
+**/tests/**
+**/*_test.rs
+Dockerfile*
+.dockerignore
+.cargo/config.toml
+*.swp
+.DS_Store

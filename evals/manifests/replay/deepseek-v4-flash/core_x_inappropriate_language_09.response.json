@@ -1,0 +1,1 @@
+{"schemaVersion":"scan-output.v1","results":[{"itemIndex":0,"decision":"flag","risk":"medium","category":"inappropriate_language","confidence":0.91,"reasons":[{"code":"targeted_insult","summary":"you shared content matching inappropriate_language"}],"evidence":[{"text":"Explicit sexual insult directed at a cow","supportsReasonCode":"targeted_insult"}]}]}

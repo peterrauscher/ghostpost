@@ -1,0 +1,1 @@
+{"schemaVersion":"scan-output.v1","results":[{"itemIndex":0,"decision":"flag","risk":"low","category":"public_image","confidence":0.91,"reasons":[{"code":"admitted_misconduct","summary":"you shared content matching public_image"}],"evidence":[{"text":"I admit serious unprofessional conduct a","supportsReasonCode":"admitted_misconduct"}]}]}

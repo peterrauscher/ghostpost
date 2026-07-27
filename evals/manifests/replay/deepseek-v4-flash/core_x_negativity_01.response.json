@@ -1,0 +1,1 @@
+{"schemaVersion":"scan-output.v1","results":[{"itemIndex":0,"decision":"flag","risk":"low","category":"negativity","confidence":0.91,"reasons":[{"code":"sustained_hostility","summary":"text matches negativity"}],"evidence":[{"text":"You and your friends are permanent garba","supportsReasonCode":"sustained_hostility"}]}]}

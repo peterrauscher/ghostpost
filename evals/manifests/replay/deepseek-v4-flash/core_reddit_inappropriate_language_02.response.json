@@ -1,0 +1,1 @@
+{"schemaVersion":"scan-output.v1","results":[{"itemIndex":0,"decision":"flag","risk":"low","category":"inappropriate_language","confidence":0.91,"reasons":[{"code":"targeted_insult","summary":"text matches inappropriate_language"}],"evidence":[{"text":"That loser is pure trash and deserves no","supportsReasonCode":"targeted_insult"}]}]}

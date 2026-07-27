@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nUPDATE work_items\nSET status = $4,\n    finished_at = CASE WHEN $4 = 'failed' THEN now() ELSE NULL END,\n    lease_owner = NULL,\n    lease_expires_at = NULL,\n    heartbeat_at = NULL,\n    last_error = $5,\n    run_after = CASE WHEN $4 = 'pending' THEN $6 ELSE run_after END,\n    updated_at = now()\nWHERE tenant_id = $1 AND id = $2 AND lease_owner = $3 AND status = 'running'\n",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "91f18a7dedb97329aba4455bc3f8e5a6d69100ddaa64cecf5e3873a0e6010ece"
+}

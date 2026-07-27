@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\nSELECT cancel_requested_at\nFROM work_items\nWHERE tenant_id = $1 AND id = $2 AND lease_owner = $3 AND status = 'running'\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "cancel_requested_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "a3051f81df531b2f2c604c657105911011b35d7c00d03bd84cd420997d4b4584"
+}

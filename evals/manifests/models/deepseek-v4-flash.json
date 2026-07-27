@@ -1,0 +1,17 @@
+{
+  "model_id": "deepseek-v4-flash",
+  "api_base": "https://api.deepseek.com/v1",
+  "pricing_usd_per_million": {
+    "input_cache_miss": 0.14,
+    "input_cache_hit": 0.0028,
+    "output": 0.28
+  },
+  "defaults": {
+    "temperature": 0.0,
+    "max_tokens": 4096,
+    "response_format": "json_object",
+    "thinking": "disabled"
+  },
+  "prompt_version": "scan-v1",
+  "prompt_sha256": "eb714649864e91415e6c1cc5ba771122b8910623553c326db7a7de4ec3cc0dcd"
+}

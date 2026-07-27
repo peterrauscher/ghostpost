@@ -1,0 +1,1 @@
+{"schemaVersion":"scan-output.v1","results":[{"itemIndex":0,"decision":"flag","risk":"low","category":"controversial_topics","confidence":0.91,"reasons":[{"code":"polarizing_advocacy","summary":"you shared content matching controversial_topics"}],"evidence":[{"text":"Force the controversial mandate through ","supportsReasonCode":"polarizing_advocacy"}]}]}

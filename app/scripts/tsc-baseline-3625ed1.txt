@@ -1,0 +1,21 @@
+# Ghostpost app TypeScript baseline captured before Plan 001 fixes
+# Planned-at commit: 3625ed1
+# Command: npx tsc --noEmit (cwd app/)
+# Do not delete; records the observed pre-fix gate and prevents silent scope creep.
+#
+# PLAN DRIFT NOTE (2026-07-23 Plan 001 executor):
+# Plan 001 recorded 252 error TS diagnostics / 38 files / EXIT 2 at this commit.
+# Live capture after `npm ci` on the same commit SHA (3625ed1) with locked
+# typescript@6.0.3 + @types/react@19.2.17 produced EXIT 0 and 0 error TS lines.
+# Reproduction was also green under typescript@5.9.3 and 5.4.5 against the same
+# sources. Source files and package.json matched the plan excerpts at capture
+# time, before Expo dependency alignment in later steps.
+# This artifact records the observed pre-fix gate rather than fabricating the
+# historical red diagnostic count.
+#
+# Capture transcript after npm ci:
+#   npm ls: typescript@6.0.3 @types/react@19.2.17 expo@57.0.7 expo-router@57.0.7
+#           react@19.2.3 react-native@0.86.0
+#   npx tsc --noEmit -> EXIT:0; error TS count: 0; unique files: 0
+#
+EXIT:0

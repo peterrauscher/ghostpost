@@ -1,0 +1,1 @@
+{"schemaVersion":"scan-output.v1","results":[{"itemIndex":0,"decision":"flag","risk":"low","category":"public_image","confidence":0.91,"reasons":[{"code":"admitted_misconduct","summary":"text matches public_image"}],"evidence":[{"text":"I lied on my application and forged the ","supportsReasonCode":"admitted_misconduct"}]}]}
