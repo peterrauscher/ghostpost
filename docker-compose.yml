@@ -37,6 +37,7 @@ services:
     environment:
       MINIO_ROOT_USER: ghostpost
       MINIO_ROOT_PASSWORD: ghostpostsecret
+      MINIO_API_CORS_ALLOW_ORIGIN: http://localhost:8081,http://127.0.0.1:8081
     ports:
       - "${MINIO_PUBLISH_HOST:-127.0.0.1}:9000:9000"
       - "127.0.0.1:9001:9001"
@@ -112,6 +113,7 @@ services:
       AUTH_SECURE_COOKIES: ${AUTH_SECURE_COOKIES:-false}
       ARCHIVE_BUCKET: ghostpost-archives
       ARCHIVE_S3_ENDPOINT: http://minio:9000
+      ARCHIVE_S3_PUBLIC_ENDPOINT: http://localhost:9000
       ARCHIVE_S3_REGION: us-east-1
       # Plan 004 documented names (compose table). Runtime S3 SDK reads the
       # standard AWS credential chain — mirror into AWS_* for the default provider.
@@ -129,6 +131,12 @@ services:
       WORKOS_COOKIE_PASSWORD: ${WORKOS_COOKIE_PASSWORD:?WORKOS_COOKIE_PASSWORD required}
       APP_SESSION_KEYS: ${APP_SESSION_KEYS:?APP_SESSION_KEYS required}
       WORKOS_SEAL_KEY_VERSION: ${WORKOS_SEAL_KEY_VERSION:-workos_v1}
+      SCAN_LLM_PROVIDER: ${SCAN_LLM_PROVIDER:-stub-deterministic}
+      SCAN_BATCH_HMAC_KEYS: ${SCAN_BATCH_HMAC_KEYS:-[{"id":"local_v1","secret":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}]}
+      SCAN_BATCH_MAX_TOKENS: ${SCAN_BATCH_MAX_TOKENS:-12000}
+      SCAN_BATCH_MAX_ITEMS: ${SCAN_BATCH_MAX_ITEMS:-16}
+      SCAN_BATCH_MAX_SCALARS: ${SCAN_BATCH_MAX_SCALARS:-6000}
+      SCAN_LLM_MAX_INFLIGHT: ${SCAN_LLM_MAX_INFLIGHT:-4}
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health/ready"]
       interval: 5s

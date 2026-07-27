@@ -1,47 +1,42 @@
-# Ghostpost
+# Ghostpost Expo app
 
-Expo SDK 57 app for cleaning up social media posts before college, rush, or job applications.
+Production Expo SDK 57 client for the Ghostpost Axum API. There is no mock or fixture fallback.
 
-## Stack
-
-- Expo Router (file-based navigation + protected route gates)
-- Ghostpost design system components (from Pencil)
-- TanStack Query + AsyncStorage persistence for server-state hydration
-- Mock API adapter by default (`EXPO_PUBLIC_API_URL` switches to HTTP)
-
-## Getting started
+## Required environment
 
 ```bash
-npm install
-npx expo start
+EXPO_PUBLIC_API_URL=http://localhost:8080
 ```
 
-Press `i` / `a` / `w` for iOS, Android, or web.
+The app fails at API-module initialization when this variable is missing. For local web auth, keep the frontend callback and API on the same hostname (`localhost`, not a mix of `localhost` and `127.0.0.1`) so the pre-auth and session cookies remain consistent.
 
-## App flow
-
-1. Welcome carousel
-2. Onboarding (coming up → concerns → platforms → how it helps)
-3. Scan progress
-4. Locked home → unlock
-5. Home / Scan / Profile tabs
-6. Review flagged content → flag detail
-
-## Data layer
-
-- Domain types: `src/domain`
-- Mock fixtures: `src/mocks`
-- API adapters: `src/services/api` (`mock` by default, `http` when `EXPO_PUBLIC_API_URL` is set)
-- Feature hooks: `src/features/hooks.ts`
-- App gate persistence: `src/providers/app-state.tsx`
-- Query cache persistence: `src/providers/query-provider.tsx`
-
-## Scripts
+Android emulator API URL:
 
 ```bash
-npm start
-npm run lint
+EXPO_PUBLIC_API_URL=http://10.0.2.2:8080
+```
+
+## Run
+
+```bash
+npm ci
+EXPO_PUBLIC_API_URL=http://localhost:8080 npm run web
+```
+
+## Authentication
+
+- Web uses the backend-managed `gp_auth_init` and `gp_session` HttpOnly cookies, plus `/v1/auth/csrf` for mutations.
+- Native receives a server-issued one-time `exchangeSecret` from `GET /v1/auth/authorize?client=native`, stores that pending flow in SecureStore, and exchanges it once at `ghostpost://auth/callback`.
+- Native stores only the returned Ghostpost `session.token`; WorkOS tokens never reach the app.
+
+## Archive uploads
+
+The document picker supplies an opaque ZIP `File`. The app reserves a signed multipart POST with the API, uploads the file directly to S3/MinIO using `expo/fetch`, and asks the backend to complete and pin the immutable object version. The ZIP is never base64-encoded, hashed, or proxied through the API process.
+
+## Gates
+
+```bash
 npm run typecheck
 npm test
-npm run export:web
+EXPO_PUBLIC_API_URL=http://localhost:8080 npm run export:web
 ```

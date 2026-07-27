@@ -121,6 +121,22 @@ struct ContentRow {
     source_revision_id: Option<String>, // loaded for stable order / future use
 }
 
+pub async fn mark_terminal_failure(pool: &PgPool, item: &WorkItem) -> AppResult<()> {
+    let payload: ScanPostsPayload = serde_json::from_value(item.payload.clone())
+        .map_err(|e| worker_err(format!("invalid scan_posts payload: {e}")))?;
+    persist::update_scan_progress(
+        pool,
+        item.tenant_id,
+        payload.scan_id,
+        "failed",
+        "complete",
+        5,
+        Some("worker_failed"),
+    )
+    .await?;
+    Ok(())
+}
+
 pub async fn handle(
     pool: &PgPool,
     item: &WorkItem,

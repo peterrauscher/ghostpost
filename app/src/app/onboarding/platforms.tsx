@@ -1,89 +1,19 @@
 import { router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
-
-import { AppText, Button, Screen, SocialAppRow, StepProgress } from '@/components';
-import { PLATFORM_OPTIONS } from '@/domain/types';
-import { useAppState } from '@/providers/app-state';
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { Pressable, View } from 'react-native';
+import { AppText, Button, Screen, SurfaceCard } from '@/components';
+import { DisclosureConsent } from '@/components/DisclosureConsent';
+import { mergeOnboarding } from '@/domain/onboarding';
+import type { PlatformId } from '@/domain/types';
+import { useOnboardingQuery, useSubmitOnboardingMutation } from '@/features/hooks';
+import { api } from '@/services/api';
 import { colors } from '@/theme';
 
 export default function PlatformsScreen() {
-  const { onboarding, togglePlatform, setOnboardingStep } = useAppState();
-  const selected = onboarding.platforms;
-  const canContinue = selected.length > 0;
-
-  return (
-    <Screen tone="tint">
-      <View style={styles.header}>
-        <StepProgress current={3} />
-        <View style={styles.titleBlock}>
-          <View style={styles.titleRow}>
-            <AppText variant="title">which </AppText>
-            <AppText variant="title" color={colors.accent}>
-              social
-            </AppText>
-            <AppText variant="title"> media</AppText>
-          </View>
-          <AppText variant="title">apps do you have?</AppText>
-          <AppText variant="bodyRegular" color={colors.muted} style={styles.disclaimer}>
-            We&apos;ll scan your public posts and comments. Your private data stays private and we
-            will never post anything.
-          </AppText>
-        </View>
-      </View>
-
-      <View style={styles.options}>
-        {PLATFORM_OPTIONS.map((platform) => (
-          <SocialAppRow
-            key={platform.id}
-            platform={platform.id}
-            label={platform.label}
-            selected={selected.includes(platform.id)}
-            onPress={() => togglePlatform(platform.id)}
-          />
-        ))}
-      </View>
-
-      <View style={styles.footer}>
-        <AppText variant="caption" color={colors.muted} align="center">
-          You can disconnect at any time.
-        </AppText>
-        <Button
-          label="continue"
-          variant={canContinue ? 'primary' : 'disabled'}
-          disabled={!canContinue}
-          onPress={() => {
-            setOnboardingStep(4);
-            router.push('/onboarding/how-it-helps');
-          }}
-        />
-      </View>
-    </Screen>
-  );
+  const onboarding = useOnboardingQuery(); const catalog = useQuery({ queryKey: ['platform-catalog'], queryFn: () => api.getPlatforms() }); const save = useSubmitOnboardingMutation();
+  const [selection, setSelection] = useState<PlatformId[] | null>(null); const [accepted, setAccepted] = useState(false);
+  const selected = selection ?? onboarding.data?.answers.platforms ?? [];
+  if (!onboarding.data) return null;
+  return <Screen tone="welcome" scroll><AppText variant="title">choose your platforms</AppText><View style={{ gap: 10 }}>{catalog.data?.platforms.map((platform) => <Pressable key={platform.id} disabled={!platform.archiveEnabled} onPress={() => setSelection((current) => { const values = current ?? selected; return values.includes(platform.id) ? values.filter((id) => id !== platform.id) : [...values, platform.id]; })}><SurfaceCard style={{ opacity: platform.archiveEnabled ? 1 : .5 }}><AppText variant="body" weight="600">{platform.label}</AppText><AppText variant="caption" color={colors.muted}>{platform.archiveEnabled ? (selected.includes(platform.id) ? 'selected' : 'tap to select') : 'Coming soon'}</AppText></SurfaceCard></Pressable>)}</View><DisclosureConsent accepted={accepted} onChange={setAccepted} /><Button label="continue →" disabled={!accepted || !selected.length} loading={save.isPending} onPress={() => void save.mutateAsync(mergeOnboarding(onboarding.data, { platforms: selected, disclosureConsent: { accepted: true, version: catalog.data?.revision ?? onboarding.data.answers.disclosureConsent.version } }, 4)).then(() => router.push('/onboarding/how-it-helps'))} /></Screen>;
 }
-
-const styles = StyleSheet.create({
-  header: {
-    gap: 14,
-    paddingTop: 8,
-  },
-  titleBlock: {
-    gap: 10,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  disclaimer: {
-    lineHeight: 19,
-  },
-  options: {
-    flex: 1,
-    gap: 10,
-    paddingTop: 10,
-  },
-  footer: {
-    gap: 12,
-    paddingBottom: 12,
-    paddingTop: 10,
-  },
-});

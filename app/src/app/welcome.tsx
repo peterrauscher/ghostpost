@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 
 import { Button, CarouselDots, Screen, AppText } from '@/components';
-import { useAppState } from '@/providers/app-state';
+import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme';
 
 const { width: windowWidth } = Dimensions.get('window');
@@ -82,7 +82,7 @@ const SLIDE_COPY = [
       { text: 'connect your accounts,', color: colors.fg },
       { text: 'we\'ll scan for you.', color: colors.accentDeep },
     ] as const,
-    body: 'link Instagram, TikTok, Reddit, and more. we help you ghost what admissions, jobs, and rush might notice (before they do).',
+    body: 'upload supported platform exports privately. we help you review what admissions, jobs, and rush might notice.',
   },
   {
     key: 'review',
@@ -91,7 +91,7 @@ const SLIDE_COPY = [
       { text: 'keep what you love,', color: colors.fg },
       { text: 'and clear the rest.', color: colors.accentDeep },
     ] as const,
-    body: 'swipe to keep or delete flagged posts so you can show up as your best self.',
+    body: 'review suggestions privately. actions change your Ghostpost copy only, never your live platform posts.',
   },
 ] as const;
 
@@ -159,7 +159,7 @@ function SlideArt({ slideKey }: { slideKey: (typeof SLIDE_COPY)[number]['key'] }
 }
 
 export default function WelcomeScreen() {
-  const { setHasStarted } = useAppState();
+  const auth = useAuth();
   const [index, setIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -210,7 +210,7 @@ export default function WelcomeScreen() {
 
       <View style={styles.footer}>
         <CarouselDots count={SLIDE_COPY.length} index={index} />
-        <Button label="get started" variant="dark" onPress={() => setHasStarted(true)} />
+        <Button label="get started" variant="dark" onPress={() => void auth.signIn()} />
         <Pressable
           accessibilityRole="link"
           onPress={() => router.push('/login')}

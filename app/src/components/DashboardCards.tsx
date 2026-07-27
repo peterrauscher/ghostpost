@@ -5,17 +5,19 @@ import Svg, { Circle } from 'react-native-svg';
 import { CountBadge } from '@/components/primitives/Badges';
 import { AppText } from '@/components/primitives/AppText';
 import { SurfaceCard } from '@/components/primitives/SurfaceCard';
-import { colors, riskColors, type RiskLevel } from '@/theme';
+import { colors, riskColors } from '@/theme';
+import type { OverallRiskLevel } from '@/domain/types';
 
 type Props = {
-  level: RiskLevel;
+  level: OverallRiskLevel;
   flaggedCount: number;
   gaugeSweep?: number;
 };
 
 export function RiskSummaryCard({ level, flaggedCount, gaugeSweep = 245 }: Props) {
   const label = level.charAt(0).toUpperCase() + level.slice(1);
-  const stroke = riskColors[level].dot;
+  const palette = level === 'none' ? { dot: colors.muted, text: colors.muted } : riskColors[level];
+  const stroke = palette.dot;
   const radius = 31;
   const circumference = 2 * Math.PI * radius;
   const progress = Math.min(1, gaugeSweep / 360);
@@ -30,7 +32,7 @@ export function RiskSummaryCard({ level, flaggedCount, gaugeSweep = 245 }: Props
         <View style={styles.copy}>
           <AppText
             variant="headline"
-            color={riskColors[level].text}
+            color={palette.text}
             weight="700"
             style={{ fontSize: 22 }}>
             {label}

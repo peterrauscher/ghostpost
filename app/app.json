@@ -7,43 +7,22 @@
     "icon": "./assets/images/logo.png",
     "scheme": "ghostpost",
     "userInterfaceStyle": "light",
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.ghostpost.app"
-    },
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.ghostpost.app" },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#EDE4FF",
-        "foregroundImage": "./assets/images/logo-transparent.png"
-      },
+      "adaptiveIcon": { "backgroundColor": "#EDE4FF", "foregroundImage": "./assets/images/logo-transparent.png" },
       "predictiveBackGestureEnabled": false,
-      "package": "com.ghostpost.app"
+      "package": "com.ghostpost.app",
+      "intentFilters": [{ "action": "VIEW", "data": [{ "scheme": "ghostpost", "host": "auth", "pathPrefix": "/callback" }], "category": ["BROWSABLE", "DEFAULT"] }]
     },
-    "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
+    "web": { "output": "static", "favicon": "./assets/images/favicon.png" },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#F4EEFC",
-          "image": "./assets/images/logo-transparent.png",
-          "imageWidth": 160
-        }
-      ],
-      [
-        "expo-font",
-        {
-          "fonts": ["./assets/fonts/SNPro-VariableFont_wght.ttf"]
-        }
-      ],
-      "expo-secure-store"
+      ["expo-splash-screen", { "backgroundColor": "#F4EEFC", "image": "./assets/images/logo-transparent.png", "imageWidth": 160 }],
+      ["expo-font", { "fonts": ["./assets/fonts/SNPro-VariableFont_wght.ttf"] }],
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-document-picker"
     ],
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
-    }
+    "experiments": { "typedRoutes": true, "reactCompiler": true }
   }
 }

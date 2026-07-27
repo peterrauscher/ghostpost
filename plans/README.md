@@ -26,7 +26,7 @@ code has landed.
 | [004](004-archive-upload-ingestion.md) | Private direct upload and Reddit/X normalization | P1 | **complete** | 002, 003 |
 | [005](005-scan-prompt-deepseek-evals.md) | `scan-v1`, provider port, DeepSeek adapter, Rust evals | P1 | **complete** | 002, 004 |
 | [006](006-product-apis-entitlements.md) | Scan/dashboard/flag APIs and free-beta entitlement | P1 | **complete** | 002, 003, 004, 005 |
-| [007](007-expo-production-cutover.md) | Authenticated Expo cutover and complete mock purge | P0 | **planned** | 001, 003, 004, 006 |
+| [007](007-expo-production-cutover.md) | Authenticated Expo cutover and complete mock purge | P0 | **complete** | 001, 003, 004, 006 |
 | [008](008-containerize-local-stack.md) | Docker local stack: Postgres, MinIO, migrator, backend | P1 | **complete** | 002, 003, 004 |
 | [009](009-sst-production-infrastructure.md) | SST v4 AWS production deployment | P1 | **planned** | 005, 006, 007, 008 |
 

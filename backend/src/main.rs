@@ -91,7 +91,8 @@ async fn build_blob_store() -> anyhow::Result<Arc<dyn BlobStore>> {
     if let Some(endpoint) = endpoint_override.as_deref() {
         builder = builder.endpoint_url(endpoint);
     }
-    let endpoint = match endpoint_override {
+    let signing_endpoint = std::env::var("ARCHIVE_S3_PUBLIC_ENDPOINT").ok().or_else(|| endpoint_override.clone());
+    let endpoint = match signing_endpoint {
         Some(base) if force_path_style => format!("{}/{}", base.trim_end_matches('/'), bucket),
         Some(base) => base,
         None => format!("https://{bucket}.s3.{region}.amazonaws.com"),

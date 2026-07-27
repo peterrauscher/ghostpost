@@ -35,7 +35,7 @@ export function FlaggedPostCard({ post, onPress }: CardProps) {
           {post.tags.map((tag) => (
             <TagPill key={tag} label={tag} />
           ))}
-          <TagPill label={post.engagementLabel} />
+          {post.engagementLabel ? <TagPill label={post.engagementLabel} /> : null}
           <View style={styles.spacer} />
           <ChevronRight size={16} color={colors.chevronMuted} />
         </View>

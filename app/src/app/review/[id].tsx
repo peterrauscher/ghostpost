@@ -24,7 +24,7 @@ export default function FlagDetailScreen() {
   const apply = async (action: ReviewAction) => {
     if (!id) return;
     await actionMutation.mutateAsync({ id, action });
-    if (action === 'resolve' || action === 'delete' || action === 'archive' || action === 'keep') {
+    if (action === 'resolve' || action === 'delete_local' || action === 'archive' || action === 'keep') {
       router.back();
     }
   };
@@ -90,14 +90,12 @@ export default function FlagDetailScreen() {
           <AppText variant="bodyLg" weight="600">
             {post.quote}
           </AppText>
-          <View style={styles.stats}>
-            <AppText variant="caption" color={colors.muted}>
-              ♡ {post.likes}
-            </AppText>
-            <AppText variant="caption" color={colors.muted}>
-              💬 {post.comments}
-            </AppText>
-          </View>
+          {post.likes !== undefined || post.comments !== undefined ? (
+            <View style={styles.stats}>
+              {post.likes !== undefined ? <AppText variant="caption" color={colors.muted}>♡ {post.likes}</AppText> : null}
+              {post.comments !== undefined ? <AppText variant="caption" color={colors.muted}>💬 {post.comments}</AppText> : null}
+            </View>
+          ) : null}
         </SurfaceCard>
 
         <View style={styles.section}>
@@ -115,20 +113,20 @@ export default function FlagDetailScreen() {
           </AppText>
           <ActionRow
             tone="danger"
-            title="Delete this post"
-            subtitle={`Remove it from ${post.platformLabel}`}
-            onPress={() => apply('delete')}
+            title="Delete Ghostpost copy"
+            subtitle="Remove this item from Ghostpost only"
+            onPress={() => apply('delete_local')}
           />
           <ActionRow
             tone="accent"
             title="Archive instead"
-            subtitle="Hide without deleting"
+            subtitle="Hide this suggestion in Ghostpost"
             onPress={() => apply('archive')}
           />
           <ActionRow
             tone="success"
             title="Keep — I’m fine with it"
-            subtitle="Mark reviewed, leave live"
+            subtitle="Mark reviewed; your live post is unchanged"
             onPress={() => apply('keep')}
           />
         </View>

@@ -248,7 +248,7 @@ WHERE tenant_id = $1 AND id = $2 AND lease_owner = $3 AND status = 'running'
             Ok(p) => p,
             Err(err) => {
                 let msg = err.to_string();
-                queue::commit_failure(
+                let status = queue::commit_failure(
                     pool,
                     item.tenant_id,
                     item.id,
@@ -259,6 +259,9 @@ WHERE tenant_id = $1 AND id = $2 AND lease_owner = $3 AND status = 'running'
                 )
                 .await
                 .map_err(AppError::from)?;
+                if status == "failed" {
+                    crate::jobs::scan_posts::mark_terminal_failure(pool, item).await?;
+                }
                 return Ok(());
             }
         };
@@ -270,7 +273,7 @@ WHERE tenant_id = $1 AND id = $2 AND lease_owner = $3 AND status = 'running'
             }
             Err(err) => {
                 let message = err.to_string();
-                queue::commit_failure(
+                let status = queue::commit_failure(
                     pool,
                     item.tenant_id,
                     item.id,
@@ -281,6 +284,9 @@ WHERE tenant_id = $1 AND id = $2 AND lease_owner = $3 AND status = 'running'
                 )
                 .await
                 .map_err(AppError::from)?;
+                if status == "failed" {
+                    crate::jobs::scan_posts::mark_terminal_failure(pool, item).await?;
+                }
                 warn!(kind = %item.kind, id = %item.id, error = %message, "scan_posts failed");
             }
         }
