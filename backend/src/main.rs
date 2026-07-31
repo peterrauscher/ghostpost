@@ -2,7 +2,7 @@ use clap::Parser;
 use ghostpost_backend::auth::{
     reseal, AuthConfig, AuthService, SdkWorkosProvider, WorkosIdentityProvider,
 };
-use ghostpost_backend::cli::{AuthCommand, Cli, Command, ServeRole};
+use ghostpost_backend::cli::{AuthCommand, Cli, Command, DeletionCommand, ServeRole};
 use ghostpost_backend::config::Config;
 use ghostpost_backend::db::{migrate, pool};
 use ghostpost_backend::error::AppError;
@@ -12,6 +12,8 @@ use ghostpost_backend::shutdown::{self, Shutdown};
 use ghostpost_backend::telemetry;
 use std::sync::Arc;
 use tracing::{error, info};
+use chrono::{DateTime, Utc};
+use sqlx::postgres::PgPoolOptions;
 
 #[tokio::main]
 async fn main() {
@@ -38,6 +40,39 @@ async fn run() -> anyhow::Result<()> {
                 config.bind_addr = bind;
             }
             run_serve(config, role).await
+        }
+        Command::Deletion { command } => {
+            telemetry::init_from_env()?;
+            match command {
+                DeletionCommand::Replay { restore_point } => {
+                    if std::env::var("RESTORE_REPLAY_PENDING").as_deref() != Ok("true") {
+                        return Err(AppError::Config("RESTORE_REPLAY_PENDING=true is required".into()).into());
+                    }
+                    let restore_point = restore_point.or_else(|| std::env::var("RESTORE_POINT").ok())
+                        .ok_or_else(|| AppError::Config("--restore-point or RESTORE_POINT is required".into()))?
+                        .parse::<DateTime<Utc>>()
+                        .map_err(|_| AppError::Config("restore point must be RFC3339".into()))?;
+                    let database_url = std::env::var("RESTORE_DATABASE_URL")
+                        .map_err(|_| AppError::Config("RESTORE_DATABASE_URL is required".into()))?;
+                    let guard_token = std::env::var("RESTORE_GUARD_TOKEN")
+                        .map_err(|_| AppError::Config("RESTORE_GUARD_TOKEN is required".into()))?;
+                    let pool = PgPoolOptions::new().max_connections(2).connect(&database_url).await?;
+                    let blob = build_blob_store().await?;
+                    let api_key = std::env::var("WORKOS_API_KEY")
+                        .map_err(|_| AppError::Config("WORKOS_API_KEY is required".into()))?;
+                    let provider: Arc<dyn WorkosIdentityProvider> = Arc::new(
+                        SdkWorkosProvider::for_deletion(&api_key)
+                            .map_err(|error| AppError::Config(error.to_string()))?
+                    );
+                    let replayed = match ghostpost_backend::deletion::replay(&pool, blob, provider, restore_point, &guard_token).await {
+                        Ok(count) => count,
+                        Err(err) => { error!(event = "deletion_replay_failed", error = %err, "deletion replay failed"); return Err(err.into()); }
+                    };
+                    info!(event = "deletion_replay_complete", replayed, "deletion replay complete");
+                    pool.close().await;
+                    Ok(())
+                }
+            }
         }
         Command::Auth { command } => {
             telemetry::init_from_env()?;

@@ -54,6 +54,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {app_role};
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT USAGE, SELECT ON SEQUENCES TO {app_role};
+REVOKE ALL ON TABLE ghostpost_restore_guard FROM {app_role};
 "#
     );
     (&mut *guard)

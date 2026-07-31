@@ -348,6 +348,7 @@ WHERE tenant_id = $1 AND id = $2 AND lease_owner = $3 AND status = 'running'
         match handle_account_purge(
             pool,
             auth.provider.clone(),
+            blob.clone(),
             item.tenant_id,
             item.id,
             item.payload.clone(),

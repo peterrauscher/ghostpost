@@ -77,6 +77,7 @@ hex = "0.4"
 
 [dev-dependencies]
 http-body-util = "0.1"
+parking_lot = "0.12"
 tower = { version = "0.5", features = ["util"] }
 
 [profile.dev]

@@ -23,10 +23,24 @@ pub enum Command {
         #[arg(long)]
         bind: Option<String>,
     },
+    /// Restore-time deletion suppression commands
+    Deletion {
+        #[command(subcommand)]
+        command: DeletionCommand,
+    },
     /// Auth administration commands
     Auth {
         #[command(subcommand)]
         command: AuthCommand,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DeletionCommand {
+    /// Replay post-restore deletion markers before readiness can be enabled
+    Replay {
+        #[arg(long)]
+        restore_point: Option<String>,
     },
 }
 

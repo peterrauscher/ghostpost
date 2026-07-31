@@ -5,6 +5,7 @@ use ghostpost_backend::auth::{
     WorkosIdentityProvider,
 };
 use ghostpost_backend::config::Config;
+use ghostpost_backend::blob::DeterministicBlobStore;
 use ghostpost_backend::db::migrate;
 use ghostpost_backend::repository::{archive_imports, users};
 use serde_json::json;
@@ -184,6 +185,7 @@ async fn account_purge_removes_every_archive_row_and_personal_field() {
     handle_account_purge(
         &pool,
         Arc::new(SyntheticProvider::default()),
+        Arc::new(DeterministicBlobStore),
         tenant.id,
         work_item_id,
         json!({"user_id":user.id,"deleted_at":deleted_at}),
@@ -308,6 +310,7 @@ async fn account_purge_checkpoints_local_deletion_before_provider_failure_and_re
     handle_account_purge(
         &pool,
         provider.clone(),
+        Arc::new(DeterministicBlobStore),
         tenant.id,
         work_item_id,
         initial_payload,
@@ -346,6 +349,7 @@ async fn account_purge_checkpoints_local_deletion_before_provider_failure_and_re
     handle_account_purge(
         &pool,
         provider.clone(),
+        Arc::new(DeterministicBlobStore),
         tenant.id,
         work_item_id,
         checkpoint_after_failure,

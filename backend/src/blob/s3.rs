@@ -1,8 +1,10 @@
-use super::{signed_post::{sign_post,PostPolicyConfig,SigningCredentials},BlobError,BlobStore,ObjectHead,PresignedPost};
+use super::{deletion_marker_key,provider_receipt_key,signed_post::{sign_post,PostPolicyConfig,SigningCredentials},AccountDeletionMarker,BlobError,BlobStore,DeletionLedgerReceipt,ObjectHead,PresignedPost,ProviderDeletionReceipt};
 use async_trait::async_trait;
 use aws_credential_types::provider::{ProvideCredentials, SharedCredentialsProvider};
 use aws_sdk_s3::Client;
 use bytes::Bytes;
+use aws_sdk_s3::primitives::ByteStream;
+use aws_sdk_s3::types::ServerSideEncryption;
 use chrono::{TimeZone,Utc};
 use std::{ops::Range,time::Duration};
 
@@ -57,4 +59,33 @@ impl BlobStore for S3BlobStore {
  async fn head_object_version(&self,key:&str,version_id:&str)->Result<ObjectHead,BlobError>{let o=self.client.head_object().bucket(&self.bucket).key(key).version_id(version_id).send().await.map_err(map_err)?;self.head(o.content_length(),o.content_type(),o.version_id(),o.last_modified().map(|d|d.secs()))}
  async fn get_range(&self,key:&str,version_id:&str,range:Range<u64>)->Result<Bytes,BlobError>{if range.start>=range.end{return Ok(Bytes::new())}let o=self.client.get_object().bucket(&self.bucket).key(key).version_id(version_id).range(format!("bytes={}-{}",range.start,range.end-1)).send().await.map_err(map_err)?;Ok(o.body.collect().await.map_err(map_err)?.into_bytes())}
  async fn delete_version(&self,key:&str,version_id:&str)->Result<(),BlobError>{self.client.delete_object().bucket(&self.bucket).key(key).version_id(version_id).send().await.map_err(map_err)?;Ok(())}
+ async fn record_deletion_marker(&self,marker:&AccountDeletionMarker)->Result<DeletionLedgerReceipt,BlobError>{
+  let key=deletion_marker_key(marker); let body=serde_json::to_vec(marker).map_err(map_err)?;
+  match self.client.get_object().bucket(&self.bucket).key(&key).send().await {
+   Ok(existing) => { let bytes=existing.body.collect().await.map_err(map_err)?.into_bytes(); if bytes.as_ref()!=body.as_slice(){return Err(BlobError::Integrity)} return Ok(DeletionLedgerReceipt{key}); }
+   Err(error) => { let text=error.to_string(); if !(text.contains("NoSuchKey")||text.contains("NotFound")||text.contains("404")){return Err(map_err(error))} }
+  }
+  let mut put=self.client.put_object().bucket(&self.bucket).key(&key).content_type("application/json").body(ByteStream::from(body));
+  if self.require_kms { put=put.server_side_encryption(ServerSideEncryption::AwsKms); if let Some(id)=&self.kms_key_id { put=put.ssekms_key_id(id); } }
+  put.send().await.map_err(map_err)?; Ok(DeletionLedgerReceipt{key})
+ }
+ async fn record_provider_complete(&self,marker:&AccountDeletionMarker,receipt:&ProviderDeletionReceipt)->Result<(),BlobError>{
+  let key=provider_receipt_key(marker); let body=serde_json::to_vec(receipt).map_err(map_err)?;
+  match self.client.get_object().bucket(&self.bucket).key(&key).send().await {
+   Ok(existing) => { let bytes=existing.body.collect().await.map_err(map_err)?.into_bytes(); if bytes.as_ref()!=body.as_slice(){return Err(BlobError::Integrity)} return Ok(()); }
+   Err(error) => { let text=error.to_string(); if !(text.contains("NoSuchKey")||text.contains("NotFound")||text.contains("404")){return Err(map_err(error))} }
+  }
+  let mut put=self.client.put_object().bucket(&self.bucket).key(key).content_type("application/json").body(ByteStream::from(body));
+  if self.require_kms { put=put.server_side_encryption(ServerSideEncryption::AwsKms); if let Some(id)=&self.kms_key_id { put=put.ssekms_key_id(id); } }
+  put.send().await.map_err(map_err)?; Ok(())
+ }
+ async fn list_deletion_markers(&self,restore_point:chrono::DateTime<Utc>)->Result<Vec<AccountDeletionMarker>,BlobError>{
+  let mut token=None; let mut markers=Vec::new();
+  loop { let mut req=self.client.list_objects_v2().bucket(&self.bucket).prefix("deletion-ledger/v1/"); if let Some(t)=token { req=req.continuation_token(t); } let page=req.send().await.map_err(map_err)?;
+   for object in page.contents() { let Some(key)=object.key() else {continue}; if key.ends_with(".provider-complete.json") {continue} let out=self.client.get_object().bucket(&self.bucket).key(key).send().await.map_err(map_err)?; let bytes=out.body.collect().await.map_err(map_err)?.into_bytes(); let marker:AccountDeletionMarker=serde_json::from_slice(&bytes).map_err(map_err)?; if deletion_marker_key(&marker)!=key {return Err(BlobError::Integrity)} if marker.deleted_at>restore_point {markers.push(marker)} }
+   if page.is_truncated()!=Some(true) {break} token=page.next_continuation_token().map(str::to_owned); if token.is_none(){return Err(BlobError::Integrity)}
+  }
+  markers.sort_by_key(|m|m.deleted_at); Ok(markers)
+ }
+ async fn provider_complete(&self,marker:&AccountDeletionMarker)->Result<bool,BlobError>{ let key=provider_receipt_key(marker); match self.client.head_object().bucket(&self.bucket).key(key).send().await {Ok(_)=>Ok(true),Err(e)=>{let text=e.to_string();if text.contains("NoSuchKey")||text.contains("NotFound")||text.contains("404"){Ok(false)}else{Err(map_err(e))}}} }
 }

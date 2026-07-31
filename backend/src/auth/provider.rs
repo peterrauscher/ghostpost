@@ -107,6 +107,16 @@ pub mod sdk {
             })
         }
 
+        pub fn for_deletion(api_key: &str) -> Result<Self, ProviderError> {
+            if api_key.trim().is_empty() {
+                return Err(ProviderError::Config("WORKOS_API_KEY is required".into()));
+            }
+            Ok(Self {
+                client: Client::builder().api_key(api_key).client_id("restore-replay").build(),
+                webhook: WebhookVerifier::new("restore-replay-unused"),
+            })
+        }
+
         fn map_auth_response(
             resp: workos::AuthenticateResponse,
         ) -> Result<ProviderAuthSession, ProviderError> {

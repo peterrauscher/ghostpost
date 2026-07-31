@@ -1,0 +1,18 @@
+{
+  "name": "ghostpost-infrastructure",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "validate:deepseek": "node scripts/validate-deepseek-manifest.mjs"
+  },
+  "devDependencies": {
+    "@pulumi/aws": "^7.15.0",
+    "@pulumi/pulumi": "^3.254.0",
+    "@types/node": "^24.10.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "sst": "^4.3.1",
+    "typescript": "^6.0.3"
+  }
+}

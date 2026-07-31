@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ghostpost.app/schemas/deepseek-approval-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["provider", "endpoint", "modelId", "promptHash", "schemaHash", "termsRevision", "privacyPolicyRevision", "allowedDataClasses", "retentionDecision", "trainingUseDecision", "dataLocation", "disclosureVersion", "consentMechanism", "effectiveAt", "expiresAt", "approver", "documentHash"],
+  "properties": {
+    "provider": { "const": "deepseek" },
+    "endpoint": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "modelId": { "const": "deepseek-v4-flash" },
+    "promptHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "schemaHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "termsRevision": { "type": "string", "minLength": 1 },
+    "privacyPolicyRevision": { "type": "string", "minLength": 1 },
+    "allowedDataClasses": { "type": "array", "uniqueItems": true, "contains": { "const": "user_authored_archive_text" }, "items": { "type": "string", "minLength": 1 } },
+    "retentionDecision": { "enum": ["approved", "no_retention"] },
+    "trainingUseDecision": { "enum": ["approved", "no_training"] },
+    "dataLocation": { "type": "string", "minLength": 1 },
+    "disclosureVersion": { "type": "string", "minLength": 1 },
+    "consentMechanism": { "type": "string", "minLength": 1 },
+    "effectiveAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "approver": { "type": "string", "minLength": 1 },
+    "documentHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

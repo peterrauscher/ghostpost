@@ -6,6 +6,7 @@ pub mod blob;
 pub mod cli;
 pub mod config;
 pub mod db;
+pub mod deletion;
 pub mod domain;
 pub mod error;
 pub mod r#import;
