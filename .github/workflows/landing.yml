@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.10
@@ -37,7 +37,7 @@ jobs:
           PUBLIC_SITE_URL: https://getghostpost.com
       - run: bunx playwright install --with-deps chromium
       - run: bun run test:e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: landing-e2e
@@ -56,7 +56,7 @@ jobs:
       group: landing-deploy
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.10
