@@ -1,0 +1,13 @@
+---
+// Where a no-JavaScript waitlist form post lands after the Worker accepts it.
+import NoticePage from '../components/NoticePage.astro';
+---
+
+<NoticePage
+  title="You’re on the list · Ghostpost"
+  description="You’re on the Ghostpost waitlist."
+  path="/joined/"
+  heading="you’re on the list 👻"
+  body="we’ll reach out as soon as ghostpost is ready for you. until then, maybe don’t post anything too spicy."
+  action={{ href: '/', label: 'back home' }}
+/>

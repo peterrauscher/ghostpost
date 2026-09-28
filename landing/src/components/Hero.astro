@@ -1,10 +1,10 @@
 ---
 import { Image } from 'astro:assets';
-import { PUBLIC_APP_URL } from 'astro:env/client';
 import { PLATFORMS } from '../demo/data';
 import { platformIcons } from '../lib/platform-icons';
 import Icon from './Icon.astro';
 import PhoneDemo from './PhoneDemo.astro';
+import WaitlistForm from './WaitlistForm.astro';
 
 // Orbiting platform tiles around the phone, echoing the app's welcome-screen art.
 const orbit = [
@@ -20,8 +20,8 @@ const orbit = [
   <div class="hero__glow" aria-hidden="true"></div>
   <div class="container hero__inner">
     <a class="hero__badge" href="#how">
-      <span class="hero__badge-new">new</span>
-      now scanning facebook + reddit
+      <span class="hero__badge-new">soon</span>
+      ghostpost is almost here
       <Icon name="chevron-right" size={14} strokeWidth={2.4} />
     </a>
     <h1 id="hero-title" class="hero__title">
@@ -31,9 +31,7 @@ const orbit = [
       ghostpost scans your social media and helps you find the posts that could hold you back, before
       admissions, recruiters, or rush ever see them.
     </p>
-    <a class="pill pill--primary pill--lg" href={PUBLIC_APP_URL}>
-      get started <Icon name="arrow-right" size={18} strokeWidth={2.4} />
-    </a>
+    <WaitlistForm source="hero" />
 
     <div class="hero__stage">
       {PLATFORMS.map(({ id, label }, i) => (
@@ -83,7 +81,7 @@ const orbit = [
     text-align: center;
   }
 
-  /* Orchid rhythm: badge → 32 → title → 32 → lede → 32 → CTA → 76 → device. */
+  /* Orchid rhythm: badge → 32 → title → 32 → lede → 32 → waitlist → 64 → device. */
   .hero__badge {
     display: inline-flex;
     align-items: center;
@@ -142,7 +140,7 @@ const orbit = [
 
   .hero__stage {
     position: relative;
-    margin-top: 76px;
+    margin-top: 64px;
   }
   .hero__tile {
     position: absolute;

@@ -4,9 +4,12 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro check && astro build",
-    "preview": "wrangler dev --port 8788",
-    "deploy": "astro build && wrangler deploy",
+    "check": "astro check && tsc -p worker",
+    "build": "astro build",
+    "db:migrate:local": "wrangler d1 migrations apply ghostpost-waitlist --local",
+    "preview": "astro build && bun run db:migrate:local && wrangler dev --port 8788",
+    "deploy": "wrangler d1 migrations apply ghostpost-waitlist --remote && astro build && wrangler deploy",
+    "types": "wrangler types worker/worker-configuration.d.ts",
     "test:e2e": "playwright test"
   },
   "devDependencies": {

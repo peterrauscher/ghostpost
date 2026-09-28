@@ -1,9 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// E2E runs against the production build served by `wrangler dev`, i.e. the same static-assets
-// runtime (and the same _headers rules) Cloudflare uses at the edge.
+// E2E runs against the production build served by `wrangler dev`: the same static-assets runtime,
+// _headers rules, waitlist Worker, local D1 database, and rate limiter Cloudflare runs at the edge.
 const PORT = 8799;
-export const TEST_APP_URL = 'https://app.ghostpost.test';
 
 export default defineConfig({
   testDir: './e2e',
@@ -22,13 +21,10 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['iPhone 13'], defaultBrowserType: 'chromium' } },
   ],
   webServer: {
-    command: `astro build && wrangler dev --port ${PORT} --ip 127.0.0.1`,
+    command: `astro build && bun run db:migrate:local && wrangler dev --port ${PORT} --ip 127.0.0.1`,
     url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: false,
     timeout: 120_000,
-    env: {
-      PUBLIC_APP_URL: TEST_APP_URL,
-      PUBLIC_SITE_URL: 'https://ghostpost.test',
-    },
+    env: { PUBLIC_SITE_URL: 'https://getghostpost.com' },
   },
 });

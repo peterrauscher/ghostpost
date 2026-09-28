@@ -1,10 +1,9 @@
 ---
 import { Image } from 'astro:assets';
-import { PUBLIC_APP_URL } from 'astro:env/client';
 import logoGhost from '@app-assets/images/logo-trim.png';
 import { PLATFORMS } from '../demo/data';
 import { platformIcons } from '../lib/platform-icons';
-import Icon from './Icon.astro';
+import WaitlistForm from './WaitlistForm.astro';
 
 const spots = [
   'left:9%; top:18%; --r:-14deg; --bob-delay:0s',
@@ -15,7 +14,7 @@ const spots = [
 ];
 ---
 
-<section class="cta" aria-labelledby="cta-title">
+<section class="cta" id="join" aria-labelledby="cta-title">
   <div class="container">
     <div class="cta__card" data-reveal>
       {PLATFORMS.map(({ id }, i) => (
@@ -24,10 +23,8 @@ const spots = [
         </span>
       ))}
       <Image class="cta__ghost bob" src={logoGhost} alt="" width={150} densities={[1, 2]} />
-      <h2 id="cta-title" class="cta__title">ready to clean your slate?</h2>
-      <a class="pill pill--white pill--lg" href={PUBLIC_APP_URL}>
-        get started <Icon name="arrow-right" size={18} strokeWidth={2.4} />
-      </a>
+      <h2 id="cta-title" class="cta__title">be first to clean your slate.</h2>
+      <WaitlistForm source="cta" tone="dark" />
     </div>
   </div>
 </section>

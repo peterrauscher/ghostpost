@@ -1,11 +1,32 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ghostpost-landing",
+  "account_id": "dc7e37bc337c69d10299f9ef70f843a9",
   "compatibility_date": "2026-09-01",
-  // Assets-only Worker: no script runs, Cloudflare serves ./dist straight from its edge.
+  "main": "worker/index.ts",
+  "routes": [{ "pattern": "getghostpost.com", "custom_domain": true }],
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
-    "not_found_handling": "404-page"
-  }
+    "not_found_handling": "404-page",
+    // Only the waitlist API runs Worker code; every other request is a static asset served straight from the edge.
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ghostpost-waitlist",
+      "database_id": "13fbbfa9-262f-4f1a-b65f-3a641cf94c71"
+    }
+  ],
+  "ratelimits": [
+    {
+      // Per-IP cap on waitlist submissions.
+      "name": "WAITLIST_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 5, "period": 60 }
+    }
+  ],
+  "observability": { "enabled": true }
 }

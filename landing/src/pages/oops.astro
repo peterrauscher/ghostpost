@@ -1,0 +1,13 @@
+---
+// Where a no-JavaScript waitlist form post lands when the Worker rejects it (bad input or rate limit).
+import NoticePage from '../components/NoticePage.astro';
+---
+
+<NoticePage
+  title="That didn’t work · Ghostpost"
+  description="We couldn’t add you to the Ghostpost waitlist."
+  path="/oops/"
+  heading="hmm, that didn’t work."
+  body="double-check your email or phone number (international numbers need their + country code) and give it another go."
+  action={{ href: '/#join', label: 'try again' }}
+/>

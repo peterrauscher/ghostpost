@@ -9,9 +9,11 @@ interface Props {
   title: string;
   description: string;
   path?: string;
+  /** Utility pages (404, waitlist confirmations) stay out of search results. */
+  noindex?: boolean;
 }
 
-const { title, description, path = '/' } = Astro.props;
+const { title, description, path = '/', noindex = false } = Astro.props;
 const canonical = new URL(path, PUBLIC_SITE_URL).href;
 const shareImage = await getImage({ src: appIcon, width: 512, height: 512, format: 'png' });
 const shareImageUrl = new URL(shareImage.src, PUBLIC_SITE_URL).href;
@@ -27,6 +29,7 @@ const touchIcon = await getImage({ src: appIcon, width: 180, height: 180, format
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
     <meta name="theme-color" content="#F7F1FF" />
     <link rel="icon" type="image/png" sizes="48x48" href={faviconImage.src} />
     <link rel="apple-touch-icon" href={touchIcon.src} />

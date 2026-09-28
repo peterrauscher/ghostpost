@@ -1,5 +1,6 @@
+import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { TEST_APP_URL } from '../playwright.config';
 
 /*
  * Ways the landing page can fail that these tests catch:
@@ -7,10 +8,29 @@ import { TEST_APP_URL } from '../playwright.config';
  * - Runtime: any console error / uncaught exception (demo script crash leaves a frozen phone).
  * - Demo autoplay stalls: never leaves the scan screen, never opens a flag, never resolves one.
  * - Takeover: a visitor tap mid-scan leaves the phone stuck, or actions don't update count/risk.
- * - CTAs pointing anywhere other than the configured app URL.
+ * - Waitlist: CTAs not leading to the form, bad input accepted, good input not persisted/normalized,
+ *   duplicates erroring or leaking membership, no-JS posts dead-ending, spam not rate limited.
  * - Mobile: horizontal overflow or the phone not fitting the viewport.
- * Artifacts: full-page screenshots per project + a video of every test under e2e/artifacts/.
+ * Artifacts: screenshots + a video of every test, and the persisted waitlist rows, under e2e/artifacts/.
  */
+
+/**
+ * Each test gets its own client IP so the per-IP rate limiter never couples tests. wrangler dev passes this
+ * header through; in production Cloudflare's edge overwrites it with the real address.
+ */
+const runOctet = Math.floor(Math.random() * 250);
+let ipCounter = 0;
+const nextIp = () => `10.${runOctet}.${Math.floor(Math.random() * 250)}.${++ipCounter}`;
+// Unique per run so persisted rows from earlier runs never satisfy (or collide with) this run's checks.
+const runId = Date.now().toString(36);
+
+function queryWaitlist(sql: string): Record<string, unknown>[] {
+  const out = execFileSync('bunx', ['wrangler', 'd1', 'execute', 'ghostpost-waitlist', '--local', '--json', '--command', sql], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+  return (JSON.parse(out) as { results: Record<string, unknown>[] }[])[0].results;
+}
 
 /** Viewport capture centred on the phone (element captures taller than the viewport render blank in Chromium). */
 async function capturePhone(page: Page, name: string) {
@@ -58,18 +78,19 @@ test('edge headers: hashed assets are immutable, HTML revalidates, unknown paths
   expect(await missing.text()).toContain('this page ghosted you.');
 });
 
-test('page renders, CTAs target the app, demo autoplays scan → review → clean up', async ({ page }) => {
+test('page renders, CTAs lead to the waitlist, demo autoplays scan → review → clean up', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/');
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/let’s clean\s*your slate\./);
   await page.screenshot({ path: artifact('hero') });
-  const ctaHrefs = await page.locator('a.pill', { hasText: 'get started' }).evaluateAll((links) =>
-    links.map((link) => (link as HTMLAnchorElement).href),
-  );
-  expect(ctaHrefs.length).toBeGreaterThan(3);
-  for (const href of ctaHrefs) expect(href).toBe(`${TEST_APP_URL}/`);
-  await expect(page.getByRole('link', { name: 'log in' }).first()).toHaveAttribute('href', `${TEST_APP_URL}/login`);
+  const ctas = page.locator('a', { hasText: 'join the waitlist' });
+  expect(await ctas.count()).toBeGreaterThan(5);
+  for (const href of await ctas.evaluateAll((links) => links.map((link) => link.getAttribute('href')))) {
+    expect(href).toBe('#join');
+  }
+  await expect(page.locator('#join form[data-waitlist]')).toHaveCount(1);
+  await expect(page.locator('a[href*="login"]')).toHaveCount(0);
 
   const demo = page.locator('[data-demo]');
   const screen = demo.locator('.d-screen');
@@ -134,6 +155,93 @@ test('visitor can take over mid-scan and drive the demo', async ({ page }) => {
   await demo.locator('[data-replay]').click();
   await expect(demo).toHaveAttribute('data-mode', 'auto');
   expect(errors).toEqual([]);
+});
+
+test('waitlist: hero takes an email, CTA takes a phone, both persist normalized', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.setExtraHTTPHeaders({ 'CF-Connecting-IP': nextIp() });
+  const project = test.info().project.name;
+  const email = `Jordan+${runId}-${project}@Example.com`;
+  const digits = String((Date.now() + project.length) % 10_000_000).padStart(7, '0');
+  const phone = `(415) ${digits.slice(0, 3)}-${digits.slice(3)}`;
+  await page.goto('/');
+
+  const hero = page.locator('form[data-waitlist]').first();
+  const heroStatus = hero.locator('[data-waitlist-status]');
+  await hero.getByRole('textbox', { name: 'Email or phone number' }).fill('not a contact');
+  await hero.getByRole('button', { name: 'join the waitlist' }).click();
+  await expect(heroStatus).toHaveText('that doesn’t look like an email or phone number.');
+  await expect(hero).toHaveAttribute('data-state', 'error');
+
+  await hero.getByRole('textbox', { name: 'Email or phone number' }).fill(email);
+  await hero.getByRole('button', { name: 'join the waitlist' }).click();
+  await expect(heroStatus).toHaveText('you’re on the list 👻 we’ll email you.');
+  await page.screenshot({ path: artifact('waitlist-hero-joined') });
+
+  // The header CTA jumps to the closing form.
+  await page.locator('header').getByRole('link', { name: 'join the waitlist' }).click();
+  await expect(page).toHaveURL(/#join$/);
+  const cta = page.locator('#join form[data-waitlist]');
+  await expect(cta).toBeInViewport();
+  await cta.getByRole('textbox', { name: 'Email or phone number' }).fill(phone);
+  await cta.getByRole('button', { name: 'join the waitlist' }).click();
+  await expect(cta.locator('[data-waitlist-status]')).toHaveText('you’re on the list 👻 we’ll text you.');
+  await cta.screenshot({ path: artifact('waitlist-cta-joined') });
+
+  const rows = queryWaitlist(
+    `SELECT contact, kind, source FROM waitlist WHERE contact IN ('${email.toLowerCase()}', '+1415${digits}') ORDER BY kind`,
+  );
+  expect(rows).toEqual([
+    { contact: email.toLowerCase(), kind: 'email', source: 'hero' },
+    { contact: `+1415${digits}`, kind: 'phone', source: 'cta' },
+  ]);
+  writeFileSync(`e2e/artifacts/${project}-waitlist-rows.json`, `${JSON.stringify(rows, null, 2)}\n`);
+  expect(errors).toEqual([]);
+});
+
+test('waitlist API: duplicates are silent no-ops, honeypot is dropped, bursts are rate limited', async ({ request }) => {
+  const headers = { Accept: 'application/json', 'CF-Connecting-IP': nextIp() };
+  const contact = `dupe-${runId}-${test.info().project.name}@example.com`;
+  const join = (form: Record<string, string>) => request.post('/api/waitlist', { headers, multipart: form });
+
+  const first = await join({ contact, source: 'hero' });
+  const again = await join({ contact: contact.toUpperCase(), source: 'cta' });
+  expect([first.status(), again.status()]).toEqual([200, 200]);
+  expect(await again.json()).toEqual({ ok: true });
+  expect(queryWaitlist(`SELECT source FROM waitlist WHERE contact = '${contact}'`)).toEqual([{ source: 'hero' }]);
+
+  const bot = `bot-${runId}-${test.info().project.name}@example.com`;
+  expect((await join({ contact: bot, company: 'Acme' })).status()).toBe(200);
+  expect(queryWaitlist(`SELECT id FROM waitlist WHERE contact = '${bot}'`)).toEqual([]);
+
+  // Limit is 5 per minute per IP and three were spent above.
+  const statuses: number[] = [];
+  for (let i = 0; i < 4; i++) statuses.push((await join({ contact: `burst-${i}-${runId}@example.com` })).status());
+  expect(statuses).toEqual([200, 200, 429, 429]);
+  const limited = await join({ contact: `burst-x-${runId}@example.com` });
+  expect(await limited.json()).toEqual({ ok: false, error: 'too many tries. give it a minute and try again.' });
+
+  expect((await request.get('/api/waitlist')).status()).toBe(405);
+});
+
+test.describe('without JavaScript', () => {
+  test.use({ javaScriptEnabled: false });
+
+  test('waitlist form still works and lands on a confirmation page', async ({ page }) => {
+    await page.setExtraHTTPHeaders({ 'CF-Connecting-IP': nextIp() });
+    await page.goto('/');
+    const hero = page.locator('form[data-waitlist]').first();
+    await hero.getByRole('textbox', { name: 'Email or phone number' }).fill(`nojs-${runId}-${test.info().project.name}@example.com`);
+    await hero.getByRole('button', { name: 'join the waitlist' }).click();
+    await expect(page).toHaveURL(/\/joined\/$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('you’re on the list 👻');
+
+    await page.goto('/');
+    await page.locator('form[data-waitlist]').first().getByRole('textbox', { name: 'Email or phone number' }).fill('nope');
+    await page.locator('form[data-waitlist]').first().getByRole('button', { name: 'join the waitlist' }).click();
+    await expect(page).toHaveURL(/\/oops\/$/);
+    await expect(page.getByRole('link', { name: 'try again' })).toHaveAttribute('href', '/#join');
+  });
 });
 
 test('layout fits the viewport without horizontal scroll', async ({ page }) => {

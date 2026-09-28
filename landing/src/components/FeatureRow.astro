@@ -1,5 +1,4 @@
 ---
-import { PUBLIC_APP_URL } from 'astro:env/client';
 import Icon, { type IconName } from './Icon.astro';
 
 interface Props {
@@ -27,7 +26,7 @@ const { id, eyebrow, title, body, bullets, reverse = false } = Astro.props;
         </li>
       ))}
     </ul>
-    <a class="pill pill--dark pill--sm" href={PUBLIC_APP_URL}>get started</a>
+    <a class="pill pill--dark pill--sm" href="#join">join the waitlist</a>
   </div>
   <div class="feature__media" data-reveal style="--reveal-delay: 120ms">
     <slot />

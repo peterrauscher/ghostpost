@@ -10,8 +10,6 @@ export default defineConfig({
   },
   env: {
     schema: {
-      // Where "get started" / "log in" send people: the deployed Expo web app.
-      PUBLIC_APP_URL: envField.string({ context: 'client', access: 'public', url: true }),
       // Canonical origin of this landing page, used for canonical + Open Graph URLs.
       PUBLIC_SITE_URL: envField.string({ context: 'client', access: 'public', url: true }),
     },

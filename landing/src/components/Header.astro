@@ -1,5 +1,4 @@
 ---
-import { PUBLIC_APP_URL } from 'astro:env/client';
 import Logo from './Logo.astro';
 
 const links = [
@@ -16,8 +15,7 @@ const links = [
       {links.map((link) => <a href={link.href}>{link.label}</a>)}
     </nav>
     <div class="header__actions">
-      <a class="pill pill--light pill--sm header__login" href={new URL('/login', PUBLIC_APP_URL).href}>log in</a>
-      <a class="pill pill--dark pill--sm" href={PUBLIC_APP_URL}>get started</a>
+      <a class="pill pill--dark pill--sm" href="#join">join the waitlist</a>
     </div>
   </div>
 </header>
@@ -78,8 +76,5 @@ const links = [
 
   @media (max-width: 860px) {
     .header__nav { display: none; }
-  }
-  @media (max-width: 420px) {
-    .header__login { display: none; }
   }
 </style>

@@ -1,5 +1,4 @@
 ---
-import { PUBLIC_APP_URL } from 'astro:env/client';
 import Logo from './Logo.astro';
 
 const columns = [
@@ -12,11 +11,8 @@ const columns = [
     ],
   },
   {
-    title: 'account',
-    links: [
-      { href: PUBLIC_APP_URL, label: 'get started' },
-      { href: new URL('/login', PUBLIC_APP_URL).href, label: 'log in' },
-    ],
+    title: 'early access',
+    links: [{ href: '#join', label: 'join the waitlist' }],
   },
 ];
 const year = new Date().getFullYear();
