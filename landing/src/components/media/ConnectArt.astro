@@ -1,0 +1,117 @@
+---
+import { Image } from 'astro:assets';
+import suitGhost from '@app-assets/images/ghosts/connect-ghost-suit.png';
+import { PLATFORMS } from '../../demo/data';
+import { platformIcons } from '../../lib/platform-icons';
+import Icon from '../Icon.astro';
+
+const spots = [
+  '--x:-170px; --y:-130px; --r:-14deg; --bob-delay:0s',
+  '--x:150px; --y:-150px; --r:12deg; --bob-delay:-1s',
+  '--x:190px; --y:10px; --r:-6deg; --bob-delay:-2s',
+  '--x:-200px; --y:30px; --r:9deg; --bob-delay:-3s',
+  '--x:175px; --y:115px; --r:4deg; --bob-delay:-1.6s',
+];
+---
+
+<div class="art art--connect">
+  <span class="art__ring art__ring--a" aria-hidden="true"></span>
+  <span class="art__ring art__ring--b" aria-hidden="true"></span>
+  {PLATFORMS.map(({ id, label }, i) => (
+    <span class="art__tile bob" style={spots[i]}>
+      <Image src={platformIcons[id]} alt={label} width={30} densities={[1, 2]} />
+    </span>
+  ))}
+  <Image class="art__ghost bob" src={suitGhost} alt="Ghostpost ghost in a suit" width={220} densities={[1, 2]} />
+  <div class="art__file">
+    <span class="art__file-icon"><Icon name="file-archive" size={18} strokeWidth={2} /></span>
+    <span class="art__file-copy">
+      <strong>instagram-export.zip</strong>
+      <span>uploaded · ready to scan</span>
+    </span>
+    <span class="art__file-check"><Icon name="check" size={12} strokeWidth={3.2} /></span>
+  </div>
+</div>
+
+<style>
+  .art {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+  }
+  .art--connect { background: var(--grad-help); }
+  .art__ring {
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    border-radius: 999px;
+    border: 1.5px dashed rgb(127 74 224 / 0.22);
+    translate: -50% -50%;
+  }
+  .art__ring--a { width: 300px; height: 300px; }
+  .art__ring--b { width: 470px; height: 470px; border-color: rgb(127 74 224 / 0.12); }
+  .art__tile {
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    width: 56px;
+    height: 56px;
+    margin: -28px 0 0 -28px;
+    display: grid;
+    place-items: center;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: var(--shadow-float);
+    translate: var(--x) var(--y);
+    --bob-dur: 5.5s;
+  }
+  .art__tile img { height: auto; }
+  .art__ghost {
+    position: relative;
+    width: 220px;
+    height: auto;
+    margin-top: -40px;
+    filter: drop-shadow(0 20px 30px rgb(61 36 101 / 0.18));
+    --bob-dur: 4.5s;
+  }
+  .art__file {
+    position: absolute;
+    left: 50%;
+    bottom: 32px;
+    translate: -50% 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px 10px 10px;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: var(--shadow-sheet);
+    white-space: nowrap;
+  }
+  .art__file-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .art__file-copy { display: flex; flex-direction: column; line-height: 1.25; }
+  .art__file-copy strong { font-size: 14px; font-weight: 700; }
+  .art__file-copy span { font-size: 12px; color: var(--muted); }
+  .art__file-check {
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--risk-low);
+    color: #fff;
+  }
+  @media (max-width: 767px) {
+    .art__ghost { width: 170px; }
+    .art__tile { scale: 0.8; translate: calc(var(--x) * 0.72) calc(var(--y) * 0.72); }
+  }
+</style>

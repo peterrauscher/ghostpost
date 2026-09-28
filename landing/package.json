@@ -1,0 +1,21 @@
+{
+  "name": "ghostpost-landing",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "wrangler dev --port 8788",
+    "deploy": "astro build && wrangler deploy",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@playwright/test": "^1.63.0",
+    "astro": "^7.3.5",
+    "lucide-static": "^1.48.0",
+    "sharp": "^0.35.5",
+    "typescript": "~6.0.3",
+    "wrangler": "^4.142.0"
+  }
+}

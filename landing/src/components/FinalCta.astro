@@ -1,0 +1,84 @@
+---
+import { Image } from 'astro:assets';
+import { PUBLIC_APP_URL } from 'astro:env/client';
+import logoGhost from '@app-assets/images/logo-trim.png';
+import { PLATFORMS } from '../demo/data';
+import { platformIcons } from '../lib/platform-icons';
+import Icon from './Icon.astro';
+
+const spots = [
+  'left:9%; top:18%; --r:-14deg; --bob-delay:0s',
+  'right:10%; top:14%; --r:12deg; --bob-delay:-1.5s',
+  'left:14%; bottom:16%; --r:10deg; --bob-delay:-3s',
+  'right:13%; bottom:20%; --r:-8deg; --bob-delay:-2s',
+  'left:50%; top:8%; --r:4deg; --bob-delay:-0.8s',
+];
+---
+
+<section class="cta" aria-labelledby="cta-title">
+  <div class="container">
+    <div class="cta__card" data-reveal>
+      {PLATFORMS.map(({ id }, i) => (
+        <span class="cta__tile bob" style={spots[i]} aria-hidden="true">
+          <Image src={platformIcons[id]} alt="" width={28} densities={[1, 2]} />
+        </span>
+      ))}
+      <Image class="cta__ghost bob" src={logoGhost} alt="" width={150} densities={[1, 2]} />
+      <h2 id="cta-title" class="cta__title">ready to clean your slate?</h2>
+      <a class="pill pill--white pill--lg" href={PUBLIC_APP_URL}>
+        get started <Icon name="arrow-right" size={18} strokeWidth={2.4} />
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta { padding: 96px 0; }
+  .cta__card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    min-height: 640px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 36px;
+    padding: 64px 24px;
+    border-radius: 40px;
+    background:
+      radial-gradient(circle at 50% 35%, rgb(255 255 255 / 0.28), transparent 50%),
+      radial-gradient(circle at 10% 100%, rgb(255 190 225 / 0.45), transparent 45%),
+      var(--grad-audit);
+    color: #fff;
+    text-align: center;
+  }
+  .cta__tile {
+    position: absolute;
+    z-index: -1;
+    width: 54px;
+    height: 54px;
+    display: grid;
+    place-items: center;
+    border-radius: 17px;
+    background: rgb(255 255 255 / 0.92);
+    box-shadow: 0 14px 30px rgb(40 20 80 / 0.22);
+    --bob-dur: 6s;
+  }
+  .cta__tile img { height: auto; }
+  .cta__ghost { width: 150px; height: auto; margin-bottom: -8px; filter: drop-shadow(0 22px 30px rgb(40 20 80 / 0.35)); }
+  .cta__title {
+    max-width: 760px;
+    font-size: clamp(42px, 6vw, 80px);
+    font-weight: 800;
+    line-height: 1.02;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+  }
+  @media (max-width: 767px) {
+    .cta { padding: 64px 0; }
+    .cta__card { min-height: 520px; border-radius: 32px; }
+    .cta__tile { scale: 0.8; }
+    .cta__ghost { width: 110px; }
+  }
+</style>

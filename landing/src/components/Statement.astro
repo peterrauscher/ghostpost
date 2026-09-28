@@ -1,0 +1,61 @@
+---
+import { Image } from 'astro:assets';
+import logoGhost from '@app-assets/images/logo-trim.png';
+---
+
+<section class="statement" aria-label="Why Ghostpost">
+  <div class="container statement__inner" data-reveal>
+    <span class="statement__avatar">
+      <Image src={logoGhost} alt="" width={44} densities={[1, 2]} />
+    </span>
+    <blockquote class="statement__quote">
+      “you’ve grown a lot since 2019. your posts haven’t. let’s <span>fix that.</span>”
+    </blockquote>
+    <p class="statement__by">— the ghostpost ghost 👻</p>
+  </div>
+</section>
+
+<style>
+  .statement {
+    min-height: 90vh;
+    display: flex;
+    align-items: center;
+    padding: 96px 0;
+  }
+  .statement__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .statement__avatar {
+    width: 68px;
+    height: 68px;
+    display: grid;
+    place-items: center;
+    border-radius: 22px;
+    background: var(--grad-avatar);
+    box-shadow: 0 14px 30px rgb(89 37 190 / 0.18);
+    rotate: -6deg;
+  }
+  .statement__avatar img { height: auto; }
+  .statement__quote {
+    max-width: 940px;
+    margin-top: 32px;
+    font-size: clamp(28px, 3.8vw, 46px);
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+  .statement__quote span { color: var(--accent); }
+  .statement__by {
+    margin-top: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  @media (max-width: 767px) {
+    .statement { min-height: 0; padding: 72px 0; }
+  }
+</style>

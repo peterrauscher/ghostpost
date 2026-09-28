@@ -1,0 +1,63 @@
+---
+import { PUBLIC_APP_URL } from 'astro:env/client';
+import Logo from './Logo.astro';
+
+const columns = [
+  {
+    title: 'product',
+    links: [
+      { href: '#how', label: 'how it works' },
+      { href: '#privacy', label: 'privacy' },
+      { href: '#receipts', label: 'the receipts' },
+    ],
+  },
+  {
+    title: 'account',
+    links: [
+      { href: PUBLIC_APP_URL, label: 'get started' },
+      { href: new URL('/login', PUBLIC_APP_URL).href, label: 'log in' },
+    ],
+  },
+];
+const year = new Date().getFullYear();
+---
+
+<footer class="footer">
+  <div class="container footer__inner">
+    <div class="footer__brand">
+      <Logo />
+      <p>scan, review, and clean up your social media before it counts.</p>
+      <p class="footer__legal">© {year} ghostpost</p>
+    </div>
+    <div class="footer__cols">
+      {columns.map((column) => (
+        <nav aria-label={column.title}>
+          <h3>{column.title}</h3>
+          <ul>
+            {column.links.map((link) => (
+              <li><a href={link.href}>{link.label}</a></li>
+            ))}
+          </ul>
+        </nav>
+      ))}
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer { padding: 120px 0; border-top: 1px solid var(--border); }
+  .footer__inner { display: flex; justify-content: space-between; gap: 48px; }
+  .footer__brand { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; max-width: 320px; }
+  .footer__brand p { font-size: 14px; line-height: 1.5; color: var(--muted); }
+  .footer__brand .footer__legal { margin-top: 24px; font-size: 13px; }
+  .footer__cols { display: flex; gap: 96px; }
+  .footer__cols h3 { font-size: 18px; font-weight: 750; line-height: 1; letter-spacing: -0.02em; }
+  .footer__cols ul { display: flex; flex-direction: column; gap: 24px; margin-top: 24px; }
+  .footer__cols a { font-size: 14px; line-height: 1; color: rgb(23 23 23 / 0.7); transition: color 0.2s ease; }
+  .footer__cols a:hover { color: var(--accent); }
+  @media (max-width: 767px) {
+    .footer { padding: 72px 0; }
+    .footer__inner { flex-direction: column; }
+    .footer__cols { gap: 64px; }
+  }
+</style>

@@ -1,0 +1,624 @@
+---
+import { getImage } from 'astro:assets';
+import worriedGhost from '@app-assets/images/ghosts/worried-ghost-clean.png';
+import logoGhost from '@app-assets/images/logo-trim.png';
+import { DEMO_POSTS, PLATFORMS, auditHeadline, overallRisk, riskLabel, type Platform } from '../demo/data';
+import { platformIcons } from '../lib/platform-icons';
+import Icon from './Icon.astro';
+
+const iconEntries = await Promise.all(
+  PLATFORMS.map(async ({ id }) => [id, (await getImage({ src: platformIcons[id], width: 64, format: 'webp' })).src] as const),
+);
+const iconSrc = Object.fromEntries(iconEntries) as Record<Platform, string>;
+const ghost = await getImage({ src: logoGhost, width: 240, format: 'webp' });
+const bannerGhost = await getImage({ src: logoGhost, width: 200, format: 'webp' });
+const avatar = await getImage({ src: logoGhost, width: 56, format: 'webp' });
+const gauge = await getImage({ src: logoGhost, width: 64, format: 'webp' });
+const worried = await getImage({ src: worriedGhost, width: 92, format: 'webp' });
+
+const initial = overallRisk(DEMO_POSTS);
+const radius = 31;
+const circumference = 2 * Math.PI * radius;
+const capitalize = (value: string) => value[0].toUpperCase() + value.slice(1);
+---
+
+<div class="d-demo" data-demo data-icons={JSON.stringify(iconSrc)} data-mode="auto">
+  <div class="d-phone" role="group" aria-label="Interactive Ghostpost app demo">
+    <div class="d-phone__buttons" aria-hidden="true"></div>
+    <div class="d-screen" data-view="scan">
+      <div class="d-status" aria-hidden="true">
+        <span class="d-status__time">9:41</span>
+        <span class="d-status__island"></span>
+        <span class="d-status__icons">
+          <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" /><rect x="5" y="5.5" width="3" height="6.5" rx="1" /><rect x="10" y="3" width="3" height="9" rx="1" /><rect x="15" y="0" width="3" height="12" rx="1" /></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 2.2c2.3 0 4.4.9 6 2.4l1.2-1.3A10.4 10.4 0 0 0 8 .4 10.4 10.4 0 0 0 .8 3.3L2 4.6a8.6 8.6 0 0 1 6-2.4Zm0 3.6c1.3 0 2.5.5 3.4 1.3l1.2-1.3A6.8 6.8 0 0 0 8 4a6.8 6.8 0 0 0-4.6 1.8l1.2 1.3A5 5 0 0 1 8 5.8Zm0 3.6c.4 0 .8.1 1 .4L8 11.6 7 9.8c.2-.3.6-.4 1-.4Z" /></svg>
+          <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="22" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".4" /><rect x="2" y="2" width="19" height="9" rx="2" /><path d="M24.5 4.5v4c.8-.3 1.5-1 1.5-2s-.7-1.7-1.5-2Z" opacity=".45" /></svg>
+        </span>
+      </div>
+
+      <!-- Scan: mirrors app/src/app/scan.tsx -->
+      <section class="d-scr d-scan" data-screen="scan" aria-label="Scanning">
+        <img class="d-scan__ghost" src={ghost.src} width="120" height="123" alt="" />
+        <p class="d-scan__headline" data-field="scan-message" aria-live="polite">unpacking your exports…</p>
+        <div class="d-track"><div class="d-track__fill" data-field="scan-progress"></div></div>
+        <ul class="d-scan__platforms">
+          {PLATFORMS.map(({ id, label }) => (
+            <li class="d-scan__platform" data-platform={id}>
+              <img src={iconSrc[id]} width="32" height="32" alt={label} />
+              <span class="d-scan__check"><Icon name="check" size={10} strokeWidth={3.4} /></span>
+            </li>
+          ))}
+        </ul>
+        <p class="d-scan__sub">1,284 posts across 5 platforms</p>
+      </section>
+
+      <!-- Home: mirrors app/src/app/(tabs)/index.tsx -->
+      <section class="d-scr d-home" data-screen="home" aria-label="Home">
+        <div class="d-home__content">
+          <div class="d-greet">
+            <span class="d-title">hey, jordan 👋</span>
+            <span class="d-avatar"><img src={avatar.src} width="28" height="28" alt="" /></span>
+          </div>
+          <div class="d-banner">
+            <span class="d-banner__label">your ghost audit &nbsp;ⓘ</span>
+            <p class="d-banner__headline" data-field="headline">{auditHeadline(DEMO_POSTS.length)}</p>
+            <img class="d-banner__ghost" src={bannerGhost.src} width="92" height="95" alt="" />
+            <button type="button" class="d-banner__btn" data-action="review">
+              <span data-field="banner-cta">review now →</span>
+            </button>
+          </div>
+          <div class="d-chips">
+            <span class="d-focus"><span class="d-focus__icon">💼</span>job interviews</span>
+            <span class="d-focus"><span class="d-focus__icon">🎓</span>college apps</span>
+          </div>
+          <div class="d-card d-flagged">
+            <div class="d-flagged__head">
+              <span class="d-cap">flagged posts</span>
+              <span class="d-count" data-field="count">{DEMO_POSTS.length}</span>
+            </div>
+            <ul class="d-list" data-list>
+              {DEMO_POSTS.map((post) => (
+                <li class="d-row" data-id={post.id}>
+                  <button type="button" class="d-row__btn" data-action="open" data-id={post.id}>
+                    <img class="d-pi" src={iconSrc[post.platform]} width="22" height="22" alt={post.platformLabel} />
+                    <span class="d-row__meta">
+                      <span class="d-row__quote">{post.quote}</span>
+                      <span class="d-row__sub">{capitalize(post.risk)} · {post.category}</span>
+                    </span>
+                    <Icon name="chevron-right" size={16} class="d-chev" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p class="d-empty">nothing left to review 👻</p>
+          </div>
+          <div class="d-card d-risk" data-level={initial.level}>
+            <span class="d-cap">overall risk level</span>
+            <div class="d-risk__row">
+              <div class="d-risk__copy">
+                <span class="d-risk__label" data-field="risk-label">{riskLabel(initial.level)}</span>
+                <span class="d-risk__sub" data-field="risk-sub">{DEMO_POSTS.length} flagged items</span>
+              </div>
+              <div class="d-gauge">
+                <svg width="72" height="72" viewBox="0 0 72 72" aria-hidden="true">
+                  <circle cx="36" cy="36" r={radius} class="d-gauge__track" />
+                  <circle
+                    cx="36"
+                    cy="36"
+                    r={radius}
+                    class="d-gauge__arc"
+                    data-field="gauge"
+                    data-circumference={circumference}
+                    stroke-dasharray={`${(circumference * initial.sweep) / 360} ${circumference}`}
+                  />
+                </svg>
+                <img src={gauge.src} width="32" height="33" alt="" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <nav class="d-tabs" aria-label="Demo tabs">
+          <span class="d-tab is-active"><Icon name="house" size={22} strokeWidth={2} />home</span>
+          <button type="button" class="d-tab" data-action="rescan"><Icon name="square-plus" size={22} strokeWidth={2} />scan</button>
+          <span class="d-tab"><Icon name="user-round" size={22} strokeWidth={2} />profile</span>
+        </nav>
+        <div class="d-toast" data-field="toast" role="status"></div>
+      </section>
+
+      <!-- Flag detail: mirrors app/src/app/review/[id].tsx -->
+      <section class="d-scr d-detail" data-screen="detail" aria-label="Flag detail">
+        <div class="d-nav">
+          <button type="button" class="d-back" data-action="back" aria-label="Back"><Icon name="chevron-left" size={20} strokeWidth={2} /></button>
+        </div>
+        <div class="d-detail__content">
+          <div class="d-riskhead">
+            <div class="d-riskhead__copy">
+              <span class="d-riskhead__label" data-field="d-risk">High Risk</span>
+              <span class="d-titlesm">potentially problematic</span>
+              <p class="d-body d-muted" data-field="d-explanation"></p>
+            </div>
+            <img class="d-riskhead__ghost" src={worried.src} width="54" height="88" alt="" />
+          </div>
+          <div class="d-card d-post">
+            <div class="d-post__row">
+              <img class="d-pi" data-field="d-icon" src={iconSrc.x} width="22" height="22" alt="" />
+              <span class="d-cap" data-field="d-platform"></span>
+              <span class="d-post__date" data-field="d-date"></span>
+            </div>
+            <p class="d-post__quote" data-field="d-quote"></p>
+            <div class="d-post__stats">
+              <span>♡ <span data-field="d-likes"></span></span>
+              <span>💬 <span data-field="d-comments"></span></span>
+            </div>
+          </div>
+          <div class="d-section">
+            <span class="d-cap">Why it’s flagged</span>
+            <p class="d-body d-muted" data-field="d-why"></p>
+          </div>
+          <div class="d-actions">
+            <span class="d-cap">what you can do</span>
+            <button type="button" class="d-card d-action d-action--danger" data-action="delete">
+              <span class="d-action__well"><Icon name="trash" size={18} strokeWidth={2} /></span>
+              <span class="d-action__copy"><span class="d-action__title">Delete Ghostpost copy</span><span class="d-action__sub">Remove this item from Ghostpost only</span></span>
+            </button>
+            <button type="button" class="d-card d-action d-action--accent" data-action="archive">
+              <span class="d-action__well"><Icon name="archive" size={18} strokeWidth={2} /></span>
+              <span class="d-action__copy"><span class="d-action__title">Archive instead</span><span class="d-action__sub">Hide this suggestion in Ghostpost</span></span>
+            </button>
+            <button type="button" class="d-card d-action d-action--success" data-action="keep">
+              <span class="d-action__well"><Icon name="check" size={18} strokeWidth={2} /></span>
+              <span class="d-action__copy"><span class="d-action__title">Keep — I’m fine with it</span><span class="d-action__sub">Mark reviewed; your live post is unchanged</span></span>
+            </button>
+          </div>
+        </div>
+        <div class="d-footer">
+          <button type="button" class="d-btn" data-action="resolve">mark as resolved →</button>
+        </div>
+      </section>
+
+      <span class="d-finger" data-finger aria-hidden="true"></span>
+    </div>
+  </div>
+
+  <p class="d-hint">
+    <span class="d-hint__dot" aria-hidden="true"></span>
+    <span data-hint-auto>live demo · tap the phone to take over</span>
+    <span data-hint-manual>you’re driving 👻</span>
+    <button type="button" class="d-hint__replay" data-replay>replay</button>
+  </p>
+</div>
+
+<script>
+  import { mountDemo } from '../demo/demo';
+  document.querySelectorAll<HTMLElement>('[data-demo]').forEach(mountDemo);
+</script>
+
+<style is:global>
+  .d-demo {
+    --scr-w: 390px;
+    --scr-h: 844px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+  }
+
+  .d-phone {
+    position: relative;
+    width: calc(var(--scr-w) + 24px);
+    height: calc(var(--scr-h) + 24px);
+    padding: 12px;
+    border-radius: 68px;
+    background: linear-gradient(145deg, #2a2632 0%, #121015 45%, #25212c 100%);
+    box-shadow:
+      inset 0 0 0 2px #3b3644,
+      inset 0 0 0 5px #0b0a0d,
+      0 50px 100px -20px rgb(40 20 80 / 0.35),
+      0 30px 60px -30px rgb(40 20 80 / 0.4);
+  }
+  .d-phone__buttons::before,
+  .d-phone__buttons::after {
+    content: '';
+    position: absolute;
+    width: 4px;
+    border-radius: 2px;
+    background: #2a2632;
+  }
+  .d-phone__buttons::before { left: -3px; top: 190px; height: 64px; box-shadow: 0 84px 0 #2a2632; }
+  .d-phone__buttons::after { right: -3px; top: 240px; height: 100px; }
+
+  .d-screen {
+    position: relative;
+    width: var(--scr-w);
+    height: var(--scr-h);
+    overflow: clip; /* not a scroll container: focus/scrollIntoView can never shift the screen */
+    border-radius: 56px;
+    background: #fafafc;
+    isolation: isolate;
+    font-family: var(--font);
+    color: var(--fg);
+    letter-spacing: 0;
+    -webkit-tap-highlight-color: transparent;
+    text-align: left;
+  }
+  :where(.d-screen) button { border: 0; background: none; padding: 0; cursor: pointer; text-align: left; }
+
+  /* Status bar */
+  .d-status {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 20;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 30px 0 44px;
+    pointer-events: none;
+  }
+  .d-status__time { font-size: 17px; font-weight: 650; font-family: system-ui, -apple-system, sans-serif; }
+  .d-status__island {
+    position: absolute;
+    left: 50%;
+    top: 11px;
+    width: 124px;
+    height: 36px;
+    margin-left: -62px;
+    border-radius: 20px;
+    background: #000;
+  }
+  .d-status__icons { display: flex; align-items: center; gap: 6px; }
+  .d-status__icons svg { fill: currentColor; }
+
+  /* Screen stack + transitions */
+  .d-scr {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.5s var(--ease-out), opacity 0.4s ease, visibility 0s linear 0.5s;
+    visibility: hidden;
+  }
+  .d-screen[data-view='scan'] .d-scan,
+  .d-screen[data-view='home'] .d-home,
+  .d-screen[data-view='detail'] .d-home,
+  .d-screen[data-view='detail'] .d-detail {
+    visibility: visible;
+    transition-delay: 0s;
+  }
+  .d-scan { background: var(--grad-welcome); opacity: 0; z-index: 3; }
+  .d-screen[data-view='scan'] .d-scan { opacity: 1; }
+  .d-home { background: #fafafc; z-index: 1; }
+  .d-screen[data-view='detail'] .d-home { transform: translateX(-28%); }
+  .d-detail { background: var(--grad-detail); z-index: 2; transform: translateX(100%); box-shadow: -10px 0 30px rgb(40 20 80 / 0.08); }
+  .d-screen[data-view='detail'] .d-detail { transform: none; }
+
+  /* Shared primitives (app/src/components/primitives) */
+  .d-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 14px;
+  }
+  .d-cap { font-size: 13px; font-weight: 600; line-height: 16px; color: var(--fg); }
+  .d-body { font-size: 13px; line-height: 19px; }
+  .d-muted { color: var(--muted); }
+  .d-pi { width: 22px; height: 22px; border-radius: 6px; flex: none; }
+
+  /* Scan */
+  .d-scan { align-items: center; justify-content: center; gap: 24px; padding: 0 28px; }
+  .d-scan__ghost { width: 120px; height: auto; animation: bob 2.4s ease-in-out infinite; }
+  .d-scan__headline {
+    min-height: 48px;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 24px;
+    letter-spacing: -0.36px;
+    color: var(--accent-deep);
+    text-align: center;
+  }
+  .d-track { width: 200px; height: 6px; border-radius: 999px; background: var(--progress-track); overflow: hidden; }
+  .d-track__fill { width: 5%; height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.45s var(--ease-out); }
+  .d-scan__platforms { display: flex; gap: 12px; }
+  .d-scan__platform {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: var(--shadow-card), inset 0 0 0 1px var(--border);
+    opacity: 0.45;
+    transform: scale(0.92);
+    transition: opacity 0.3s ease, transform 0.4s var(--ease-bounce);
+  }
+  .d-scan__platform img { width: 26px; height: 26px; }
+  .d-scan__platform.is-done { opacity: 1; transform: none; }
+  .d-scan__check {
+    position: absolute;
+    right: -5px;
+    top: -5px;
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--risk-low);
+    color: #fff;
+    box-shadow: 0 0 0 2px #f3ebff;
+    transform: scale(0);
+    transition: transform 0.35s var(--ease-bounce);
+  }
+  .d-scan__platform.is-done .d-scan__check { transform: scale(1); }
+  .d-scan__sub { font-size: 13px; color: var(--muted); }
+
+  /* Home */
+  .d-home__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 62px 16px 0;
+    overflow: clip;
+  }
+  .d-greet { height: 46px; display: flex; align-items: center; justify-content: space-between; padding: 0 2px; }
+  .d-title { font-size: 24px; font-weight: 700; line-height: 30px; letter-spacing: -0.72px; }
+  .d-avatar { width: 40px; height: 40px; border-radius: 20px; display: grid; place-items: center; background: var(--grad-avatar); }
+  .d-avatar img { width: 28px; height: 28px; }
+
+  .d-banner {
+    position: relative;
+    flex: none;
+    height: 196px;
+    display: flex;
+    flex-direction: column;
+    padding: 18px;
+    border-radius: 22px;
+    background: var(--grad-audit);
+    overflow: clip;
+    color: #fff;
+  }
+  .d-banner__label { margin-bottom: 8px; font-size: 12px; font-weight: 600; line-height: 16px; color: rgb(255 255 255 / 0.92); }
+  .d-banner__headline { max-width: 170px; font-size: 18px; font-weight: 700; line-height: 24px; letter-spacing: -0.36px; }
+  .d-banner__ghost { position: absolute; right: 14px; top: 30px; width: 92px; height: auto; animation: bob 4s ease-in-out infinite; }
+  .d-banner__btn {
+    margin-top: auto;
+    align-self: flex-start;
+    height: 38px;
+    padding: 0 18px;
+    border-radius: 19px;
+    background: #292135;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    transition: transform 0.2s var(--ease-bounce);
+  }
+  .d-banner__btn:active { transform: scale(0.96); }
+
+  .d-chips { display: flex; gap: 8px; }
+  .d-focus {
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 11px;
+    border-radius: 17px;
+    background: #fff;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .d-focus__icon { width: 18px; height: 18px; display: grid; place-items: center; border-radius: 9px; background: var(--accent-soft); font-size: 10px; }
+
+  .d-flagged { display: flex; flex-direction: column; gap: 6px; padding: 12px 16px 6px; box-shadow: var(--shadow-card); }
+  .d-flagged__head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 2px; }
+  .d-count {
+    min-width: 28px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .d-list { display: flex; flex-direction: column; }
+  .d-row {
+    display: grid;
+    grid-template-rows: 1fr;
+    border-top: 1px solid var(--border);
+    transition: grid-template-rows 0.45s var(--ease-out), opacity 0.3s ease, border-color 0.3s ease;
+  }
+  .d-row.is-leaving { grid-template-rows: 0fr; opacity: 0; border-color: transparent; }
+  .d-row__btn { min-height: 0; overflow: clip; display: flex; align-items: center; gap: 10px; width: 100%; }
+  .d-row__btn > * { margin-block: 8px; }
+  .d-row__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .d-row__quote { font-size: 12px; font-weight: 600; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .d-row__sub { font-size: 11px; line-height: 14px; color: var(--muted); }
+  .d-row__btn.is-pressed { background: var(--tag-bg); }
+  .d-chev { color: var(--chevron); flex: none; }
+  .d-empty { display: none; padding: 12px 0 10px; border-top: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--muted); }
+  .d-flagged.is-empty .d-empty { display: block; }
+
+  .d-risk { display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; box-shadow: var(--shadow-card); }
+  .d-risk__row { display: flex; align-items: center; justify-content: space-between; height: 72px; }
+  .d-risk__copy { display: flex; flex-direction: column; gap: 2px; }
+  .d-risk__label { font-size: 22px; font-weight: 700; line-height: 24px; transition: color 0.3s ease; }
+  .d-risk__sub { font-size: 12px; color: var(--muted); }
+  .d-gauge { position: relative; width: 72px; height: 72px; display: grid; place-items: center; }
+  .d-gauge svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .d-gauge circle { fill: none; stroke-width: 8; }
+  .d-gauge__track { stroke: var(--gauge-track); }
+  .d-gauge__arc { stroke-linecap: round; transition: stroke-dasharray 0.9s var(--ease-out), stroke 0.3s ease, opacity 0.3s ease; }
+  .d-risk[data-level='clear'] .d-gauge__arc { opacity: 0; }
+  .d-gauge img { position: relative; width: 32px; height: auto; }
+  .d-risk[data-level='high'] .d-risk__label { color: var(--risk-high-text); }
+  .d-risk[data-level='high'] .d-gauge__arc { stroke: var(--risk-high); }
+  .d-risk[data-level='medium'] .d-risk__label { color: var(--risk-medium-text); }
+  .d-risk[data-level='medium'] .d-gauge__arc { stroke: var(--risk-medium); }
+  .d-risk[data-level='low'] .d-risk__label,
+  .d-risk[data-level='clear'] .d-risk__label { color: var(--risk-low-text); }
+  .d-risk[data-level='low'] .d-gauge__arc,
+  .d-risk[data-level='clear'] .d-gauge__arc { stroke: var(--risk-low); }
+
+  .d-tabs {
+    flex: none;
+    height: 84px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-around;
+    padding: 8px 8px 0;
+    background: #fff;
+    border-top: 1px solid var(--border);
+  }
+  .d-tab {
+    width: 72px;
+    height: 46px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #b0aab8;
+  }
+  .d-tab.is-active { color: var(--accent); }
+
+  .d-toast {
+    position: absolute;
+    left: 50%;
+    bottom: 100px;
+    z-index: 5;
+    padding: 12px 18px;
+    border-radius: 999px;
+    background: var(--black);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: var(--shadow-dark);
+    opacity: 0;
+    transform: translate(-50%, 16px) scale(0.9);
+    transition: opacity 0.25s ease, transform 0.4s var(--ease-bounce);
+    pointer-events: none;
+  }
+  .d-toast.is-shown { opacity: 1; transform: translate(-50%, 0) scale(1); }
+
+  /* Detail */
+  .d-nav { flex: none; height: 50px; margin-top: 54px; padding: 0 12px; display: flex; align-items: center; }
+  .d-back { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; }
+  .d-detail__content { flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 0 18px 12px; overflow: clip; }
+  .d-riskhead { display: flex; justify-content: space-between; gap: 8px; min-height: 104px; }
+  .d-riskhead__copy { flex: 1; max-width: 220px; display: flex; flex-direction: column; gap: 4px; }
+  .d-riskhead__label { font-size: 12px; font-weight: 700; line-height: 16px; }
+  .d-detail[data-risk='high'] .d-riskhead__label { color: var(--risk-high); }
+  .d-detail[data-risk='medium'] .d-riskhead__label { color: var(--risk-medium); }
+  .d-detail[data-risk='low'] .d-riskhead__label { color: var(--risk-low); }
+  .d-titlesm { font-size: 22px; font-weight: 700; line-height: 28px; letter-spacing: -0.4px; }
+  .d-riskhead__ghost { width: 54px; height: auto; align-self: flex-start; margin: 4px 14px 0 0; animation: bob 3s ease-in-out infinite; }
+  .d-post { display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow-card); }
+  .d-post__row { display: flex; align-items: center; gap: 8px; }
+  .d-post__date { margin-left: auto; font-size: 11px; color: var(--muted); }
+  .d-post__quote { font-size: 16px; font-weight: 600; line-height: 22px; letter-spacing: -0.32px; }
+  .d-post__stats { display: flex; gap: 12px; font-size: 12px; font-weight: 500; color: var(--muted); }
+  .d-section { display: flex; flex-direction: column; gap: 6px; }
+  .d-actions { display: flex; flex-direction: column; gap: 8px; }
+  .d-action {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #fff;
+    transition: transform 0.2s var(--ease-bounce), background-color 0.2s ease;
+  }
+  .d-action.is-pressed { transform: scale(0.97); background: var(--tag-bg); }
+  .d-action__well { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 10px; }
+  .d-action--danger .d-action__well { background: var(--risk-high-bg); color: var(--risk-high); }
+  .d-action--accent .d-action__well { background: var(--accent-soft); color: var(--accent); }
+  .d-action--success .d-action__well { background: var(--risk-low-bg); color: var(--risk-low); }
+  .d-action__copy { display: flex; flex-direction: column; gap: 2px; }
+  .d-action__title { font-size: 14px; font-weight: 600; line-height: 19px; }
+  .d-action--danger .d-action__title { color: var(--risk-high); }
+  .d-action__sub { font-size: 12px; line-height: 16px; color: var(--muted); }
+  .d-footer { flex: none; padding: 10px 18px 34px; }
+  .d-btn {
+    width: 100%;
+    height: 50px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--grad-button);
+    box-shadow: var(--shadow-button);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  /* Autoplay finger */
+  .d-finger {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 30;
+    width: 46px;
+    height: 46px;
+    margin: -23px 0 0 -23px;
+    border-radius: 999px;
+    background: rgb(20 20 20 / 0.16);
+    border: 2px solid rgb(255 255 255 / 0.9);
+    box-shadow: 0 6px 18px rgb(40 20 80 / 0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.7s var(--ease-out), opacity 0.3s ease;
+  }
+  .d-finger.is-shown { opacity: 1; }
+  .d-finger.is-pressing { animation: finger-press 0.32s ease; }
+  @keyframes finger-press {
+    50% { scale: 0.78; background: rgb(127 74 224 / 0.3); }
+  }
+  .d-demo[data-mode='manual'] .d-finger { display: none; }
+
+  /* Hint under the phone */
+  .d-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.8);
+    box-shadow: inset 0 0 0 1px var(--border), var(--shadow-card);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .d-hint__dot { width: 7px; height: 7px; border-radius: 999px; background: var(--risk-low); animation: pulse 1.8s ease-in-out infinite; }
+  .d-hint__replay {
+    border: 0;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .d-demo[data-mode='auto'] [data-hint-manual],
+  .d-demo[data-mode='auto'] .d-hint__replay,
+  .d-demo[data-mode='manual'] [data-hint-auto] { display: none; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgb(61 184 110 / 0.5); }
+    50% { box-shadow: 0 0 0 5px rgb(61 184 110 / 0); }
+  }
+
+  @media (max-width: 520px) {
+    .d-phone { zoom: 0.84; }
+  }
+  @media (max-width: 400px) {
+    .d-phone { zoom: 0.76; }
+  }
+</style>

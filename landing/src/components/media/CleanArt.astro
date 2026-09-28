@@ -1,0 +1,82 @@
+---
+import { Image } from 'astro:assets';
+import broomGhost from '@app-assets/images/ghosts/review-wipe-ghost.png';
+import { DEMO_POSTS } from '../../demo/data';
+import Icon, { type IconName } from '../Icon.astro';
+import PostCard from './PostCard.astro';
+
+// Same three review actions as app/src/app/review/[id].tsx.
+const actions: readonly { tone: string; icon: IconName; title: string; sub: string }[] = [
+  { tone: 'danger', icon: 'trash', title: 'Delete Ghostpost copy', sub: 'Remove this item from Ghostpost only' },
+  { tone: 'accent', icon: 'archive', title: 'Archive instead', sub: 'Hide this suggestion in Ghostpost' },
+  { tone: 'success', icon: 'check', title: 'Keep — I’m fine with it', sub: 'Mark reviewed; your live post is unchanged' },
+];
+---
+
+<div class="art">
+  <div class="art__stack">
+    <PostCard post={DEMO_POSTS[0]} tags={['drinking', '48 likes']} />
+    {actions.map((action) => (
+      <div class:list={['art__action', `art__action--${action.tone}`]}>
+        <span class="art__well"><Icon name={action.icon} size={18} strokeWidth={2} /></span>
+        <span class="art__copy">
+          <strong>{action.title}</strong>
+          <span>{action.sub}</span>
+        </span>
+      </div>
+    ))}
+  </div>
+  <Image class="art__broom bob" src={broomGhost} alt="Ghost sweeping with a broom" width={190} densities={[1, 2]} />
+</div>
+
+<style>
+  .art {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(circle at 85% 20%, rgb(237 228 255 / 0.9), transparent 45%),
+      linear-gradient(180deg, #fff0f1 0%, #fff7f6 60%, #fdf2ff 100%);
+  }
+  .art__stack {
+    width: min(340px, 78%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-right: 90px;
+  }
+  .art__stack > :global(.post) { margin-bottom: 6px; rotate: -1.5deg; }
+  .art__action {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+  }
+  .art__well { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 10px; }
+  .art__action--danger .art__well { background: var(--risk-high-bg); color: var(--risk-high); }
+  .art__action--accent .art__well { background: var(--accent-soft); color: var(--accent); }
+  .art__action--success .art__well { background: var(--risk-low-bg); color: var(--risk-low); }
+  .art__copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .art__copy strong { font-size: 14px; font-weight: 600; line-height: 19px; }
+  .art__action--danger strong { color: var(--risk-high); }
+  .art__copy span { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .art__broom {
+    position: absolute;
+    right: -6px;
+    bottom: -8px;
+    width: 190px;
+    height: auto;
+    filter: drop-shadow(0 16px 24px rgb(61 36 101 / 0.16));
+    --bob-dur: 3.6s;
+  }
+  @media (max-width: 767px) {
+    .art__stack { margin-right: 0; width: 86%; }
+    .art__broom { width: 120px; right: -14px; bottom: -14px; }
+  }
+</style>

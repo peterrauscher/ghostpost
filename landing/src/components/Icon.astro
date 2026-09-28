@@ -1,0 +1,71 @@
+---
+// Build-time inline Lucide icons (same set the app uses via lucide-react-native). Zero runtime cost.
+import archive from 'lucide-static/icons/archive.svg?raw';
+import arrowRight from 'lucide-static/icons/arrow-right.svg?raw';
+import check from 'lucide-static/icons/check.svg?raw';
+import chevronLeft from 'lucide-static/icons/chevron-left.svg?raw';
+import chevronRight from 'lucide-static/icons/chevron-right.svg?raw';
+import eyeOff from 'lucide-static/icons/eye-off.svg?raw';
+import fileArchive from 'lucide-static/icons/file-archive.svg?raw';
+import gauge from 'lucide-static/icons/gauge.svg?raw';
+import heart from 'lucide-static/icons/heart.svg?raw';
+import house from 'lucide-static/icons/house.svg?raw';
+import keyRound from 'lucide-static/icons/key-round.svg?raw';
+import layers from 'lucide-static/icons/layers.svg?raw';
+import listFilter from 'lucide-static/icons/list-filter.svg?raw';
+import messageCircleWarning from 'lucide-static/icons/message-circle-warning.svg?raw';
+import scanSearch from 'lucide-static/icons/scan-search.svg?raw';
+import shieldCheck from 'lucide-static/icons/shield-check.svg?raw';
+import sparkles from 'lucide-static/icons/sparkles.svg?raw';
+import squarePlus from 'lucide-static/icons/square-plus.svg?raw';
+import trash from 'lucide-static/icons/trash-2.svg?raw';
+import trendingDown from 'lucide-static/icons/trending-down.svg?raw';
+import userRound from 'lucide-static/icons/user-round.svg?raw';
+import userRoundX from 'lucide-static/icons/user-round-x.svg?raw';
+
+const icons = {
+  archive,
+  'arrow-right': arrowRight,
+  check,
+  'chevron-left': chevronLeft,
+  'chevron-right': chevronRight,
+  'eye-off': eyeOff,
+  'file-archive': fileArchive,
+  gauge,
+  heart,
+  house,
+  'key-round': keyRound,
+  layers,
+  'list-filter': listFilter,
+  'message-circle-warning': messageCircleWarning,
+  'scan-search': scanSearch,
+  'shield-check': shieldCheck,
+  sparkles,
+  'square-plus': squarePlus,
+  trash,
+  'trending-down': trendingDown,
+  'user-round': userRound,
+  'user-round-x': userRoundX,
+} as const;
+
+export type IconName = keyof typeof icons;
+
+interface Props {
+  name: IconName;
+  size?: number;
+  strokeWidth?: number;
+  class?: string;
+}
+
+const { name, size = 18, strokeWidth = 2.2, class: className } = Astro.props;
+const svg = icons[name]
+  .replace(/<!--[\s\S]*?-->/, '')
+  .replace(/class="[^"]*"/, `class="${className ?? ''}" aria-hidden="true" focusable="false"`)
+  .replace(/width="24"/, `width="${size}"`)
+  .replace(/height="24"/, `height="${size}"`)
+  .replace(/stroke-width="2"/, `stroke-width="${strokeWidth}"`)
+  .replace(/\s+/g, ' ')
+  .trim();
+---
+
+<Fragment set:html={svg} />

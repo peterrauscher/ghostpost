@@ -1,0 +1,132 @@
+---
+import Divider from '../components/Divider.astro';
+import FeatureRow from '../components/FeatureRow.astro';
+import FinalCta from '../components/FinalCta.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
+import Receipts from '../components/Receipts.astro';
+import Statement from '../components/Statement.astro';
+import CleanArt from '../components/media/CleanArt.astro';
+import ConnectArt from '../components/media/ConnectArt.astro';
+import PrivacyArt from '../components/media/PrivacyArt.astro';
+import RiskArt from '../components/media/RiskArt.astro';
+import ScanArt from '../components/media/ScanArt.astro';
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="Ghostpost · clean up your social media before it counts"
+  description="Ghostpost scans your Instagram, TikTok, X, Facebook, and Reddit history and helps you find and clean up posts that could hold you back with admissions, recruiters, or rush."
+>
+  <Header />
+  <main>
+    <Hero />
+    <Statement />
+
+    <section class="features" id="how" aria-label="How Ghostpost works">
+      <div class="container features__stack">
+        <FeatureRow
+          eyebrow="connect"
+          title="bring every account along."
+          body="upload the data exports from instagram, tiktok, x, facebook, and reddit. no social passwords, no linking your live accounts."
+          bullets={[
+            { icon: 'layers', text: 'five platforms, one place' },
+            { icon: 'file-archive', text: 'just upload your export zip' },
+            { icon: 'key-round', text: 'no social passwords, ever' },
+          ]}
+        >
+          <ConnectArt />
+        </FeatureRow>
+        <Divider />
+        <FeatureRow
+          reverse
+          eyebrow="scan"
+          title="we read every post, so they don’t have to."
+          body="ghostpost combs through your history for the stuff admissions officers, recruiters, and rush chairs tend to notice."
+          bullets={[
+            { icon: 'message-circle-warning', text: 'language, drinking, hot takes & more' },
+            { icon: 'sparkles', text: 'tuned to what’s coming up for you' },
+            { icon: 'scan-search', text: 'every flag comes with a reason' },
+          ]}
+        >
+          <ScanArt />
+        </FeatureRow>
+        <Divider />
+        <FeatureRow
+          eyebrow="review"
+          title="see what they’d see."
+          body="get one clear risk level and a sorted list of the posts worth a second look, from high risk to low."
+          bullets={[
+            { icon: 'gauge', text: 'your risk level at a glance' },
+            { icon: 'list-filter', text: 'filter by high, medium, and low' },
+            { icon: 'chevron-right', text: 'tap any post for the full story' },
+          ]}
+        >
+          <RiskArt />
+        </FeatureRow>
+        <Divider />
+        <FeatureRow
+          reverse
+          eyebrow="clean up"
+          title="keep what you love, clear the rest."
+          body="go flag by flag and decide what stays. you make every call, ghostpost just makes it quick."
+          bullets={[
+            { icon: 'trash', text: 'delete, archive, or keep' },
+            { icon: 'heart', text: 'hold on to the posts you’re proud of' },
+            { icon: 'trending-down', text: 'watch your risk level drop' },
+          ]}
+        >
+          <CleanArt />
+        </FeatureRow>
+        <Divider />
+        <FeatureRow
+          id="privacy"
+          eyebrow="privacy"
+          title="private, like a ghost."
+          body="your uploads stay private. ghostpost never posts, edits, or deletes anything on your live accounts."
+          bullets={[
+            { icon: 'eye-off', text: 'never touches your live posts' },
+            { icon: 'shield-check', text: 'your results are for your eyes only' },
+            { icon: 'user-round-x', text: 'delete your account anytime' },
+          ]}
+        >
+          <PrivacyArt />
+        </FeatureRow>
+      </div>
+    </section>
+
+    <Receipts />
+    <FinalCta />
+  </main>
+  <Footer />
+</Base>
+
+<script>
+  // One observer reveals every [data-reveal] block as it enters the viewport.
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    },
+    { rootMargin: '0px 0px -10% 0px' },
+  );
+  document.querySelectorAll('[data-reveal]').forEach((el) => observer.observe(el));
+</script>
+
+<style>
+  /* Orchid feature band: 176px vertical padding, 80px between rows and dividers. */
+  .features { padding: 176px 0; }
+  .features__stack { display: flex; flex-direction: column; gap: 80px; }
+  @media (max-width: 1023px) {
+    .features { padding: 120px 0; }
+    .features__stack { gap: 64px; }
+  }
+  @media (max-width: 767px) {
+    .features { padding: 72px 0; }
+    .features__stack { gap: 56px; }
+  }
+</style>

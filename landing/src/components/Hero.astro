@@ -1,0 +1,172 @@
+---
+import { Image } from 'astro:assets';
+import { PUBLIC_APP_URL } from 'astro:env/client';
+import { PLATFORMS } from '../demo/data';
+import { platformIcons } from '../lib/platform-icons';
+import Icon from './Icon.astro';
+import PhoneDemo from './PhoneDemo.astro';
+
+// Orbiting platform tiles around the phone, echoing the app's welcome-screen art.
+const orbit = [
+  { style: '--x:-300px; --y:120px; --r:-12deg; --bob-delay:0s' },
+  { style: '--x:268px; --y:40px; --r:14deg; --bob-delay:-1.2s' },
+  { style: '--x:300px; --y:360px; --r:-8deg; --bob-delay:-2.4s' },
+  { style: '--x:-330px; --y:420px; --r:10deg; --bob-delay:-3.1s' },
+  { style: '--x:250px; --y:620px; --r:6deg; --bob-delay:-0.6s' },
+];
+---
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero__glow" aria-hidden="true"></div>
+  <div class="container hero__inner">
+    <a class="hero__badge" href="#how">
+      <span class="hero__badge-new">new</span>
+      now scanning facebook + reddit
+      <Icon name="chevron-right" size={14} strokeWidth={2.4} />
+    </a>
+    <h1 id="hero-title" class="hero__title">
+      let’s clean <span class="hero__accent">your slate.</span>
+    </h1>
+    <p class="hero__lede">
+      ghostpost scans your social media and helps you find the posts that could hold you back, before
+      admissions, recruiters, or rush ever see them.
+    </p>
+    <a class="pill pill--primary pill--lg" href={PUBLIC_APP_URL}>
+      get started <Icon name="arrow-right" size={18} strokeWidth={2.4} />
+    </a>
+
+    <div class="hero__stage">
+      {PLATFORMS.map(({ id, label }, i) => (
+        <span class="hero__tile bob" style={orbit[i].style} aria-hidden="true">
+          <Image src={platformIcons[id]} alt={label} width={34} densities={[1, 2]} />
+        </span>
+      ))}
+      <PhoneDemo />
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+    padding: 144px 0 96px;
+    background: var(--grad-welcome);
+  }
+  .hero::after {
+    /* Melt the lavender hero into the page tint. */
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    height: 420px;
+    background: linear-gradient(180deg, rgb(250 250 252 / 0) 0%, var(--tint) 100%);
+    z-index: -1;
+  }
+  .hero__glow {
+    position: absolute;
+    z-index: -1;
+    left: 50%;
+    top: -240px;
+    width: 1100px;
+    height: 900px;
+    margin-left: -550px;
+    background:
+      radial-gradient(closest-side at 30% 40%, rgb(167 139 250 / 0.28), transparent),
+      radial-gradient(closest-side at 72% 55%, rgb(255 214 236 / 0.55), transparent);
+    filter: blur(20px);
+  }
+  .hero__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Orchid rhythm: badge → 32 → title → 32 → lede → 32 → CTA → 76 → device. */
+  .hero__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 4px 12px 4px 4px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.75);
+    box-shadow: inset 0 0 0 1px var(--border), var(--shadow-card);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg);
+    transition: transform 0.25s var(--ease-bounce);
+  }
+  .hero__badge:hover { transform: translateY(-2px); }
+  .hero__badge-new {
+    display: inline-grid;
+    place-items: center;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: var(--grad-button);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .hero__badge :global(svg) { color: var(--muted); }
+
+  .hero__title {
+    max-width: min(92vw, 760px);
+    margin-top: 32px;
+    font-size: clamp(46px, 7vw, 76px);
+    font-weight: 800;
+    line-height: 1.02;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+  }
+  .hero__accent {
+    display: block;
+    color: var(--accent-deep);
+    background: linear-gradient(100deg, #7f4ae0 10%, #5925be 60%, #8b6ae8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero__lede {
+    max-width: min(92vw, 520px);
+    margin: 32px 0;
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--muted);
+    text-wrap: pretty;
+  }
+
+  .hero__stage {
+    position: relative;
+    margin-top: 76px;
+  }
+  .hero__tile {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 64px;
+    height: 64px;
+    margin-left: -32px;
+    display: grid;
+    place-items: center;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: var(--shadow-float), inset 0 0 0 1px var(--border);
+    translate: var(--x) var(--y);
+    --bob-dur: 6s;
+  }
+  .hero__tile img { width: 34px; height: auto; }
+
+  @media (max-width: 900px) {
+    .hero__tile { display: none; }
+  }
+  @media (max-width: 767px) {
+    .hero { padding: 120px 0 72px; }
+    .hero__lede { font-size: 16px; }
+    .hero__stage { margin-top: 56px; }
+  }
+</style>

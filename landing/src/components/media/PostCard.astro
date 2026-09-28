@@ -1,0 +1,67 @@
+---
+// Static twin of app/src/components/FlaggedContent.tsx → FlaggedPostCard.
+import { Image } from 'astro:assets';
+import type { DemoPost } from '../../demo/data';
+import { platformIcons } from '../../lib/platform-icons';
+import Icon from '../Icon.astro';
+
+interface Props {
+  post: DemoPost;
+  tags: readonly string[];
+}
+const { post, tags } = Astro.props;
+---
+
+<div class="post">
+  <div class="post__head">
+    <Image class="post__icon" src={platformIcons[post.platform]} alt="" width={22} densities={[1, 2]} />
+    <span class="post__platform">{post.platformLabel}</span>
+    <span class="post__date">{post.date}</span>
+    <span class:list={['post__badge', `post__badge--${post.risk}`]}>{post.risk[0].toUpperCase() + post.risk.slice(1)}</span>
+  </div>
+  <p class="post__quote">{post.quote}</p>
+  <div class="post__tags">
+    {tags.map((tag) => <span class="post__tag">{tag}</span>)}
+    <Icon name="chevron-right" size={16} class="post__chev" />
+  </div>
+</div>
+
+<style>
+  .post {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-float);
+    text-align: left;
+  }
+  .post__head { display: flex; align-items: center; gap: 8px; }
+  .post__icon { width: 22px; height: 22px; border-radius: 6px; }
+  .post__platform { font-size: 12px; font-weight: 600; }
+  .post__date { font-size: 11px; color: var(--muted); margin-right: auto; }
+  .post__badge {
+    height: 22px;
+    display: grid;
+    place-items: center;
+    padding: 0 10px;
+    border-radius: 11px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .post__badge--high { background: var(--risk-high-bg); color: var(--risk-high-text); }
+  .post__badge--medium { background: var(--risk-medium-bg); color: var(--risk-medium-text); }
+  .post__badge--low { background: var(--risk-low-bg); color: var(--risk-low-text); }
+  .post__quote { font-size: 15px; font-weight: 600; line-height: 21px; letter-spacing: -0.3px; }
+  .post__tags { display: flex; align-items: center; gap: 4px; }
+  .post__tag {
+    padding: 3px 8px;
+    border-radius: 10px;
+    background: var(--tag-bg);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .post__tags :global(.post__chev) { margin-left: auto; color: var(--chevron); }
+</style>

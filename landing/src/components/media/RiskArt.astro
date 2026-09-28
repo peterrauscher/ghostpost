@@ -1,0 +1,105 @@
+---
+import { Image } from 'astro:assets';
+import logoGhost from '@app-assets/images/logo-trim.png';
+import { DEMO_POSTS } from '../../demo/data';
+import PostCard from './PostCard.astro';
+
+const chips = [
+  { label: 'All', count: 8, tone: 'all' },
+  { label: 'High', count: 2, tone: 'high' },
+  { label: 'Medium', count: 4, tone: 'medium' },
+  { label: 'Low', count: 2, tone: 'low' },
+] as const;
+const radius = 38;
+const circumference = 2 * Math.PI * radius;
+---
+
+<div class="art">
+  <div class="art__stack">
+    <div class="art__summary">
+      <div>
+        <p class="art__cap">overall risk level</p>
+        <p class="art__level">Medium</p>
+        <p class="art__sub">8 flagged items</p>
+      </div>
+      <div class="art__gauge">
+        <svg width="88" height="88" viewBox="0 0 88 88" aria-hidden="true">
+          <circle cx="44" cy="44" r={radius} class="art__track" />
+          <circle cx="44" cy="44" r={radius} class="art__arc" stroke-dasharray={`${circumference * 0.58} ${circumference}`} />
+        </svg>
+        <Image src={logoGhost} alt="" width={38} densities={[1, 2]} />
+      </div>
+    </div>
+    <div class="art__chips">
+      {chips.map((chip) => (
+        <span class:list={['art__chip', { 'is-active': chip.tone === 'all' }]}>
+          {chip.tone !== 'all' && <i class={`art__dot art__dot--${chip.tone}`} />}
+          {chip.label}
+          <small>{chip.count}</small>
+        </span>
+      ))}
+    </div>
+    <div class="art__post">
+      <PostCard post={DEMO_POSTS[1]} tags={['negativity', 'work']} />
+    </div>
+  </div>
+</div>
+
+<style>
+  .art {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(circle at 15% 85%, rgb(255 214 236 / 0.7), transparent 45%),
+      var(--grad-welcome);
+  }
+  .art__stack {
+    width: min(380px, 86%);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .art__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px;
+    border-radius: 22px;
+    background: #fff;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-float);
+    rotate: -2deg;
+  }
+  .art__cap { font-size: 13px; font-weight: 600; }
+  .art__level { margin-top: 6px; font-size: 28px; font-weight: 800; line-height: 1; color: var(--risk-medium-text); letter-spacing: -0.02em; }
+  .art__sub { margin-top: 4px; font-size: 12px; color: var(--muted); }
+  .art__gauge { position: relative; width: 88px; height: 88px; display: grid; place-items: center; }
+  .art__gauge svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .art__gauge circle { fill: none; stroke-width: 9; }
+  .art__track { stroke: var(--gauge-track); }
+  .art__arc { stroke: var(--risk-medium); stroke-linecap: round; }
+  .art__gauge img { position: relative; height: auto; }
+  .art__chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .art__chip {
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 11px;
+    border-radius: 17px;
+    background: #fff;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .art__chip small { font-size: 11px; }
+  .art__chip.is-active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: var(--shadow-button); }
+  .art__dot { width: 7px; height: 7px; border-radius: 999px; }
+  .art__dot--high { background: var(--risk-high); }
+  .art__dot--medium { background: var(--risk-medium); }
+  .art__dot--low { background: var(--risk-low); }
+  .art__post { rotate: 1.5deg; }
+</style>

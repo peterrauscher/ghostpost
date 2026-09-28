@@ -1,0 +1,37 @@
+---
+// Section divider built from the app's CarouselDots (20×7 active pill + 7×7 dots).
+---
+
+<div class="divider" aria-hidden="true">
+  <span class="divider__dots"><i class="is-active"></i><i></i><i></i></span>
+</div>
+
+<style>
+  .divider {
+    position: relative;
+    height: 24px;
+    display: grid;
+    place-items: center;
+  }
+  .divider::before {
+    content: '';
+    position: absolute;
+    inset: 50% 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border) 15%, var(--border) 85%, transparent);
+  }
+  .divider__dots {
+    position: relative;
+    display: flex;
+    gap: 8px;
+    padding: 0 20px;
+    background: var(--tint);
+  }
+  .divider i {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--dot-inactive);
+  }
+  .divider i.is-active { width: 20px; background: var(--accent); }
+</style>

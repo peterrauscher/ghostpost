@@ -1,0 +1,30 @@
+---
+import { Image } from 'astro:assets';
+import logoGhost from '@app-assets/images/logo-trim.png';
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Page not found · Ghostpost" description="This page vanished into thin air." path="/404">
+  <main class="lost">
+    <Image class="bob" src={logoGhost} alt="" width={120} densities={[1, 2]} loading="eager" />
+    <h1>this page ghosted you.</h1>
+    <p>it’s not here anymore, or it never was. spooky.</p>
+    <a class="pill pill--primary pill--lg" href="/">back home</a>
+  </main>
+</Base>
+
+<style>
+  .lost {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 24px;
+    background: var(--grad-welcome);
+    text-align: center;
+  }
+  h1 { font-size: clamp(36px, 6vw, 56px); font-weight: 800; letter-spacing: -0.04em; line-height: 1.05; }
+  p { margin-bottom: 12px; color: var(--muted); }
+</style>

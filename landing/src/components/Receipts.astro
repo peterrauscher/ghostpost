@@ -1,0 +1,113 @@
+---
+// CareerBuilder / Harris Poll survey of 1,000+ hiring managers, published Aug 2018.
+const SOURCE =
+  'https://www.prnewswire.com/news-releases/more-than-half-of-employers-have-found-content-on-social-media-that-caused-them-not-to-hire-a-candidate-according-to-recent-careerbuilder-survey-300694437.html';
+
+const stats = [
+  { value: 70, label: 'check your socials', sub: 'of employers research job candidates on social media.' },
+  { value: 57, label: 'found a dealbreaker', sub: 'of those found something that made them pass on a hire.' },
+];
+---
+
+<section class="receipts" id="receipts" aria-labelledby="receipts-title">
+  <div class="container receipts__inner" data-reveal>
+    <span class="receipts__pill"><i aria-hidden="true"></i>the receipts</span>
+    <h2 id="receipts-title" class="receipts__title">people are looking.</h2>
+    <div class="receipts__grid">
+      {stats.map((stat) => (
+        <div class="receipts__stat">
+          <p class="receipts__value"><span data-count-to={stat.value}>{stat.value}</span>%</p>
+          <h3 class="receipts__label">{stat.label}</h3>
+          <p class="receipts__sub">{stat.sub}</p>
+        </div>
+      ))}
+    </div>
+    <p class="receipts__source">
+      source: <a href={SOURCE} rel="noopener" target="_blank">careerbuilder hiring survey, 2018</a>
+    </p>
+  </div>
+</section>
+
+<script>
+  // Count up from 0 the first time the numbers scroll into view.
+  const counters = document.querySelectorAll<HTMLElement>('[data-count-to]');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduced && counters.length) {
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        observer.unobserve(entry.target);
+        const el = entry.target as HTMLElement;
+        const target = Number(el.dataset.countTo);
+        const started = performance.now();
+        const frame = (now: number) => {
+          const t = Math.min(1, (now - started) / 1400);
+          el.textContent = String(Math.round(target * (1 - Math.pow(1 - t, 3))));
+          if (t < 1) requestAnimationFrame(frame);
+        };
+        requestAnimationFrame(frame);
+      }
+    }, { threshold: 0.6 });
+    counters.forEach((el) => {
+      el.textContent = '0';
+      observer.observe(el);
+    });
+  }
+</script>
+
+<style>
+  .receipts { padding: 112px 0; }
+  .receipts__inner { display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .receipts__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 30px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .receipts__pill i { width: 7px; height: 7px; border-radius: 999px; background: var(--accent); }
+  .receipts__title {
+    margin-top: 20px;
+    font-size: clamp(32px, 4vw, 46px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.04em;
+  }
+  .receipts__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: min(100%, 860px);
+    margin-top: 56px;
+  }
+  .receipts__stat { padding: 0 32px; }
+  .receipts__stat + .receipts__stat { border-left: 1px solid var(--border); }
+  .receipts__value {
+    font-size: clamp(76px, 10vw, 128px);
+    font-weight: 850;
+    line-height: 1;
+    letter-spacing: -0.06em;
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #a78bfa 0%, #7f4ae0 45%, #5925be 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .receipts__label { margin-top: 16px; font-size: 20px; font-weight: 750; letter-spacing: -0.02em; }
+  .receipts__sub { max-width: 280px; margin: 8px auto 0; font-size: 14px; line-height: 1.5; color: var(--muted); }
+  .receipts__source { margin-top: 48px; font-size: 13px; color: var(--muted); }
+  .receipts__source a { text-decoration: underline; text-decoration-color: var(--dot-inactive); text-underline-offset: 3px; }
+  .receipts__source a:hover { color: var(--accent); }
+
+  @media (max-width: 640px) {
+    .receipts { padding: 80px 0; }
+    .receipts__grid { grid-template-columns: 1fr; gap: 40px; }
+    .receipts__stat + .receipts__stat { border-left: 0; border-top: 1px solid var(--border); padding-top: 40px; }
+  }
+</style>

@@ -1,0 +1,39 @@
+---
+import { Image } from 'astro:assets';
+import logoGhost from '@app-assets/images/logo-trim.png';
+---
+
+<a href="/" class="logo" aria-label="Ghostpost home">
+  <span class="logo__tile">
+    <Image src={logoGhost} alt="" width={24} densities={[1, 2]} loading="eager" />
+  </span>
+  <span class="logo__word">ghostpost</span>
+</a>
+
+<style>
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 12px;
+  }
+  /* Purple tile (app auditGradient family) so the white ghost reads on light backgrounds. */
+  .logo__tile {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #a78bfa 0%, #7f4ae0 100%);
+    box-shadow: 0 6px 14px rgb(127 74 224 / 0.3);
+    transition: transform 0.4s var(--ease-bounce);
+  }
+  .logo__tile img { height: auto; }
+  .logo:hover .logo__tile { transform: rotate(-8deg) scale(1.06); }
+  .logo__word {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+</style>

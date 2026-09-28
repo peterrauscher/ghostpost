@@ -1,0 +1,7 @@
+dist/
+.astro/
+.wrangler/
+test-results/
+playwright-report/
+e2e/artifacts/
+!.env.development

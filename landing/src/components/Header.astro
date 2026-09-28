@@ -1,0 +1,85 @@
+---
+import { PUBLIC_APP_URL } from 'astro:env/client';
+import Logo from './Logo.astro';
+
+const links = [
+  { href: '#how', label: 'how it works' },
+  { href: '#privacy', label: 'privacy' },
+  { href: '#receipts', label: 'the receipts' },
+];
+---
+
+<header class="header" data-header>
+  <div class="header__bar">
+    <Logo />
+    <nav class="header__nav" aria-label="Primary">
+      {links.map((link) => <a href={link.href}>{link.label}</a>)}
+    </nav>
+    <div class="header__actions">
+      <a class="pill pill--light pill--sm header__login" href={new URL('/login', PUBLIC_APP_URL).href}>log in</a>
+      <a class="pill pill--dark pill--sm" href={PUBLIC_APP_URL}>get started</a>
+    </div>
+  </div>
+</header>
+
+<script>
+  // Frosted bar once the hero headline scrolls under it.
+  const header = document.querySelector<HTMLElement>('[data-header]');
+  if (header) {
+    const update = () => header.classList.toggle('is-scrolled', window.scrollY > 12);
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+  }
+</script>
+
+<style>
+  .header {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 50;
+    padding: 12px calc(var(--gutter) - 16px) 0;
+    pointer-events: none;
+  }
+  .header__bar {
+    max-width: calc(var(--column) + 32px);
+    height: 58px;
+    margin-inline: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 0 12px 0 16px;
+    border-radius: 999px;
+    pointer-events: auto;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease;
+  }
+  .header.is-scrolled .header__bar {
+    background: rgb(255 255 255 / 0.72);
+    box-shadow: inset 0 0 0 1px rgb(237 232 245 / 0.9), 0 8px 30px rgb(61 36 101 / 0.08);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  }
+  .header__nav {
+    display: flex;
+    align-items: center;
+    margin-right: auto;
+    margin-left: 12px;
+  }
+  .header__nav a {
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgb(23 23 23 / 0.72);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .header__nav a:hover { background: rgb(127 74 224 / 0.08); color: var(--accent-deep); }
+  .header__actions { display: flex; align-items: center; gap: 8px; }
+
+  @media (max-width: 860px) {
+    .header__nav { display: none; }
+  }
+  @media (max-width: 420px) {
+    .header__login { display: none; }
+  }
+</style>

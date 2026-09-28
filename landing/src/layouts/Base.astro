@@ -1,0 +1,48 @@
+---
+import { getImage } from 'astro:assets';
+import { PUBLIC_SITE_URL } from 'astro:env/client';
+import fontUrl from '../fonts/sn-pro-latin.woff2?url';
+import appIcon from '@app-assets/images/logo.png';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  path?: string;
+}
+
+const { title, description, path = '/' } = Astro.props;
+const canonical = new URL(path, PUBLIC_SITE_URL).href;
+const shareImage = await getImage({ src: appIcon, width: 512, height: 512, format: 'png' });
+const shareImageUrl = new URL(shareImage.src, PUBLIC_SITE_URL).href;
+const faviconImage = await getImage({ src: appIcon, width: 48, height: 48, format: 'png' });
+const touchIcon = await getImage({ src: appIcon, width: 180, height: 180, format: 'png' });
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#F7F1FF" />
+    <link rel="icon" type="image/png" sizes="48x48" href={faviconImage.src} />
+    <link rel="apple-touch-icon" href={touchIcon.src} />
+    <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Ghostpost" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={shareImageUrl} />
+    <meta name="twitter:card" content="summary" />
+
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

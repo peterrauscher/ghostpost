@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ghostpost-landing",
+  "compatibility_date": "2026-09-01",
+  // Assets-only Worker: no script runs, Cloudflare serves ./dist straight from its edge.
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}
