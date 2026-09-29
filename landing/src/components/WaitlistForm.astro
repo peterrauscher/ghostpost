@@ -138,8 +138,57 @@ const inputId = `waitlist-${source}`;
   }
 
   @media (max-width: 480px) {
-    .wl__field { height: auto; flex-direction: column; padding: 6px; border-radius: 30px; }
-    .wl__input { width: 100%; height: 52px; padding: 0 16px; text-align: center; }
-    .wl__submit { width: 100%; justify-content: center; }
+    .wl__field {
+      height: auto;
+      flex-direction: column;
+      padding: 0;
+      background: transparent;
+      box-shadow: none;
+      border-radius: 0;
+      gap: 10px;
+    }
+    .wl__field:focus-within {
+      box-shadow: none;
+    }
+    .wl[data-state='error'] .wl__field {
+      box-shadow: none;
+      animation: none;
+    }
+    .wl__input {
+      flex: none;
+      width: 100%;
+      height: 52px;
+      padding: 0 20px;
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: 0 0 0 1px var(--border), 0 10px 24px rgb(89 37 190 / 0.10);
+      text-align: center;
+      font-size: 16px;
+      transition: box-shadow 0.25s ease;
+    }
+    .wl__input:focus {
+      box-shadow: 0 0 0 3px rgb(127 74 224 / 0.35), 0 14px 34px rgb(89 37 190 / 0.16);
+    }
+    .wl[data-state='error'] .wl__input {
+      box-shadow: 0 0 0 2px var(--risk-high), 0 14px 34px rgb(232 90 107 / 0.18);
+      animation: wiggle 0.4s ease;
+    }
+    .wl__submit {
+      width: 100%;
+      height: 52px;
+      border-radius: 999px;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .wl--dark .wl__field { box-shadow: none; }
+    .wl--dark .wl__input {
+      box-shadow: 0 12px 28px rgb(40 20 80 / 0.25);
+    }
+    .wl--dark[data-state='error'] .wl__input {
+      box-shadow: 0 0 0 2px var(--risk-high), 0 14px 34px rgb(232 90 107 / 0.25);
+    }
+    .wl[data-state='done'] .wl__status {
+      min-height: 52px;
+    }
   }
 </style>
