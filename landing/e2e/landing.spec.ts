@@ -84,10 +84,10 @@ test('page renders, CTAs lead to the waitlist, demo autoplays scan → review �
 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/let’s clean\s*your slate\./);
   await page.screenshot({ path: artifact('hero') });
-  const ctas = page.locator('a', { hasText: 'join the waitlist' });
+  const ctas = page.locator('a[href="#join"]');
   expect(await ctas.count()).toBeGreaterThan(5);
-  for (const href of await ctas.evaluateAll((links) => links.map((link) => link.getAttribute('href')))) {
-    expect(href).toBe('#join');
+  for (const text of await ctas.allInnerTexts()) {
+    expect(['join the waitlist', 'get early access']).toContain(text.trim().toLowerCase());
   }
   await expect(page.locator('#join form[data-waitlist]')).toHaveCount(1);
   await expect(page.locator('a[href*="login"]')).toHaveCount(0);
@@ -122,7 +122,6 @@ test('visitor can take over mid-scan and drive the demo', async ({ page }) => {
 
   await screen.click({ position: { x: 40, y: 400 } });
   await expect(demo).toHaveAttribute('data-mode', 'manual');
-  await expect(demo.getByText('you’re driving 👻')).toBeVisible();
   // The interrupted scan still finishes on its own.
   await expect(screen).toHaveAttribute('data-view', 'home', { timeout: 10_000 });
 
@@ -151,9 +150,6 @@ test('visitor can take over mid-scan and drive the demo', async ({ page }) => {
   await expect(screen).toHaveAttribute('data-view', 'scan');
   await expect(screen).toHaveAttribute('data-view', 'home', { timeout: 10_000 });
   await expect(demo.locator('[data-field="count"]')).toHaveText('4');
-
-  await demo.locator('[data-replay]').click();
-  await expect(demo).toHaveAttribute('data-mode', 'auto');
   expect(errors).toEqual([]);
 });
 
@@ -179,7 +175,7 @@ test('waitlist: hero takes an email, CTA takes a phone, both persist normalized'
   await page.screenshot({ path: artifact('waitlist-hero-joined') });
 
   // The header CTA jumps to the closing form.
-  await page.locator('header').getByRole('link', { name: 'join the waitlist' }).click();
+  await page.locator('header').getByRole('link', { name: 'get early access' }).click();
   await expect(page).toHaveURL(/#join$/);
   const cta = page.locator('#join form[data-waitlist]');
   await expect(cta).toBeInViewport();

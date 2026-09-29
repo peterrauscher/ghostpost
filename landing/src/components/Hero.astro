@@ -2,7 +2,6 @@
 import { Image } from 'astro:assets';
 import { PLATFORMS } from '../demo/data';
 import { platformIcons } from '../lib/platform-icons';
-import Icon from './Icon.astro';
 import PhoneDemo from './PhoneDemo.astro';
 import WaitlistForm from './WaitlistForm.astro';
 
@@ -19,11 +18,6 @@ const orbit = [
 <section class="hero" aria-labelledby="hero-title">
   <div class="hero__glow" aria-hidden="true"></div>
   <div class="container hero__inner">
-    <a class="hero__badge" href="#how">
-      <span class="hero__badge-new">soon</span>
-      ghostpost is almost here
-      <Icon name="chevron-right" size={14} strokeWidth={2.4} />
-    </a>
     <h1 id="hero-title" class="hero__title">
       let’s clean <span class="hero__accent">your slate.</span>
     </h1>
@@ -81,40 +75,10 @@ const orbit = [
     text-align: center;
   }
 
-  /* Orchid rhythm: badge → 32 → title → 32 → lede → 32 → waitlist → 64 → device. */
-  .hero__badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    height: 36px;
-    padding: 4px 12px 4px 4px;
-    border-radius: 999px;
-    background: rgb(255 255 255 / 0.75);
-    box-shadow: inset 0 0 0 1px var(--border), var(--shadow-card);
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--fg);
-    transition: transform 0.25s var(--ease-bounce);
-  }
-  .hero__badge:hover { transform: translateY(-2px); }
-  .hero__badge-new {
-    display: inline-grid;
-    place-items: center;
-    height: 28px;
-    padding: 0 10px;
-    border-radius: 999px;
-    background: var(--grad-button);
-    color: #fff;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-  .hero__badge :global(svg) { color: var(--muted); }
+  /* Orchid rhythm: title → 32 → lede → 32 → waitlist → 64 → device. */
 
   .hero__title {
     max-width: min(92vw, 760px);
-    margin-top: 32px;
     font-size: clamp(46px, 7vw, 76px);
     font-weight: 800;
     line-height: 1.02;
@@ -151,13 +115,11 @@ const orbit = [
     margin-left: -32px;
     display: grid;
     place-items: center;
-    border-radius: 20px;
-    background: #fff;
-    box-shadow: var(--shadow-float), inset 0 0 0 1px var(--border);
     translate: var(--x) var(--y);
     --bob-dur: 6s;
   }
-  .hero__tile img { width: 34px; height: auto; }
+  /* Bare icon: the gradient behind it is light, so a soft shadow keeps it from flattening into the page. */
+  .hero__tile img { width: 40px; height: auto; filter: drop-shadow(0 10px 18px rgb(38 20 80 / 0.18)); }
 
   @media (max-width: 900px) {
     .hero__tile { display: none; }

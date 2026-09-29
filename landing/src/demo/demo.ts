@@ -226,7 +226,7 @@ export function mountDemo(root: HTMLElement) {
     }
   });
 
-  $('[data-replay]').addEventListener('click', () => {
+  root.querySelector<HTMLElement>('[data-replay]')?.addEventListener('click', () => {
     root.dataset.mode = 'auto';
     start(autoplay);
   });
