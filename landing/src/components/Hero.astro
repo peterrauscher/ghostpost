@@ -43,17 +43,30 @@ const orbit = [
     position: relative;
     isolation: isolate;
     overflow: clip;
-    padding: 144px 0 96px;
+    padding: 144px 0 160px;
     background: var(--grad-welcome);
   }
   .hero::after {
-    /* Melt the lavender hero into the page tint. */
+    /* Melt the lavender hero smoothly into the page tint without Mach bands or harsh edges. */
     content: '';
     position: absolute;
     inset: auto 0 0;
-    height: 420px;
-    background: linear-gradient(180deg, rgb(250 250 252 / 0) 0%, var(--tint) 100%);
+    height: 640px;
+    background: linear-gradient(
+      180deg,
+      rgb(250 250 252 / 0) 0%,
+      rgb(250 250 252 / 0.04) 12%,
+      rgb(250 250 252 / 0.145) 24%,
+      rgb(250 250 252 / 0.295) 36%,
+      rgb(250 250 252 / 0.47) 48%,
+      rgb(250 250 252 / 0.648) 60%,
+      rgb(250 250 252 / 0.809) 72%,
+      rgb(250 250 252 / 0.931) 84%,
+      rgb(250 250 252 / 0.986) 93%,
+      var(--tint) 100%
+    );
     z-index: -1;
+    pointer-events: none;
   }
   .hero__glow {
     position: absolute;
@@ -125,7 +138,7 @@ const orbit = [
     .hero__tile { display: none; }
   }
   @media (max-width: 767px) {
-    .hero { padding: 120px 0 72px; }
+    .hero { padding: 120px 0 100px; }
     .hero__lede { font-size: 16px; }
     .hero__stage { margin-top: 56px; }
   }
