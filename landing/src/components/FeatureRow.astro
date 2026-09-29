@@ -26,7 +26,6 @@ const { id, eyebrow, title, body, bullets, reverse = false } = Astro.props;
         </li>
       ))}
     </ul>
-    <a class="pill pill--dark pill--sm" href="#join">join the waitlist</a>
   </div>
   <div class="feature__media" data-reveal style="--reveal-delay: 120ms">
     <slot />
@@ -65,7 +64,7 @@ const { id, eyebrow, title, body, bullets, reverse = false } = Astro.props;
   }
   .feature__list {
     max-width: 470px;
-    margin: 44px 0;
+    margin-top: 44px;
   }
   .feature__list li {
     display: flex;
@@ -104,7 +103,6 @@ const { id, eyebrow, title, body, bullets, reverse = false } = Astro.props;
   }
   @media (max-width: 767px) {
     .feature__title { font-size: 26px; }
-    .feature__list { margin: 32px 0; }
-    .feature__media { aspect-ratio: auto; height: 400px; border-radius: 28px; }
+    .feature__list { margin-top: 32px; }
   }
 </style>

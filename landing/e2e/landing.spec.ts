@@ -85,7 +85,7 @@ test('page renders, CTAs lead to the waitlist, demo autoplays scan → review �
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/let’s clean\s*your slate\./);
   await page.screenshot({ path: artifact('hero') });
   const ctas = page.locator('a[href="#join"]');
-  expect(await ctas.count()).toBeGreaterThan(5);
+  expect(await ctas.count()).toBeGreaterThanOrEqual(2);
   for (const text of await ctas.allInnerTexts()) {
     expect(['join the waitlist', 'get early access']).toContain(text.trim().toLowerCase());
   }

@@ -19,7 +19,7 @@ const spots = [
     <div class="cta__card" data-reveal>
       {PLATFORMS.map(({ id }, i) => (
         <span class="cta__tile bob" style={spots[i]} aria-hidden="true">
-          <Image src={platformIcons[id]} alt="" width={28} densities={[1, 2]} />
+          <Image src={platformIcons[id]} alt="" width={34} densities={[1, 2]} />
         </span>
       ))}
       <Image class="cta__ghost bob" src={logoGhost} alt="" width={150} densities={[1, 2]} />
@@ -53,16 +53,12 @@ const spots = [
   .cta__tile {
     position: absolute;
     z-index: -1;
-    width: 54px;
-    height: 54px;
     display: grid;
     place-items: center;
-    border-radius: 17px;
-    background: rgb(255 255 255 / 0.92);
-    box-shadow: 0 14px 30px rgb(40 20 80 / 0.22);
     --bob-dur: 6s;
   }
-  .cta__tile img { height: auto; }
+  /* Bare icon on the purple card: each mark carries its own colour, so a soft shadow is all it needs. */
+  .cta__tile img { height: auto; filter: drop-shadow(0 14px 22px rgb(40 20 80 / 0.32)); }
   .cta__ghost { width: 150px; height: auto; margin-bottom: -8px; filter: drop-shadow(0 22px 30px rgb(40 20 80 / 0.35)); }
   .cta__title {
     max-width: 760px;
