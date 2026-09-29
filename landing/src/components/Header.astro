@@ -2,9 +2,9 @@
 import Logo from './Logo.astro';
 
 const links = [
-  { href: '#how', label: 'how it works' },
-  { href: '#privacy', label: 'privacy' },
-  { href: '#receipts', label: 'the receipts' },
+  { href: '/#how', label: 'how it works' },
+  { href: '/#privacy', label: 'privacy' },
+  { href: '/#receipts', label: 'the receipts' },
 ];
 ---
 
@@ -15,7 +15,7 @@ const links = [
       {links.map((link) => <a href={link.href}>{link.label}</a>)}
     </nav>
     <div class="header__actions">
-      <a class="pill pill--dark pill--sm" href="#join">get early access</a>
+      <a class="pill pill--dark pill--sm" href="/#join">get early access</a>
     </div>
   </div>
 </header>

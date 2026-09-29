@@ -1,0 +1,265 @@
+---
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import Icon from '../components/Icon.astro';
+import Base from '../layouts/Base.astro';
+import { SITE } from '../lib/site';
+
+const faqs = [
+  {
+    q: 'What is Ghostpost?',
+    a: 'Ghostpost is a privacy-first social media audit tool. It scans your historical posts, comments, and activity across major platforms and highlights content that could hold you back from college admissions, recruiting, job offers, or Greek life rush.',
+  },
+  {
+    q: 'How does Ghostpost work?',
+    a: 'Instead of connecting live accounts or giving away your passwords, you request an official data archive from each platform (Instagram, TikTok, X, Facebook, and Reddit) and upload the .zip file to Ghostpost. Our analyzer parses the archive, highlights posts that might raise eyebrows, and lets you review them one by one.',
+  },
+  {
+    q: 'Does Ghostpost need my social media passwords?',
+    a: 'Never. Ghostpost never asks for your passwords, and we never use live OAuth connections to link your accounts. Using official data exports means your live accounts remain completely untouched and secure.',
+  },
+  {
+    q: 'Will Ghostpost ever post, edit, or delete anything on my live profiles?',
+    a: 'No. Ghostpost is strictly read-only and local to your session. It helps you find flagged content and gives you direct links and context so you can make decisions on your own terms. We never have permission to modify or post anything to your live social accounts.',
+  },
+  {
+    q: 'What kinds of posts does Ghostpost flag?',
+    a: 'Ghostpost scans for content that admissions officers and recruiters routinely scrutinize: references to alcohol and drugs, profanity and inappropriate language, toxic negativity, controversial political takes, and content that could violate student or employee codes of conduct.',
+  },
+  {
+    q: 'How does privacy work?',
+    a: 'Your privacy is the core of our product. Your archives are processed in an isolated environment solely to generate your audit. We never sell your data, never share it with advertisers, and never use it to train public AI models. You can permanently delete your scan data at any time with a single click.',
+  },
+  {
+    q: 'Which platforms are supported?',
+    a: 'We currently support official data export archives from Instagram, TikTok, X (formerly Twitter), Facebook, and Reddit.',
+  },
+  {
+    q: 'How much does Ghostpost cost?',
+    a: 'Ghostpost is currently in private early access. Joining the waitlist gives you priority access to our upcoming release and early-bird pricing.',
+  },
+];
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map(({ q, a }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: a,
+    },
+  })),
+};
+---
+
+<Base
+  title={`FAQ · ${SITE.name}`}
+  description="Frequently asked questions about Ghostpost: how our social media archive scans work, what we flag, and our strict zero-password privacy model."
+  path="/faq"
+>
+  <script slot="head" type="application/ld+json" is:inline set:html={JSON.stringify(faqSchema)} />
+  <Header />
+
+  <main class="faq-page">
+    <div class="container faq-page__inner">
+      <header class="faq-page__header">
+        <span class="faq-page__badge">faq</span>
+        <h1 class="faq-page__title">frequently asked questions</h1>
+        <p class="faq-page__lede">
+          everything you need to know about ghostpost, how scans work, and how we protect your privacy.
+        </p>
+      </header>
+
+      <div class="faq__list" role="region" aria-label="Questions and answers">
+        {faqs.map(({ q, a }, i) => (
+          <details class="faq__item" id={`faq-${i + 1}`}>
+            <summary class="faq__summary">
+              <span class="faq__question">{q}</span>
+              <span class="faq__icon" aria-hidden="true">
+                <Icon name="chevron-right" size={18} strokeWidth={2.4} />
+              </span>
+            </summary>
+            <div class="faq__content">
+              <p>{a}</p>
+            </div>
+          </details>
+        ))}
+      </div>
+
+      <div class="faq__cta">
+        <div class="faq__cta-card">
+          <h2>still have questions?</h2>
+          <p>can’t find what you’re looking for? reach out to our team directly and we’ll get back to you.</p>
+          <a class="pill pill--primary pill--md" href="/contact">contact us</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  .faq-page {
+    position: relative;
+    padding: 144px 0 96px;
+    background:
+      radial-gradient(circle at 50% 0%, rgb(167 139 250 / 0.18), transparent 600px),
+      var(--tint);
+  }
+  .faq-page__inner {
+    max-width: 820px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .faq-page__header {
+    text-align: center;
+    margin-bottom: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .faq-page__badge {
+    display: inline-grid;
+    place-items: center;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .faq-page__title {
+    font-size: clamp(36px, 5.5vw, 60px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    color: var(--fg);
+    text-wrap: balance;
+  }
+  .faq-page__lede {
+    margin-top: 18px;
+    max-width: 540px;
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--muted);
+    text-wrap: pretty;
+  }
+
+  .faq__list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .faq__item {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .faq__item:hover {
+    border-color: rgb(127 74 224 / 0.25);
+    box-shadow: 0 6px 20px rgb(61 36 101 / 0.06);
+  }
+  .faq__item[open] {
+    border-color: rgb(127 74 224 / 0.35);
+    box-shadow: 0 8px 24px rgb(61 36 101 / 0.08);
+  }
+
+  .faq__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 22px 28px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--fg);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+  }
+  .faq__summary::-webkit-details-marker {
+    display: none;
+  }
+  .faq__question {
+    line-height: 1.35;
+    letter-spacing: -0.015em;
+  }
+  .faq__icon {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--tag-bg);
+    color: var(--muted);
+    transition: transform 0.25s var(--ease-bounce), background-color 0.2s ease, color 0.2s ease;
+  }
+  .faq__item[open] .faq__icon {
+    transform: rotate(90deg);
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+  }
+
+  .faq__content {
+    padding: 0 28px 24px;
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--muted);
+    text-wrap: pretty;
+  }
+  .faq__content p + p {
+    margin-top: 12px;
+  }
+
+  .faq__cta {
+    width: 100%;
+    margin-top: 64px;
+  }
+  .faq__cta-card {
+    border-radius: 28px;
+    background: var(--grad-welcome);
+    border: 1px solid var(--border);
+    padding: 48px 32px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .faq__cta-card h2 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--fg);
+  }
+  .faq__cta-card p {
+    max-width: 440px;
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .faq__cta-card a {
+    margin-top: 8px;
+  }
+
+  @media (max-width: 767px) {
+    .faq-page { padding: 120px 0 72px; }
+    .faq-page__header { margin-bottom: 40px; }
+    .faq__summary { padding: 18px 20px; font-size: 16px; }
+    .faq__content { padding: 0 20px 20px; font-size: 14px; }
+    .faq__cta-card { padding: 36px 20px; }
+  }
+</style>

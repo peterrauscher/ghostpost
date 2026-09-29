@@ -1,0 +1,280 @@
+---
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import Base from '../layouts/Base.astro';
+import { SITE } from '../lib/site';
+---
+
+<Base
+  title={`Privacy Policy · ${SITE.name}`}
+  description="Ghostpost's Privacy Policy. How we handle your social media archives, our zero-password policy, and how we protect your personal data."
+  path="/privacy"
+>
+  <Header />
+
+  <main class="legal-page">
+    <div class="container legal-page__inner">
+      <article class="prose">
+        <header class="prose__header">
+          <span class="prose__badge">privacy</span>
+          <h1 class="prose__title">privacy policy</h1>
+          <p class="prose__date">Last updated: September 28, 2026</p>
+        </header>
+
+        <div class="prose__callout">
+          <p class="prose__highlight">
+            Privacy and security are the foundation of Ghostpost. We don’t sell your data. We don’t use it for advertising.
+            We never touch your live social accounts. It’s your data, period.
+          </p>
+          <p>
+            We don’t train public artificial intelligence models on your private archives. Your scan is strictly your own.
+          </p>
+        </div>
+
+        <section>
+          <h2>1. Our Core Privacy Commitments</h2>
+          <p>Ghostpost is designed from the ground up around four foundational privacy principles:</p>
+          <ul>
+            <li><strong>Zero Social Passwords:</strong> We never ask for, collect, or store your social media passwords.</li>
+            <li><strong>No Live Account Linking:</strong> We do not connect to your live profiles via OAuth or scrape your active feeds. You upload official data export archives that you control.</li>
+            <li><strong>No Public AI Training:</strong> We never use your uploaded posts, photos, comments, or direct messages to train shared or public AI models.</li>
+            <li><strong>No Data Monetization:</strong> We do not sell, rent, or trade your personal data, archives, or contact information to advertisers, data brokers, or third parties.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>2. Information We Collect</h2>
+          <h3>Waitlist & Contact Information</h3>
+          <p>
+            When you join our early-access waitlist, we collect your email address or mobile phone number, along with the source
+            of your signup. We use this information solely to notify you when Ghostpost is ready for you, provide your early-access
+            onboarding, and send critical transactional updates.
+          </p>
+
+          <h3>Uploaded Social Media Archives</h3>
+          <p>
+            To perform a scan, you voluntarily upload an official data export file (such as a .zip archive from Instagram, TikTok,
+            X, Facebook, or Reddit). These archives contain your historical posts, comments, captions, dates, and media that you
+            chose to export from the platform.
+          </p>
+
+          <h3>Technical Telemetry</h3>
+          <p>
+            We collect basic, privacy-preserving technical logs (such as IP address, browser type, and response latency) strictly
+            to prevent abuse, rate-limit waitlist spam, and maintain the security and availability of our edge infrastructure.
+          </p>
+        </section>
+
+        <section>
+          <h2>3. How We Process Social Archives</h2>
+          <p>
+            When you submit a data export zip, our automated audit engine parses the text and metadata in an isolated, ephemeral
+            processing environment:
+          </p>
+          <ul>
+            <li><strong>Content Categorization:</strong> Text is evaluated against reputational risk categories (such as alcohol, drugs, profanity, toxicity, or extreme hot takes).</li>
+            <li><strong>Report Generation:</strong> A prioritized review dashboard is compiled for your browser session, displaying flagged items, timestamps, and direct URLs or context to help you locate them.</li>
+            <li><strong>Strict Read-Only Isolation:</strong> The audit is generated exclusively for your review. Ghostpost has no ability to delete or modify posts on your live social accounts; you remain in total control of any cleanup action.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>4. Data Retention & Immediate Purge</h2>
+          <p>
+            We believe you should never leave data where it doesn’t belong:
+          </p>
+          <ul>
+            <li><strong>User-Initiated Purge:</strong> You can permanently purge your scan results, parsed data, and uploaded files at any time directly from your dashboard. Once confirmed, deletion from our active systems is immediate.</li>
+            <li><strong>Automatic Expiration:</strong> Uploaded archive files are automatically deleted after your audit session completes or expires, unless you explicitly request temporary cloud retention for ongoing review.</li>
+            <li><strong>Waitlist Removal:</strong> You can remove yourself from the waitlist at any time by clicking unsubscribe in any notification or by emailing <a href="mailto:privacy@getghostpost.com">privacy@getghostpost.com</a>.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>5. Subprocessors & Infrastructure</h2>
+          <p>
+            We partner with industry-leading infrastructure providers who are contractually bound by rigorous data protection
+            agreements:
+          </p>
+          <ul>
+            <li><strong>Cloudflare, Inc.:</strong> Edge hosting, DDoS mitigation, and serverless compute (Workers & D1 database). All traffic is encrypted in transit via TLS 1.3.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>6. Security Practices</h2>
+          <p>We maintain comprehensive technical safeguards to protect your personal information:</p>
+          <ul>
+            <li>All connections to Ghostpost are encrypted using modern HTTPS (TLS 1.3) with HSTS enabled.</li>
+            <li>Archive processing runs in isolated sandbox environments with strict access controls.</li>
+            <li>We adhere to the principle of least privilege: our staff never accesses or reads your private social archives except upon your explicit request for technical support.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>7. Children's Privacy</h2>
+          <p>
+            Ghostpost is intended for high school, college, and adult users preparing for higher education admissions and
+            employment. We do not knowingly collect personal information from children under the age of 13. If you believe a child
+            under 13 has provided personal data to Ghostpost, please contact us immediately at <a href="mailto:privacy@getghostpost.com">privacy@getghostpost.com</a>, and we will promptly delete the information.
+          </p>
+        </section>
+
+        <section>
+          <h2>8. California (CCPA/CPRA) & International Privacy Rights</h2>
+          <p>
+            Regardless of where you live, Ghostpost affords you the highest privacy standards:
+          </p>
+          <ul>
+            <li><strong>Right to Know & Access:</strong> You have the right to request a copy of the personal information we hold about you.</li>
+            <li><strong>Right to Delete:</strong> You have the right to request the permanent deletion of your personal data.</li>
+            <li><strong>No Sale or Sharing:</strong> We do not sell your personal information and do not share it for cross-context behavioral advertising.</li>
+          </ul>
+          <p>
+            To exercise any of these rights, simply email <a href="mailto:privacy@getghostpost.com">privacy@getghostpost.com</a>. We will verify and process your request within 30 days without discrimination.
+          </p>
+        </section>
+
+        <section>
+          <h2>9. Security Vulnerability Disclosure</h2>
+          <p>
+            We welcome vulnerability reports from security researchers and developers. If you discover a vulnerability or security
+            issue affecting Ghostpost, please disclose it responsibly by emailing <a href="mailto:privacy@getghostpost.com">privacy@getghostpost.com</a> with reproducible steps. We appreciate your assistance in keeping our users safe.
+          </p>
+        </section>
+
+        <section>
+          <h2>10. Changes & Contact</h2>
+          <p>
+            We may update this Privacy Policy from time to time. When changes are made, we will update the "Last updated" date
+            at the top of this page and notify waitlist members of any material revisions.
+          </p>
+          <p>For any questions or concerns regarding our privacy practices, please contact us at:</p>
+          <ul class="prose__contact-list">
+            <li><strong>Privacy Officer:</strong> <a href="mailto:privacy@getghostpost.com">privacy@getghostpost.com</a></li>
+            <li><strong>General Inquiries:</strong> <a href="mailto:hello@getghostpost.com">hello@getghostpost.com</a></li>
+          </ul>
+        </section>
+      </article>
+    </div>
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  .legal-page {
+    position: relative;
+    padding: 144px 0 96px;
+    background:
+      radial-gradient(circle at 50% 0%, rgb(167 139 250 / 0.14), transparent 600px),
+      var(--tint);
+  }
+  .legal-page__inner {
+    max-width: 800px;
+  }
+
+  .prose {
+    color: rgb(23 23 23 / 0.85);
+    font-size: 16px;
+    line-height: 1.75;
+  }
+  .prose__header {
+    margin-bottom: 40px;
+  }
+  .prose__badge {
+    display: inline-grid;
+    place-items: center;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .prose__title {
+    font-size: clamp(36px, 5.5vw, 56px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    color: var(--fg);
+    margin-bottom: 12px;
+  }
+  .prose__date {
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .prose__callout {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px 28px;
+    box-shadow: var(--shadow-card);
+    margin-bottom: 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .prose__highlight {
+    font-size: 17px;
+    font-weight: 650;
+    line-height: 1.55;
+    color: var(--fg);
+  }
+
+  .prose section {
+    margin-top: 40px;
+  }
+  .prose h2 {
+    font-size: 24px;
+    font-weight: 750;
+    letter-spacing: -0.025em;
+    color: var(--fg);
+    margin-bottom: 16px;
+  }
+  .prose h3 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--fg);
+    margin-top: 24px;
+    margin-bottom: 8px;
+  }
+  .prose p {
+    margin-bottom: 16px;
+  }
+  .prose ul {
+    margin: 16px 0 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    list-style-type: disc;
+  }
+  .prose li {
+    padding-left: 4px;
+  }
+  .prose a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.2s ease;
+  }
+  .prose a:hover {
+    color: var(--accent-deep);
+  }
+  .prose__contact-list {
+    list-style: none;
+    padding-left: 0;
+    margin-left: 0;
+  }
+
+  @media (max-width: 767px) {
+    .legal-page { padding: 120px 0 72px; }
+    .prose h2 { font-size: 20px; }
+  }
+</style>

@@ -1,0 +1,250 @@
+---
+import { Image } from 'astro:assets';
+import logoGhost from '@app-assets/images/logo-trim.png';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import Icon from '../components/Icon.astro';
+import Base from '../layouts/Base.astro';
+import { SITE } from '../lib/site';
+
+const channels = [
+  {
+    title: 'general & support',
+    desc: 'questions about social archive scans, waitlist status, or your account.',
+    email: 'hello@getghostpost.com',
+    action: 'mailto:hello@getghostpost.com',
+    label: 'email support',
+    icon: 'house',
+  },
+  {
+    title: 'privacy & security',
+    desc: 'inquiries about our zero-password data handling or vulnerability disclosures.',
+    email: 'privacy@getghostpost.com',
+    action: 'mailto:privacy@getghostpost.com',
+    label: 'email privacy team',
+    icon: 'shield-check',
+  },
+  {
+    title: 'press & partnerships',
+    desc: 'media inquiries, college admissions counselors, and athletic recruitment.',
+    email: 'press@getghostpost.com',
+    action: 'mailto:press@getghostpost.com',
+    label: 'email press',
+    icon: 'sparkles',
+  },
+] as const;
+---
+
+<Base
+  title={`Contact us · ${SITE.name}`}
+  description="Get in touch with the Ghostpost team. Reach out for help with social archives, privacy questions, press, or early access."
+  path="/contact"
+>
+  <Header />
+
+  <main class="contact-page">
+    <div class="container contact-page__inner">
+      <div class="contact-page__hero">
+        <span class="contact-page__avatar">
+          <Image src={logoGhost} alt="" width={64} densities={[1, 2]} />
+        </span>
+        <h1 class="contact-page__title">get in touch</h1>
+        <p class="contact-page__lede">
+          ghostpost helps you clean your slate. reach out to the team directly and we’ll get back to you.
+        </p>
+
+        <div class="contact-page__primary">
+          <a class="pill pill--primary pill--lg" href="mailto:hello@getghostpost.com">
+            hello@getghostpost.com
+          </a>
+          <span class="contact-page__note">we typically reply within 24 hours.</span>
+        </div>
+      </div>
+
+      <div class="contact-grid">
+        {channels.map((ch) => (
+          <div class="contact-card">
+            <div class="contact-card__icon">
+              <Icon name={ch.icon} size={20} strokeWidth={2.2} />
+            </div>
+            <h2 class="contact-card__title">{ch.title}</h2>
+            <p class="contact-card__desc">{ch.desc}</p>
+            <a class="contact-card__link" href={ch.action}>
+              {ch.email}
+              <Icon name="arrow-right" size={14} strokeWidth={2.4} />
+            </a>
+          </div>
+        ))}
+      </div>
+
+      <div class="contact-page__early">
+        <p>looking to clean up your social media before admissions or recruiting?</p>
+        <a class="pill pill--dark pill--md" href="/#join">join the waitlist</a>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  .contact-page {
+    position: relative;
+    padding: 144px 0 96px;
+    background:
+      radial-gradient(circle at 50% 0%, rgb(167 139 250 / 0.18), transparent 600px),
+      var(--tint);
+  }
+  .contact-page__inner {
+    max-width: 860px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .contact-page__hero {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 64px;
+  }
+  .contact-page__avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 999px;
+    background: var(--grad-avatar);
+    display: grid;
+    place-items: center;
+    box-shadow: inset 0 0 0 1px rgb(127 74 224 / 0.25), var(--shadow-card);
+    margin-bottom: 24px;
+  }
+  .contact-page__avatar img {
+    width: 36px;
+    height: auto;
+  }
+  .contact-page__title {
+    font-size: clamp(38px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    color: var(--fg);
+    text-wrap: balance;
+  }
+  .contact-page__lede {
+    margin-top: 18px;
+    max-width: 480px;
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--muted);
+    text-wrap: pretty;
+  }
+
+  .contact-page__primary {
+    margin-top: 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .contact-page__note {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .contact-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .contact-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .contact-card:hover {
+    transform: translateY(-2px);
+    border-color: rgb(127 74 224 / 0.3);
+    box-shadow: 0 12px 28px rgb(61 36 101 / 0.08);
+  }
+  .contact-card__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    display: grid;
+    place-items: center;
+    margin-bottom: 20px;
+  }
+  .contact-card__title {
+    font-size: 18px;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    color: var(--fg);
+    margin-bottom: 8px;
+  }
+  .contact-card__desc {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--muted);
+    flex-grow: 1;
+    margin-bottom: 20px;
+    text-wrap: pretty;
+  }
+  .contact-card__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    word-break: break-all;
+    transition: gap 0.2s ease, color 0.2s ease;
+  }
+  .contact-card__link:hover {
+    color: var(--accent-deep);
+    gap: 9px;
+  }
+
+  .contact-page__early {
+    margin-top: 64px;
+    width: 100%;
+    padding: 36px 28px;
+    border-radius: 24px;
+    background: var(--grad-welcome);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .contact-page__early p {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--fg);
+    max-width: 460px;
+  }
+
+  @media (max-width: 900px) {
+    .contact-grid {
+      grid-template-columns: 1fr;
+      max-width: 480px;
+    }
+    .contact-page__early {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+  @media (max-width: 767px) {
+    .contact-page { padding: 120px 0 72px; }
+    .contact-page__hero { margin-bottom: 40px; }
+  }
+</style>
