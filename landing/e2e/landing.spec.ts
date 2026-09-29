@@ -11,7 +11,9 @@ import { expect, test, type Page } from '@playwright/test';
  * - Waitlist: CTAs not leading to the form, bad input accepted, good input not persisted/normalized,
  *   duplicates erroring or leaking membership, no-JS posts dead-ending, spam not rate limited.
  * - Mobile: horizontal overflow or the phone not fitting the viewport.
- * Artifacts: screenshots + a video of every test, and the persisted waitlist rows, under e2e/artifacts/.
+ * - Discoverability: robots/sitemap/llms.txt/manifest missing or pointing at the wrong origin, social card
+ *   image broken or the wrong size, utility pages indexable, invalid JSON-LD.
+ * Artifacts: screenshots + a video of every test, the persisted waitlist rows, and the discovery files, under e2e/artifacts/.
  */
 
 /**
@@ -76,6 +78,54 @@ test('edge headers: hashed assets are immutable, HTML revalidates, unknown paths
   const missing = await request.get('/definitely-not-a-page');
   expect(missing.status()).toBe(404);
   expect(await missing.text()).toContain('this page ghosted you.');
+});
+
+test('discoverability: robots, sitemap, llms.txt, manifest, social card, and structured data', async ({ page, request }) => {
+  const origin = 'https://getghostpost.com';
+  const fetchText = async (path: string, type: string) => {
+    const response = await request.get(path);
+    expect(response.status(), path).toBe(200);
+    expect(response.headers()['content-type'], path).toContain(type);
+    const body = await response.text();
+    writeFileSync(`e2e/artifacts/${test.info().project.name}-${path.slice(1)}`, body);
+    return body;
+  };
+
+  expect(await fetchText('/robots.txt', 'text/plain')).toContain(`Sitemap: ${origin}/sitemap.xml`);
+  const sitemap = await fetchText('/sitemap.xml', 'xml');
+  expect([...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1])).toEqual([`${origin}/`]);
+  const llms = await fetchText('/llms.txt', 'text/');
+  expect(llms).toMatch(/^# Ghostpost\n\n> .+\n/);
+  expect(llms).toContain(`](${origin}/)`);
+  const manifest = JSON.parse(await fetchText('/site.webmanifest', ''));
+  for (const icon of manifest.icons) expect((await request.get(icon.src)).status(), icon.src).toBe(200);
+
+  await page.goto('/');
+  const meta = (selector: string) => page.locator(selector).first().getAttribute('content');
+  const title = await page.title();
+  expect(title.length).toBeLessThanOrEqual(60);
+  expect((await meta('meta[name="description"]'))!.length).toBeLessThanOrEqual(160);
+  expect(await meta('meta[property="og:title"]')).toBe(title);
+  expect(await meta('meta[name="twitter:card"]')).toBe('summary_large_image');
+  expect(await meta('meta[name="robots"]')).not.toContain('noindex');
+  expect(await page.locator('link[rel="canonical"]').getAttribute('href')).toBe(`${origin}/`);
+
+  // The card URL is absolute on the production origin; fetch the same path locally and check its real size.
+  const cardUrl = new URL((await meta('meta[property="og:image"]'))!);
+  expect(cardUrl.origin).toBe(origin);
+  const card = await request.get(cardUrl.pathname);
+  expect(card.status()).toBe(200);
+  const png = await card.body();
+  expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
+  expect(await meta('meta[property="og:image:width"]')).toBe('1200');
+
+  const graph = JSON.parse((await page.locator('script[type="application/ld+json"]').textContent())!)['@graph'];
+  expect(graph.map((node: { '@type': string }) => node['@type'])).toEqual(['Organization', 'WebSite', 'MobileApplication']);
+
+  for (const path of ['/404', '/joined/', '/oops/']) {
+    await page.goto(path);
+    expect(await meta('meta[name="robots"]'), path).toBe('noindex');
+  }
 });
 
 test('page renders, CTAs lead to the waitlist, demo autoplays scan → review → clean up', async ({ page }) => {

@@ -13,6 +13,17 @@ Other notes:
 - The phone demo (`src/components/PhoneDemo.astro` + `src/demo/`) is a live HTML copy of the app's scan, home, and flag-detail screens. It plays on its own while it's on screen, and the visitor takes over on their first tap.
 - Page spacing follows orchid.ai: 120px gutters, a 1200px column, 64px between text and media, 176px padding around the features band, and 80px between rows.
 
+## Search, social, and AI discoverability
+
+`src/lib/site.ts` holds the title, description, and share-card details, plus `INDEXABLE_PATHS`. Everything below reads from it:
+
+- **Head tags** (`src/layouts/Base.astro`): canonical URL, `robots` meta (utility pages pass `noindex`), Open Graph, and Twitter `summary_large_image` tags.
+- **Social card**: `public/og.png` (1200×630). It's rendered by `bun run og` (`scripts/og-card.ts`) with the site font and mascot; rerun it and commit the PNG when the copy or branding changes.
+- **Structured data**: the home page embeds JSON-LD for `Organization`, `WebSite`, and `MobileApplication`.
+- **Generated files** (`src/pages/*.ts`, prerendered at build time): `/robots.txt` (points at the sitemap, blocks `/api/`), `/sitemap.xml` (`INDEXABLE_PATHS` only), `/llms.txt` (a Markdown summary for LLM agents, per [llmstxt.org](https://llmstxt.org/)), and `/site.webmanifest`.
+
+When you add a page that should be indexed, add it to `INDEXABLE_PATHS` and to the link list in `src/pages/llms.txt.ts`.
+
 ## Waitlist
 
 `src/components/WaitlistForm.astro` appears twice: in the hero and in the closing `#join` section. Every "join the waitlist" link points at `#join`.
@@ -101,11 +112,13 @@ The test suite builds the site, migrates the local D1 database, serves everythin
   - the rate limit
   - the no-JavaScript fallback
 - that there's no horizontal overflow
+- discoverability: robots, sitemap, llms.txt, manifest, the social card size, JSON-LD, and `noindex` on utility pages
 
 Artifacts are written to `e2e/artifacts/`:
 
 - screenshots
 - `*-waitlist-rows.json`, the rows read back from D1
+- `*-robots.txt`, `*-sitemap.xml`, `*-llms.txt`, `*-site.webmanifest`, the discovery files as served
 - a video of each test, under `results/`
 - an HTML report, under `report/`
 

@@ -16,7 +16,7 @@ const { id, eyebrow, title, body, bullets, reverse = false } = Astro.props;
 <article class:list={['feature', { 'feature--reverse': reverse }]} id={id}>
   <div class="feature__copy" data-reveal>
     <p class="feature__eyebrow">{eyebrow}</p>
-    <h3 class="feature__title">{title}</h3>
+    <h2 class="feature__title">{title}</h2>
     <p class="feature__body">{body}</p>
     <ul class="feature__list">
       {bullets.map((bullet) => (

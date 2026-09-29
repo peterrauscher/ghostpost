@@ -1,8 +1,8 @@
 ---
 import { getImage } from 'astro:assets';
-import { PUBLIC_SITE_URL } from 'astro:env/client';
 import fontUrl from '../fonts/sn-pro-latin.woff2?url';
 import appIcon from '@app-assets/images/logo.png';
+import { absoluteUrl, SITE } from '../lib/site';
 import '../styles/global.css';
 
 interface Props {
@@ -14,9 +14,8 @@ interface Props {
 }
 
 const { title, description, path = '/', noindex = false } = Astro.props;
-const canonical = new URL(path, PUBLIC_SITE_URL).href;
-const shareImage = await getImage({ src: appIcon, width: 512, height: 512, format: 'png' });
-const shareImageUrl = new URL(shareImage.src, PUBLIC_SITE_URL).href;
+const canonical = absoluteUrl(path);
+const shareImageUrl = absoluteUrl(SITE.shareImage.path);
 const faviconImage = await getImage({ src: appIcon, width: 48, height: 48, format: 'png' });
 const touchIcon = await getImage({ src: appIcon, width: 180, height: 180, format: 'png' });
 ---
@@ -29,20 +28,33 @@ const touchIcon = await getImage({ src: appIcon, width: 180, height: 180, format
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    {noindex && <meta name="robots" content="noindex" />}
-    <meta name="theme-color" content="#F7F1FF" />
+    <meta name="robots" content={noindex ? 'noindex' : 'index, follow, max-image-preview:large'} />
+    <meta name="theme-color" content={SITE.themeColor} />
     <link rel="icon" type="image/png" sizes="48x48" href={faviconImage.src} />
     <link rel="apple-touch-icon" href={touchIcon.src} />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+    <link rel="alternate" type="text/markdown" title="llms.txt" href="/llms.txt" />
     <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin />
 
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Ghostpost" />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={shareImageUrl} />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content={String(SITE.shareImage.width)} />
+    <meta property="og:image:height" content={String(SITE.shareImage.height)} />
+    <meta property="og:image:alt" content={SITE.shareImage.alt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={shareImageUrl} />
+    <meta name="twitter:image:alt" content={SITE.shareImage.alt} />
 
+    <slot name="head" />
     <script is:inline>document.documentElement.classList.add('js');</script>
   </head>
   <body>

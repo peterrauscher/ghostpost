@@ -10,7 +10,8 @@
     "preview": "astro build && bun run db:migrate:local && wrangler dev --port 8788",
     "deploy": "wrangler d1 migrations apply ghostpost-waitlist --remote && astro build && wrangler deploy",
     "types": "wrangler types worker/worker-configuration.d.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "og": "bun scripts/og-card.ts"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",

@@ -13,12 +13,51 @@ import PrivacyArt from '../components/media/PrivacyArt.astro';
 import RiskArt from '../components/media/RiskArt.astro';
 import ScanArt from '../components/media/ScanArt.astro';
 import Base from '../layouts/Base.astro';
+import { absoluteUrl, SITE } from '../lib/site';
+
+// Structured data for search rich results and answer engines; mirrors the visible page copy.
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': absoluteUrl('/#organization'),
+      name: SITE.name,
+      url: absoluteUrl('/'),
+      logo: absoluteUrl(SITE.shareImage.path),
+    },
+    {
+      '@type': 'WebSite',
+      '@id': absoluteUrl('/#website'),
+      name: SITE.name,
+      url: absoluteUrl('/'),
+      description: SITE.description,
+      publisher: { '@id': absoluteUrl('/#organization') },
+      inLanguage: 'en-US',
+    },
+    {
+      '@type': 'MobileApplication',
+      name: SITE.name,
+      url: absoluteUrl('/'),
+      description: SITE.description,
+      image: absoluteUrl(SITE.shareImage.path),
+      applicationCategory: 'UtilitiesApplication',
+      operatingSystem: 'iOS, Android',
+      publisher: { '@id': absoluteUrl('/#organization') },
+      featureList: [
+        'Upload data exports from Instagram, TikTok, X, Facebook, and Reddit, with no social passwords',
+        'Scan every post for content admissions officers, recruiters, and rush chairs notice',
+        'One overall risk level with flagged posts sorted from high to low risk',
+        'Delete, archive, or keep each flagged post',
+        'Never posts, edits, or deletes anything on your live accounts',
+      ],
+    },
+  ],
+};
 ---
 
-<Base
-  title="Ghostpost · clean up your social media before it counts"
-  description="Ghostpost scans your Instagram, TikTok, X, Facebook, and Reddit history and helps you find and clean up posts that could hold you back with admissions, recruiters, or rush."
->
+<Base title={SITE.title} description={SITE.description}>
+  <script slot="head" type="application/ld+json" is:inline set:html={JSON.stringify(structuredData)} />
   <Header />
   <main>
     <Hero />
