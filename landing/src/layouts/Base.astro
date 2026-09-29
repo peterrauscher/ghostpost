@@ -1,7 +1,5 @@
 ---
-import { getImage } from 'astro:assets';
 import fontUrl from '../fonts/sn-pro-latin.woff2?url';
-import appIcon from '@app-assets/images/logo.png';
 import { absoluteUrl, SITE } from '../lib/site';
 import '../styles/global.css';
 
@@ -16,8 +14,6 @@ interface Props {
 const { title, description, path = '/', noindex = false } = Astro.props;
 const canonical = absoluteUrl(path);
 const shareImageUrl = absoluteUrl(SITE.shareImage.path);
-const faviconImage = await getImage({ src: appIcon, width: 48, height: 48, format: 'png' });
-const touchIcon = await getImage({ src: appIcon, width: 180, height: 180, format: 'png' });
 ---
 
 <!doctype html>
@@ -30,8 +26,9 @@ const touchIcon = await getImage({ src: appIcon, width: 180, height: 180, format
     <link rel="canonical" href={canonical} />
     <meta name="robots" content={noindex ? 'noindex' : 'index, follow, max-image-preview:large'} />
     <meta name="theme-color" content={SITE.themeColor} />
-    <link rel="icon" type="image/png" sizes="48x48" href={faviconImage.src} />
-    <link rel="apple-touch-icon" href={touchIcon.src} />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/icons/icon-48.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
     <link rel="alternate" type="text/markdown" title="llms.txt" href="/llms.txt" />
