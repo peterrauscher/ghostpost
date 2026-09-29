@@ -11,7 +11,9 @@
     "deploy": "wrangler d1 migrations apply ghostpost-waitlist --remote && astro build && wrangler deploy",
     "types": "wrangler types worker/worker-configuration.d.ts",
     "test:e2e": "playwright test",
-    "og": "bun scripts/og-card.ts"
+    "og": "bun scripts/og-card.ts",
+    "waitlist": "bun scripts/waitlist.ts",
+    "waitlist:csv": "bun scripts/waitlist.ts --csv"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
