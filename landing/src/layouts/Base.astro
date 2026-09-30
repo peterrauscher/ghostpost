@@ -9,15 +9,20 @@ interface Props {
   path?: string;
   /** Utility pages (404, waitlist confirmations) stay out of search results. */
   noindex?: boolean;
+  /**
+   * Color of the strip the browser paints above the page for the status bar on notched phones.
+   * Must match the top of the page, so that strip never shows up as a band. Any CSS color.
+   */
+  canvas?: string;
 }
 
-const { title, description, path = '/', noindex = false } = Astro.props;
+const { title, description, path = '/', noindex = false, canvas } = Astro.props;
 const canonical = absoluteUrl(path);
 const shareImageUrl = absoluteUrl(SITE.shareImage.path);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" style={canvas ? `--page-canvas:${canvas}` : undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />

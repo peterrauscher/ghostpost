@@ -17,6 +17,11 @@
   --accent-deep: #5925be;
   --accent-soft: #ede4ff;
   --tint: #fafafc;
+  /* Painted on the root element, so it fills the strip the browser keeps above the page for the
+     status bar on notched phones. It has to match the top of the page or that strip reads as a
+     white band. Pages that open with the welcome gradient set it to --welcome-top. */
+  --page-canvas: var(--tint);
+  --welcome-top: #f7f1ff;
   --black: #141414;
   --risk-high: #e85a6b;
   --risk-high-text: #b83245;
@@ -33,7 +38,7 @@
   --dot-inactive: #d5c5f0;
   --progress-track: #ebe1fa;
 
-  --grad-welcome: linear-gradient(180deg, #f7f1ff 0%, #f0e6ff 55%, #ede4ff 100%);
+  --grad-welcome: linear-gradient(180deg, var(--welcome-top) 0%, #f0e6ff 55%, #ede4ff 100%);
   --grad-button: linear-gradient(135deg, #7f4ae0 0%, #5925be 100%);
   --grad-audit: linear-gradient(135deg, #a78bfa 0%, #8b6ae8 50%, #7c5cf0 100%);
   --grad-avatar: linear-gradient(180deg, #ede4ff 0%, #d4c4ff 100%);
@@ -71,6 +76,7 @@ html {
   text-size-adjust: 100%;
   scroll-behavior: smooth;
   scroll-padding-top: 88px;
+  background: var(--page-canvas);
 }
 
 body {

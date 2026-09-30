@@ -10,7 +10,8 @@ import { expect, test, type Page } from '@playwright/test';
  * - Takeover: a visitor tap mid-scan leaves the phone stuck, or actions don't update count/risk.
  * - Waitlist: CTAs not leading to the form, bad input accepted, good input not persisted/normalized,
  *   duplicates erroring or leaking membership, no-JS posts dead-ending, spam not rate limited.
- * - Mobile: horizontal overflow or the phone not fitting the viewport.
+ * - Mobile: horizontal overflow, the phone not fitting the viewport, or a white band above the page on
+ *   notched phones.
  * - Discoverability: robots/sitemap/llms.txt/manifest missing or pointing at the wrong origin, social card
  *   image broken or the wrong size, utility pages indexable, invalid JSON-LD.
  * Artifacts: screenshots + a video of every test, the persisted waitlist rows, and the discovery files, under e2e/artifacts/.
@@ -300,4 +301,21 @@ test('layout fits the viewport without horizontal scroll', async ({ page }) => {
   const phone = await page.locator('.d-phone').boundingBox();
   expect(phone!.x).toBeGreaterThanOrEqual(0);
   expect(phone!.x + phone!.width).toBeLessThanOrEqual(innerWidth);
+});
+
+test('root canvas matches the top of the page, so notched phones get no white band', async ({ page }) => {
+  // iOS keeps a strip above the page for the status bar and fills it with the root element's
+  // background. If that color doesn't match the top of the page, the strip reads as a white band.
+  for (const [path, selector] of [['/', '.hero'], ['/joined/', '.notice']]) {
+    await page.goto(path);
+    const { canvas, topOfPage } = await page.evaluate((sel) => {
+      const top = getComputedStyle(document.querySelector(sel)!);
+      return {
+        canvas: getComputedStyle(document.documentElement).backgroundColor,
+        topOfPage: top.backgroundImage.match(/rgba?\([^)]+\)/)?.[0] ?? top.backgroundColor,
+      };
+    }, selector);
+    // Colors are compared by their channels so a different color syntax on either side can't hide a mismatch.
+    expect(canvas.match(/[\d.]+/g), `${path} root canvas`).toEqual(topOfPage.match(/[\d.]+/g));
+  }
 });

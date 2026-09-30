@@ -15,7 +15,7 @@ interface Props {
 const { title, description, path, heading, body, action } = Astro.props;
 ---
 
-<Base title={title} description={description} path={path} noindex>
+<Base title={title} description={description} path={path} noindex canvas="var(--welcome-top)">
   <main class="notice">
     <Image class="bob" src={logoGhost} alt="" width={120} densities={[1, 2]} loading="eager" />
     <h1>{heading}</h1>

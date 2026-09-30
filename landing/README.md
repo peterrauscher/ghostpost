@@ -12,6 +12,7 @@ Other notes:
 - Mascots and platform icons are imported from `../app/assets`, so the app stays the single source for them. Design tokens in `src/styles/global.css` copy `app/src/theme/tokens.ts`.
 - The phone demo (`src/components/PhoneDemo.astro` + `src/demo/`) is a live HTML copy of the app's scan, home, and flag-detail screens. It plays on its own while it's on screen, and the visitor takes over on their first tap.
 - Page spacing follows orchid.ai: 120px gutters, a 1200px column, 64px between text and media, 176px padding around the features band, and 80px between rows.
+- Notched phones: the browser keeps a strip above the page for the status bar and fills it with the root element's background (`--page-canvas`, painted on `html`). Pages that open with the welcome gradient pass `canvas="var(--welcome-top)"` to `Base.astro` so that strip matches the top of the page instead of showing up as a white band.
 
 ## Search, social, and AI discoverability
 
