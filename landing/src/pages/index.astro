@@ -61,8 +61,8 @@ const structuredData = {
   <Header />
   <main>
     <Hero />
-    <Statement />
-
+    <div class="landing-body">
+      <Statement />
     <section class="features" id="how" aria-label="How Ghostpost works">
       <div class="container features__stack">
         <FeatureRow
@@ -137,6 +137,7 @@ const structuredData = {
 
     <Receipts />
     <FinalCta />
+    </div>
   </main>
   <Footer />
 </Base>
@@ -157,6 +158,9 @@ const structuredData = {
 </script>
 
 <style>
+  .landing-body {
+    background: var(--tint);
+  }
   /* Orchid feature band: 176px vertical padding, 80px between rows and dividers. */
   .features { padding: 176px 0; }
   .features__stack { display: flex; flex-direction: column; gap: 80px; }

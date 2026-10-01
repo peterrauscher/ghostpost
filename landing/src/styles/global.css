@@ -17,9 +17,9 @@
   --accent-deep: #5925be;
   --accent-soft: #ede4ff;
   --tint: #fafafc;
-  /* Painted on the root element, so it fills the strip the browser keeps above the page for the
-     status bar on notched phones. It has to match the top of the page or that strip reads as a
-     white band. Pages that open with the welcome gradient set it to --welcome-top. */
+  /* Painted on the root and body elements, so it fills the strip the browser keeps above the
+     page for the status bar on notched phones. It has to match the top of the page or that strip
+     reads as a white band. Pages that open with the welcome gradient set it to --welcome-top. */
   --page-canvas: var(--tint);
   --welcome-top: #f7f1ff;
   --black: #141414;
@@ -81,7 +81,7 @@ html {
 
 body {
   margin: 0;
-  background: var(--tint);
+  background: var(--page-canvas);
   color: var(--fg);
   font-family: var(--font);
   font-size: 16px;
@@ -90,7 +90,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overflow-x: clip;
 }
-
 img, svg { display: block; max-width: 100%; }
 img { height: auto; }
 a { color: inherit; text-decoration: none; }

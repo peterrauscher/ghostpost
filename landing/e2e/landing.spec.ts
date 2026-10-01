@@ -304,18 +304,20 @@ test('layout fits the viewport without horizontal scroll', async ({ page }) => {
 });
 
 test('root canvas matches the top of the page, so notched phones get no white band', async ({ page }) => {
-  // iOS keeps a strip above the page for the status bar and fills it with the root element's
-  // background. If that color doesn't match the top of the page, the strip reads as a white band.
+  // iOS keeps a strip above the page for the status bar and fills it with the body element's
+  // (and root element's) background. If that color doesn't match the top of the page, the strip reads as a white band.
   for (const [path, selector] of [['/', '.hero'], ['/joined/', '.notice']]) {
     await page.goto(path);
-    const { canvas, topOfPage } = await page.evaluate((sel) => {
+    const { canvas, bodyCanvas, topOfPage } = await page.evaluate((sel) => {
       const top = getComputedStyle(document.querySelector(sel)!);
       return {
         canvas: getComputedStyle(document.documentElement).backgroundColor,
+        bodyCanvas: getComputedStyle(document.body).backgroundColor,
         topOfPage: top.backgroundImage.match(/rgba?\([^)]+\)/)?.[0] ?? top.backgroundColor,
       };
     }, selector);
     // Colors are compared by their channels so a different color syntax on either side can't hide a mismatch.
     expect(canvas.match(/[\d.]+/g), `${path} root canvas`).toEqual(topOfPage.match(/[\d.]+/g));
+    expect(bodyCanvas.match(/[\d.]+/g), `${path} body canvas`).toEqual(topOfPage.match(/[\d.]+/g));
   }
 });
