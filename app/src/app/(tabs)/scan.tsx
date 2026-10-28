@@ -8,7 +8,7 @@ import { ArchivePicker } from '@/components/ArchivePicker';
 import { useOnboardingQuery, useStartScanMutation } from '@/features/hooks';
 import { useLifecycle } from '@/providers/lifecycle-provider';
 import { api } from '@/services/api';
-import { bodyFromPickerAsset, postArchiveBytes } from '@/services/api/archive-upload';
+import { bodyFromPickerAsset, putArchiveBytes } from '@/services/api/archive-upload';
 import type { PlatformId } from '@/domain/types';
 import { colors } from '@/theme';
 
@@ -26,7 +26,7 @@ export default function ScanTabScreen() {
     try {
       const reserve = await api.reserveArchiveImport({ platform: chosen, contentLength: asset.size, contentType: asset.mimeType || 'application/zip' }, Crypto.randomUUID());
       setMessage('uploading directly to private storage…');
-      await postArchiveBytes(reserve.upload, bodyFromPickerAsset(asset), asset.name);
+      await putArchiveBytes(reserve.upload, bodyFromPickerAsset(asset));
       setMessage('verifying and processing archive…');
       await api.completeArchiveImport(reserve.id, Crypto.randomUUID());
       await lifecycle.refetch();

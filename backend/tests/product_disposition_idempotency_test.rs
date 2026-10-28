@@ -1,4 +1,4 @@
-//! Plan 006: duplicate Idempotency-Key on review-actions ⇒ same 200; one audit row.
+//! Duplicate Idempotency-Key on review-actions ⇒ same 200; one audit row.
 mod common;
 
 use axum::http::{Method, StatusCode};

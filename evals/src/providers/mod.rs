@@ -1,10 +1,12 @@
-//! Eval LLM providers: stub, replay, optional deepseek.
+//! Eval LLM providers: stub, replay, optional live deepseek and jev.
 
 mod deepseek;
+mod jev;
 mod replay;
 mod stub;
 
 pub use deepseek::DeepseekProvider;
+pub use jev::JevProvider;
 pub use replay::ReplayFixtureProvider;
 pub use stub::StubDeterministicProvider;
 
@@ -31,6 +33,8 @@ pub struct CompletionResponse {
     pub model_id: String,
     pub provider: &'static str,
     pub http_calls: u32,
+    /// Provider-computed cost; `None` uses the DeepSeek model manifest pricing.
+    pub cost_usd: Option<f64>,
 }
 
 #[async_trait]
@@ -46,7 +50,8 @@ pub fn build_provider(
     match name {
         "stub-deterministic" => Ok(Box::new(StubDeterministicProvider::new(root)?)),
         "replay-fixture" => Ok(Box::new(ReplayFixtureProvider::new(root)?)),
-        "deepseek-v4-flash" => Ok(Box::new(DeepseekProvider::new(root)?)),
+        "deepseek-flash" => Ok(Box::new(DeepseekProvider::new(root)?)),
+        "jev" => Ok(Box::new(JevProvider::new(root)?)),
         other => anyhow::bail!("unknown provider: {other}"),
     }
 }

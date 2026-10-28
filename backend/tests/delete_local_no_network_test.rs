@@ -1,4 +1,4 @@
-//! Plan 006: delete_local succeeds with zero outbound HTTP; content scheduled for purge.
+//! delete_local succeeds with zero outbound HTTP; content scheduled for purge.
 mod common;
 
 use axum::http::{Method, StatusCode};

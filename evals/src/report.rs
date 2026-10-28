@@ -23,6 +23,9 @@ pub struct CaseRecord {
     pub amplified_checked: bool,
     pub amplified_ok: bool,
     pub latency_ms: u64,
+    /// Which expectation checks failed, e.g. `0: risk low < medium`.
+    #[serde(default)]
+    pub mismatches: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,7 +41,6 @@ pub struct SuiteReport {
     pub invariant_violations: u64,
     pub cost_usd: f64,
     pub privacy_findings: u64,
-    pub approval_blocked: bool,
     pub gate_failures: Vec<String>,
     pub metrics: AggregateMetrics,
     pub cases: Vec<CaseRecord>,

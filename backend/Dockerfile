@@ -1,5 +1,5 @@
 # Multi-stage build for ghostpost-backend.
-# Digests recorded at Plan 008 implementation (multi-arch; do not hard-code --platform).
+# Base image digests are pinned (multi-arch; do not hard-code --platform).
 
 # rust:1.88-bookworm (stable bookworm; matches backend MSRV floor via rust-toolchain)
 # Digest: sha256:af306cfa71d987911a781c37b59d7d67d934f49684058f96cf72079c3626bfe0
@@ -14,7 +14,7 @@ WORKDIR /build
 FROM builder-base AS builder
 
 # Full context after .dockerignore: src/, migrations/, Cargo.*, .sqlx/, rust-toolchain,
-# and prompts/ (Plan 005 compile-time embed). No secrets as build args.
+# and prompts/ (compile-time embed). No secrets as build args.
 COPY . .
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
@@ -31,7 +31,8 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl dumb-init \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system --gid 10001 ghostpost \
-    && useradd --system --uid 10001 --gid 10001 --home-dir /nonexistent --shell /usr/sbin/nologin ghostpost
+    && useradd --system --uid 10001 --gid 10001 --home-dir /nonexistent --shell /usr/sbin/nologin ghostpost \
+    && install -d -o 10001 -g 10001 -m 0700 /var/spool/ghostpost
 
 COPY --from=builder --chown=root:root --chmod=0555 /build/ghostpost-backend /usr/local/bin/ghostpost-backend
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ordered local stack start for Ghostpost (Plan 008).
+# Ordered local stack start for Ghostpost.
 # No secrets in this script — copy .env.example → .env first.
 #
 # Device notes (comments only):
@@ -18,7 +18,7 @@ fi
 echo "==> postgres + minio"
 docker compose up -d --wait postgres minio
 
-echo "==> minio-init (bucket + versioning)"
+echo "==> minio-init (private bucket + raw lifecycle)"
 docker compose run --rm minio-init
 
 echo "==> migrate"

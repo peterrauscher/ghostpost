@@ -41,11 +41,3 @@ WHERE deletion_pending_at IS NOT NULL
 
     Ok(idem + pending)
 }
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn retention_module_links() {
-        assert!(true);
-    }
-}

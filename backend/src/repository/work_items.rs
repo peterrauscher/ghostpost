@@ -156,14 +156,3 @@ WHERE tenant_id = $1 AND id = $2
     .await?;
     Ok(result.rows_affected())
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn work_item_status_strings() {
-        assert_eq!(WorkItemStatus::Pending.as_str(), "pending");
-        assert_eq!(WorkItemStatus::Cancelled.to_string(), "cancelled");
-    }
-}

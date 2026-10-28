@@ -88,6 +88,7 @@ impl ScanLlmProvider for ReplayFixtureProvider {
             provider: "replay-fixture",
             provider_request_id: Some(req.request_id.to_string()),
             latency_ms: start.elapsed().as_millis() as u32,
+            cost_usd: 0.0,
         })
     }
 }

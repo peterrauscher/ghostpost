@@ -1,47 +1,54 @@
 /// <reference types="jest" />
 
+import { QueryClient } from '@tanstack/react-query';
 import { identityKeys } from '@/features/query-keys';
 
-describe('identityKeys (Plan 007)', () => {
-  it('scopes the root key with session generation and user id', () => {
-    expect(identityKeys.root(3, 'user-a')).toEqual(['ghostpost', 3, 'user-a']);
-    expect(identityKeys.root(4, 'user-a')).toEqual(['ghostpost', 4, 'user-a']);
-    expect(identityKeys.root(3, 'user-b')).toEqual(['ghostpost', 3, 'user-b']);
-  });
+// Reuse IDs across resources so fixture prefixes cannot hide namespace collisions.
+const resources: [string, (generation: number, userId: string) => readonly unknown[]][] = [
+  ['profile', identityKeys.profile],
+  ['onboarding', identityKeys.onboarding],
+  ['imports', identityKeys.imports],
+  ['first import', (g, u) => identityKeys.import(g, u, 'id-1')],
+  ['second import', (g, u) => identityKeys.import(g, u, 'id-2')],
+  ['current scan', identityKeys.scanCurrent],
+  ['first scan', (g, u) => identityKeys.scan(g, u, 'id-1')],
+  ['second scan', (g, u) => identityKeys.scan(g, u, 'id-2')],
+  ['entitlement', identityKeys.entitlement],
+  ['latest dashboard', identityKeys.dashboard],
+  ['first scan dashboard', (g, u) => identityKeys.dashboard(g, u, 'id-1')],
+  ['second scan dashboard', (g, u) => identityKeys.dashboard(g, u, 'id-2')],
+  ['latest flags', identityKeys.flags],
+  ['latest high-risk flags', (g, u) => identityKeys.flags(g, u, 'high')],
+  ['first scan flags', (g, u) => identityKeys.flags(g, u, 'all', 'id-1')],
+  ['second scan flags', (g, u) => identityKeys.flags(g, u, 'all', 'id-2')],
+  ['first scan high-risk flags', (g, u) => identityKeys.flags(g, u, 'high', 'id-1')],
+  ['first flag', (g, u) => identityKeys.flag(g, u, 'id-1')],
+  ['second flag', (g, u) => identityKeys.flag(g, u, 'id-2')],
+];
 
-  it('nests resource keys under generation + user so cache cannot leak across identities', () => {
-    const genA = 1;
-    const genB = 2;
-    const userA = 'alice';
-    const userB = 'bob';
+describe('identity-scoped query cache', () => {
+  it('keeps resources and filters separate across users and session generations', () => {
+    const client = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } });
+    const identities = [
+      { generation: 1, userId: 'alice' },
+      { generation: 2, userId: 'alice' },
+      { generation: 1, userId: 'bob' },
+    ];
 
-    expect(identityKeys.profile(genA, userA)).toEqual(['ghostpost', genA, userA, 'me']);
-    expect(identityKeys.onboarding(genA, userA)).toEqual(['ghostpost', genA, userA, 'onboarding']);
-    expect(identityKeys.imports(genA, userA)).toEqual(['ghostpost', genA, userA, 'imports']);
-    expect(identityKeys.import(genA, userA, 'imp-1')).toEqual(['ghostpost', genA, userA, 'imports', 'imp-1']);
-    expect(identityKeys.scanCurrent(genA, userA)).toEqual(['ghostpost', genA, userA, 'scan', 'current']);
-    expect(identityKeys.scan(genA, userA, 'scan-9')).toEqual(['ghostpost', genA, userA, 'scan', 'scan-9']);
-    expect(identityKeys.entitlement(genA, userA)).toEqual(['ghostpost', genA, userA, 'entitlement']);
-    expect(identityKeys.dashboard(genA, userA)).toEqual(['ghostpost', genA, userA, 'dashboard', 'latest']);
-    expect(identityKeys.dashboard(genA, userA, 'scan-9')).toEqual(['ghostpost', genA, userA, 'dashboard', 'scan-9']);
-    expect(identityKeys.flags(genA, userA)).toEqual(['ghostpost', genA, userA, 'flags', 'latest', 'all']);
-    expect(identityKeys.flags(genA, userA, 'high', 'scan-9')).toEqual([
-      'ghostpost',
-      genA,
-      userA,
-      'flags',
-      'scan-9',
-      'high',
-    ]);
-    expect(identityKeys.flag(genA, userA, 'flag-1')).toEqual(['ghostpost', genA, userA, 'flag', 'flag-1']);
+    try {
+      for (const { generation, userId } of identities) {
+        for (const [resource, key] of resources) {
+          client.setQueryData(key(generation, userId), { resource, generation, userId });
+        }
+      }
 
-    // Bumping sessionGeneration or swapping userId yields a disjoint prefix.
-    const keyA = identityKeys.profile(genA, userA);
-    const keyGenB = identityKeys.profile(genB, userA);
-    const keyUserB = identityKeys.profile(genA, userB);
-    expect(keyA[1]).not.toEqual(keyGenB[1]);
-    expect(keyA[2]).not.toEqual(keyUserB[2]);
-    expect(identityKeys.root(genA, userA)).not.toEqual(identityKeys.root(genB, userA));
-    expect(identityKeys.root(genA, userA)).not.toEqual(identityKeys.root(genA, userB));
+      for (const { generation, userId } of identities) {
+        for (const [resource, key] of resources) {
+          expect(client.getQueryData(key(generation, userId))).toEqual({ resource, generation, userId });
+        }
+      }
+    } finally {
+      client.clear();
+    }
   });
 });

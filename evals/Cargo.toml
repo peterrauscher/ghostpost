@@ -25,12 +25,12 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
 thiserror = "2"
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "io-util"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "io-util", "time"] }
 unicode-normalization = "0.1"
-# Path dep — sibling owns full impl; evals needs pack/batch_id for parity tests.
 uuid = { version = "1", features = ["serde"] }
 
 scan-text = { path = "../backend/crates/scan-text" }
+scan-jev = { path = "../backend/crates/scan-jev" }
 
 [dev-dependencies]
 tempfile = "3"

@@ -1,4 +1,4 @@
-//! Plan 002 remediation: SHUTDOWN_DEADLINE_SECS must bound serve drain.
+//! SHUTDOWN_DEADLINE_SECS must bound serve drain.
 //!
 //! KernelOps finding: main.rs awaits api/worker joins with no timeout while
 //! Shutdown only stores deadline_secs. This contract test fails until drain is

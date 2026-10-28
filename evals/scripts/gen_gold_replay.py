@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLD = ROOT / "manifests" / "gold"
-REPLAY = ROOT / "manifests" / "replay" / "deepseek-v4-flash"
+REPLAY = ROOT / "manifests" / "replay" / "deepseek-flash"
 PROMPT_SHA = (ROOT / "manifests" / "models" / "scan-v1.prompt.sha256").read_text().strip()
 
 COMING_UP = [
@@ -720,7 +720,7 @@ def main():
             f.write(json.dumps(case, separators=(",", ":")) + "\n")
 
     index = {
-        "model_id": "deepseek-v4-flash",
+        "model_id": "deepseek-flash",
         "prompt_sha256": PROMPT_SHA,
         "cases": replay_cases,
     }

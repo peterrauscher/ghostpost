@@ -3,7 +3,7 @@ use crate::blob::{AccountDeletionMarker, BlobError, BlobStore, ProviderDeletionR
 use crate::error::{AppError, AppResult};
 use chrono::{DateTime, Utc};
 use sha2::{Digest, Sha256};
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
 use std::sync::Arc;
 use subtle::ConstantTimeEq;
 
@@ -32,21 +32,17 @@ pub async fn verify_restore_guard(pool: &PgPool, token: &str) -> AppResult<()> {
     Ok(())
 }
 
-async fn delete_archive_versions(
+async fn delete_archive_objects(
     pool: &PgPool,
     blob: &dyn BlobStore,
     marker: &AccountDeletionMarker,
 ) -> AppResult<()> {
-    let rows = sqlx::query("SELECT raw_storage_key, raw_storage_version_id FROM archive_imports WHERE tenant_id=$1 AND user_id=$2")
+    let keys: Vec<Option<String>> = sqlx::query_scalar("SELECT raw_storage_key FROM archive_imports WHERE tenant_id=$1 AND user_id=$2")
         .bind(marker.tenant_id).bind(marker.user_id).fetch_all(pool).await?;
-    for row in rows {
-        let key: Option<String> = row.try_get("raw_storage_key")?;
-        let version: Option<String> = row.try_get("raw_storage_version_id")?;
-        if let (Some(key), Some(version)) = (key, version) {
-            match blob.delete_version(&key, &version).await {
-                Ok(()) | Err(BlobError::NotFound) => {}
-                Err(error) => return Err(blob_error(error)),
-            }
+    for key in keys.into_iter().flatten() {
+        match blob.delete_object(&key).await {
+            Ok(()) | Err(BlobError::NotFound) => {}
+            Err(error) => return Err(blob_error(error)),
         }
     }
     Ok(())
@@ -96,7 +92,7 @@ pub async fn replay(
             .map_err(blob_error)?;
         }
         if user.is_some() {
-            delete_archive_versions(pool, blob.as_ref(), &marker).await?;
+            delete_archive_objects(pool, blob.as_ref(), &marker).await?;
             store::local_purge_profile(pool, marker.tenant_id, marker.user_id).await?;
             let mut tx = pool.begin().await?;
             sqlx::query("DELETE FROM work_items WHERE tenant_id=$1 AND subject_user_id=$2")

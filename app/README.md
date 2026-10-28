@@ -29,9 +29,64 @@ EXPO_PUBLIC_API_URL=http://localhost:8080 npm run web
 - Native receives a server-issued one-time `exchangeSecret` from `GET /v1/auth/authorize?client=native`, stores that pending flow in SecureStore, and exchanges it once at `ghostpost://auth/callback`.
 - Native stores only the returned Ghostpost `session.token`; WorkOS tokens never reach the app.
 
+## Authentication browser E2E
+
+From `app/`, against the deployed frontend and its real API and WorkOS environment:
+
+```bash
+npm ci
+npm run test:e2e:install
+export E2E_BASE_URL=https://app.getghostpost.com
+# Load E2E_WORKOS_API_KEY from your secret store; do not put it in source.
+npm run test:e2e
+npx playwright show-report e2e/artifacts/report
+```
+
+`E2E_WORKOS_API_KEY` must belong to the same WorkOS environment as the API.
+Missing credentials fail the run rather than silently skipping it.
+
+`e2e/auth.spec.ts` runs these journeys in desktop Chromium and iPhone-sized
+WebKit, with no intercepted API responses or fabricated app sessions:
+
+- **Sign up:** use the app's `get started` passwordless email-code flow with a
+  previously nonexistent identity; verify the callback, onboarding, and session
+  persistence after reload.
+- **Sign in:** return in a fresh browser context; verify the same account,
+  completed onboarding, profile email, and persistence after reload.
+- **Log out:** use the profile action; verify a saved pre-logout cookie is
+  rejected by the server and reloading stays signed out.
+- **Sign up → delete account:** use the profile action; verify another live
+  session is revoked, reloading stays signed out, and the real purge worker
+  removes the WorkOS identity.
+
+Every scenario generates a unique `ghostpost-e2e-<uuid>@example.com` identity
+and removes it afterwards. WorkOS accepts reserved example domains without
+delivering email. The Node runner retrieves that identity's one-time code from
+the real WorkOS Events/Magic Auth APIs; its management key never enters the
+browser or browser trace. These tests do not verify inbox delivery, email
+branding, or the separate `Sign up` form inside Hosted AuthKit. That form can
+require human verification; the suite does not solve or disable it.
+
+Evidence is retained under ignored `e2e/artifacts/`: an HTML report, machine-readable
+results, a per-scenario `journey.json`, completion screenshots, and videos.
+Failures also retain screenshots and Playwright traces. Treat artifacts as
+sensitive test-account session data; do not commit or publish them.
+
+`.github/workflows/app-e2e.yml` runs manually, daily, and on matching successful
+production `deployment_status` events. It verifies the deployed release, not
+unshipped PR code. Configure repository secret `WORKOS_E2E_API_KEY` and optional
+variable `APP_E2E_BASE_URL` (defaults to production). The dedicated WorkOS key
+`ghostpost-e2e` is stored in that encrypted GitHub secret. WorkOS API keys have
+broad environment access; keep this workflow restricted to trusted code and
+rotate its key independently of the application's production key. CI retains
+artifacts for 14 days and fails without retrying failed journeys.
+
+Mobile WebKit exercises the browser engine and cookie/callback boundary, but is
+not proof for a physical iPhone or an installed Home Screen web app.
+
 ## Archive uploads
 
-The document picker supplies an opaque ZIP `File`. The app reserves a signed multipart POST with the API, uploads the file directly to S3/MinIO using `expo/fetch`, and asks the backend to complete and pin the immutable object version. The ZIP is never base64-encoded, hashed, or proxied through the API process.
+The document picker supplies an opaque ZIP. The app reserves a presigned create-once PUT with the API, uploads the file directly to object storage (R2 in production, MinIO locally) sending the returned headers verbatim, and asks the backend to complete and pin the object's ETag. Web uploads the picked `File` with `fetch`; native streams it from disk with `expo-file-system`'s `File.upload`. The ZIP is never base64-encoded, hashed, buffered in JS, or proxied through the API process.
 
 ## Gates
 
@@ -40,3 +95,12 @@ npm run typecheck
 npm test
 EXPO_PUBLIC_API_URL=http://localhost:8080 npm run export:web
 ```
+
+Jest owns the contracts that do not require a hosted authentication journey:
+
+- `domain/lifecycle.test.ts`: exact routing decisions for onboarding, import readiness, scan states, and review access. Add cases to the shared table rather than replaying a weaker allowed-gate assertion.
+- `features/query-keys.test.ts`: isolation in a real TanStack Query cache across users, session generations, resources, IDs, and filters. Reuse IDs across resource types to expose namespace collisions; do not pin internal tuple spelling or order.
+- `services/api/client.test.ts`: native transport results, typed HTTP errors, and single-flight refresh under concurrent 401s. Reload modules for isolated client state instead of exporting production reset hooks.
+- `domain/types.smoke.test.ts`: public onboarding/platform IDs accepted by the backend. These are independent protocol contracts, not disposable copies of internal implementation.
+
+Jest is a local gate; the deployed browser authentication journeys above remain separate proof.

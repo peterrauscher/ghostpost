@@ -1,4 +1,4 @@
-//! Shared Plan 003 auth integration harness (mock WorkOS + axum Router).
+//! Shared auth integration harness (mock WorkOS + axum Router).
 
 #![allow(dead_code)]
 

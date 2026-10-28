@@ -1,4 +1,4 @@
-//! Plan 006: free_beta productId, platformLimit=2, unlimited rescans.
+//! free_beta productId, platformLimit=2, unlimited rescans.
 mod common;
 
 use axum::http::{Method, StatusCode};

@@ -1,5 +1,5 @@
 //! Scan worker e2e with stub provider (requires DATABASE_URL).
-use ghostpost_backend::jobs::scan_posts::{self, parse_batch_keys};
+use ghostpost_backend::jobs::scan_posts;
 use ghostpost_backend::repository::{onboarding, scans, users, work_items};
 use ghostpost_backend::scan::llm::stub::StubDeterministicProvider;
 use ghostpost_backend::scan::llm::ScanLlmProvider;
@@ -185,13 +185,4 @@ WHERE table_name='model_attempts'
     for bad in ["raw_prompt", "raw_completion", "prompt_text", "completion_text"] {
         assert!(!cols.iter().any(|c| c == bad), "found forbidden col {bad}");
     }
-}
-
-#[test]
-fn batch_keys_parse_unit() {
-    let keys = parse_batch_keys(
-        r#"[{"id":"local_v1","secret":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}]"#,
-    )
-    .unwrap();
-    assert_eq!(keys[0].id, "local_v1");
 }

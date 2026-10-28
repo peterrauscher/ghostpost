@@ -56,6 +56,7 @@ impl EvalLlmProvider for StubDeterministicProvider {
             model_id: "stub-deterministic".into(),
             provider: "stub-deterministic",
             http_calls: 1,
+            cost_usd: None,
         })
     }
 }

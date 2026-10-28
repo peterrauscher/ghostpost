@@ -1,4 +1,4 @@
-//! Plan 006: zero open flags ⇒ risk.level=none, gaugeSweep=0.
+//! Zero open flags ⇒ risk.level=none, gaugeSweep=0.
 mod common;
 
 use axum::http::{Method, StatusCode};

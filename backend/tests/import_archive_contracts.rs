@@ -1,6 +1,7 @@
 use ghostpost_backend::r#import::archive::SafeArchive;
 use ghostpost_backend::r#import::reddit::parse_csv;
-use ghostpost_backend::r#import::x::{parse_tweets, unwrap_js};
+use ghostpost_backend::r#import::x::parse_tweets;
+use std::future::Future;
 use ghostpost_backend::r#import::{
     ArchivePlatform, Authorship, ContentState, FormatConfidence, FormatFamily, ImportErrorCode,
     RecordType, RelationConfidence, TextFormat,
@@ -41,7 +42,7 @@ fn stored(name: &str, bytes: &[u8]) -> Vec<u8> {
     }])
 }
 
-fn error_code(result: Result<SafeArchive, ghostpost_backend::r#import::ImportError>) -> &'static str {
+fn error_code(result: Result<SafeArchive<Cursor<Vec<u8>>>, ghostpost_backend::r#import::ImportError>) -> &'static str {
     match result {
         Ok(_) => panic!("archive must be rejected"),
         Err(error) => error.code,
@@ -117,7 +118,7 @@ fn safe_zip_rejects_noncanonical_paths_before_any_content_is_read() {
     for (name, path) in cases {
         let bytes = stored(path, b"not parsed");
         assert_eq!(
-            error_code(SafeArchive::index(bytes, ArchivePlatform::Reddit)),
+            error_code(SafeArchive::index(Cursor::new(bytes), ArchivePlatform::Reddit)),
             "unsafe_zip_entry",
             "case {name}"
         );
@@ -126,7 +127,7 @@ fn safe_zip_rejects_noncanonical_paths_before_any_content_is_read() {
     let mut nul = stored("comments.csv", b"not parsed");
     replace_all(&mut nul, b"comments.csv", b"comments\0csv");
     assert_eq!(
-        error_code(SafeArchive::index(nul, ArchivePlatform::Reddit)),
+        error_code(SafeArchive::index(Cursor::new(nul), ArchivePlatform::Reddit)),
         "unsafe_zip_entry",
         "NUL in a raw entry name"
     );
@@ -135,7 +136,7 @@ fn safe_zip_rejects_noncanonical_paths_before_any_content_is_read() {
     replace_all(&mut invalid_utf8, b"comments.csv", b"comment\xff.csv");
     set_zip_flag(&mut invalid_utf8, 1 << 11);
     assert_eq!(
-        error_code(SafeArchive::index(invalid_utf8, ArchivePlatform::Reddit)),
+        error_code(SafeArchive::index(Cursor::new(invalid_utf8), ArchivePlatform::Reddit)),
         "unsafe_zip_entry",
         "entry names must be valid UTF-8"
     );
@@ -157,7 +158,7 @@ fn safe_zip_rejects_duplicate_canonical_names() {
     ]);
     replace_all(&mut duplicate, b"commentz.csv", b"comments.csv");
     assert_eq!(
-        error_code(SafeArchive::index(duplicate, ArchivePlatform::Reddit)),
+        error_code(SafeArchive::index(Cursor::new(duplicate), ArchivePlatform::Reddit)),
         "duplicate_zip_entry"
     );
 }
@@ -174,7 +175,7 @@ fn safe_zip_rejects_symlinks_before_opening_them() {
         .expect("synthetic symlink");
     let symlink = writer.finish().unwrap().into_inner();
     assert_eq!(
-        error_code(SafeArchive::index(symlink, ArchivePlatform::Reddit)),
+        error_code(SafeArchive::index(Cursor::new(symlink), ArchivePlatform::Reddit)),
         "unsafe_zip_entry"
     );
 }
@@ -184,7 +185,7 @@ fn safe_zip_rejects_encrypted_selected_entries() {
     let mut encrypted = stored("comments.csv", b"ciphertext-shaped bytes");
     set_zip_flag(&mut encrypted, 1);
     assert_eq!(
-        error_code(SafeArchive::index(encrypted, ArchivePlatform::Reddit)),
+        error_code(SafeArchive::index(Cursor::new(encrypted), ArchivePlatform::Reddit)),
         "encrypted_zip"
     );
 }
@@ -193,7 +194,7 @@ fn safe_zip_rejects_encrypted_selected_entries() {
 fn safe_zip_rejects_nested_archives_even_when_not_allowlisted() {
     let nested = stored("nested.zip", b"PK\x03\x04synthetic nested archive");
     assert_eq!(
-        error_code(SafeArchive::index(nested, ArchivePlatform::Reddit)),
+        error_code(SafeArchive::index(Cursor::new(nested), ArchivePlatform::Reddit)),
         "unsafe_zip_entry"
     );
 }
@@ -203,7 +204,7 @@ fn safe_zip_rejects_unsupported_selected_entry_compression() {
     let mut unsupported = stored("comments.csv", b"unsupported compression payload");
     patch_zip_header_u16(&mut unsupported, 8, 10, 99);
     assert_eq!(
-        error_code(SafeArchive::index(unsupported, ArchivePlatform::Reddit)),
+        error_code(SafeArchive::index(Cursor::new(unsupported), ArchivePlatform::Reddit)),
         "unsupported_compression"
     );
 }
@@ -217,7 +218,7 @@ fn safe_zip_enforces_per_entry_and_aggregate_compression_ratio_before_inflate() 
         compression: CompressionMethod::Deflated,
     }]);
     assert_eq!(
-        error_code(SafeArchive::index(per_entry, ArchivePlatform::Reddit)),
+        error_code(SafeArchive::index(Cursor::new(per_entry), ArchivePlatform::Reddit)),
         "zip_limit_exceeded"
     );
 
@@ -237,7 +238,7 @@ fn safe_zip_enforces_per_entry_and_aggregate_compression_ratio_before_inflate() 
         },
     ]);
     assert_eq!(
-        error_code(SafeArchive::index(aggregate, ArchivePlatform::Reddit)),
+        error_code(SafeArchive::index(Cursor::new(aggregate), ArchivePlatform::Reddit)),
         "zip_limit_exceeded"
     );
 }
@@ -255,7 +256,7 @@ fn safe_zip_enforces_entry_count_and_selected_entry_count() {
     }
     let selected = selected_writer.finish().unwrap().into_inner();
     assert_eq!(
-        error_code(SafeArchive::index(selected, ArchivePlatform::X)),
+        error_code(SafeArchive::index(Cursor::new(selected), ArchivePlatform::X)),
         "zip_limit_exceeded"
     );
 
@@ -270,7 +271,7 @@ fn safe_zip_enforces_entry_count_and_selected_entry_count() {
     }
     let too_many = count_writer.finish().unwrap().into_inner();
     assert_eq!(
-        error_code(SafeArchive::index(too_many, ArchivePlatform::X)),
+        error_code(SafeArchive::index(Cursor::new(too_many), ArchivePlatform::X)),
         "zip_limit_exceeded"
     );
 }
@@ -311,18 +312,16 @@ fn excluded_private_sources_are_never_opened_or_decompressed() {
             .expect("excluded payload bytes in ZIP");
         archive[offset] ^= 0xff;
     }
-    let indexed = SafeArchive::index(archive, ArchivePlatform::Reddit)
+    let mut indexed = SafeArchive::index(Cursor::new(archive), ArchivePlatform::Reddit)
         .expect("corrupt excluded payloads must not affect indexing");
-    let opened = indexed
-        .read_selected()
-        .expect("corrupt excluded payloads must never be decompressed");
+    let opened = read_all(&mut indexed).expect("corrupt excluded payloads must never be decompressed");
     assert_eq!(opened.len(), 1);
     assert_eq!(opened.get("comments.csv").map(Vec::as_slice), Some(valid.as_slice()));
 
     let selected_only = stored("comments.csv", valid);
-    let indexed = SafeArchive::index(selected_only, ArchivePlatform::Reddit)
+    let mut indexed = SafeArchive::index(Cursor::new(selected_only), ArchivePlatform::Reddit)
         .expect("allowlisted comments entry");
-    let opened = indexed.read_selected().expect("read selected entry");
+    let opened = read_all(&mut indexed).expect("read selected entry");
     assert_eq!(opened.len(), 1);
     assert_eq!(opened.get("comments.csv").map(Vec::as_slice), Some(valid.as_slice()));
 }
@@ -336,7 +335,7 @@ fn x_allowlist_accepts_only_exact_modern_shards_and_classic_months() {
         "data/tweet-part0001.js",
         "data/tweets/2026_01.js",
     ] {
-        SafeArchive::index(stored(path, b"[]"), ArchivePlatform::X)
+        SafeArchive::index(Cursor::new(stored(path, b"[]")), ArchivePlatform::X)
             .unwrap_or_else(|error| panic!("{path} should be allowlisted: {}", error.code));
     }
 
@@ -355,7 +354,7 @@ fn x_allowlist_accepts_only_exact_modern_shards_and_classic_months() {
         "data/like.js",
     ] {
         assert_eq!(
-            error_code(SafeArchive::index(stored(path, b"[]"), ArchivePlatform::X)),
+            error_code(SafeArchive::index(Cursor::new(stored(path, b"[]")), ArchivePlatform::X)),
             "no_supported_content",
             "{path} must not be opened"
         );
@@ -381,7 +380,7 @@ fn x_shards_are_validated_contiguous_and_selected_in_numeric_order() {
             compression: CompressionMethod::Stored,
         },
     ]);
-    let indexed = SafeArchive::index(out_of_order, ArchivePlatform::X)
+    let indexed = SafeArchive::index(Cursor::new(out_of_order), ArchivePlatform::X)
         .expect("contiguous parts are accepted regardless of ZIP order");
     let names: Vec<&str> = indexed
         .selected
@@ -411,7 +410,7 @@ fn x_shards_are_validated_contiguous_and_selected_in_numeric_order() {
         },
     ]);
     assert_eq!(
-        error_code(SafeArchive::index(gap, ArchivePlatform::X)),
+        error_code(SafeArchive::index(Cursor::new(gap), ArchivePlatform::X)),
         "unsupported_format_version"
     );
 }
@@ -419,27 +418,44 @@ fn x_shards_are_validated_contiguous_and_selected_in_numeric_order() {
 #[test]
 fn zip_magic_rejects_sfx_trailing_payload_and_non_zip_bytes() {
     assert_eq!(
-        error_code(SafeArchive::index(b"not a zip".to_vec(), ArchivePlatform::Reddit)),
+        error_code(SafeArchive::index(Cursor::new(b"not a zip".to_vec()), ArchivePlatform::Reddit)),
         "not_zip"
     );
 
     let mut sfx = b"MZ synthetic preamble".to_vec();
     sfx.extend(stored("comments.csv", b"content"));
     assert_eq!(
-        error_code(SafeArchive::index(sfx, ArchivePlatform::Reddit)),
+        error_code(SafeArchive::index(Cursor::new(sfx), ArchivePlatform::Reddit)),
         "not_zip"
     );
 
     let mut trailing = stored("comments.csv", b"content");
     trailing.extend_from_slice(b"adversarial trailing payload");
     assert_eq!(
-        error_code(SafeArchive::index(trailing, ArchivePlatform::Reddit)),
+        error_code(SafeArchive::index(Cursor::new(trailing), ArchivePlatform::Reddit)),
         "unsupported_zip"
     );
 }
 
 fn parse_reddit(csv: &[u8], file: &str) -> Result<Vec<ghostpost_backend::r#import::NormalizedArchiveRecord>, ghostpost_backend::r#import::ImportError> {
-    parse_csv(Cursor::new(csv), file, Uuid::nil())
+    let mut records = Vec::new();
+    parse_csv(Cursor::new(csv), file, Uuid::nil(), &mut |record| { records.push(record); Ok(()) })?;
+    Ok(records)
+}
+
+/// Every selected entry through the streaming reader, keyed by name.
+fn read_all(archive: &mut SafeArchive<Cursor<Vec<u8>>>) -> Result<std::collections::BTreeMap<String, Vec<u8>>, ghostpost_backend::r#import::ImportError> {
+    let names: Vec<String> = archive.selected.iter().map(|entry| entry.name.clone()).collect();
+    let mut out = std::collections::BTreeMap::new();
+    for name in names {
+        let bytes = archive.read_entry(&name, |reader| {
+            let mut bytes = Vec::new();
+            std::io::Read::read_to_end(reader, &mut bytes).map_err(|_| ghostpost_backend::r#import::ImportError::from(ImportErrorCode::IntegrityMismatch))?;
+            Ok(bytes)
+        })?;
+        out.insert(name, bytes);
+    }
+    Ok(out)
 }
 
 #[test]
@@ -576,8 +592,12 @@ fn reddit_rejects_schema_identity_parent_permalink_date_and_malformed_csv_bounda
     }
 }
 
+fn block_on<T>(future: impl Future<Output = T>) -> T {
+    tokio::runtime::Builder::new_current_thread().build().expect("test runtime").block_on(future)
+}
+
 fn parse_x(input: &[u8]) -> Result<Vec<ghostpost_backend::r#import::NormalizedArchiveRecord>, ghostpost_backend::r#import::ImportError> {
-    parse_tweets(input, Uuid::nil(), "data/tweets.js", FormatFamily::XGdpr)
+    block_on(parse_tweets(input, Uuid::nil(), "data/tweets.js", FormatFamily::XGdpr))
 }
 
 #[test]
@@ -643,7 +663,7 @@ fn x_rejects_unknown_wrappers_suffix_code_malformed_json_and_inexact_ids() {
 
     let oversized_prefix = format!("{}window.YTD.tweets.part0 = {valid_tweet}", " ".repeat(4_097));
     assert_eq!(
-        unwrap_js(oversized_prefix.as_bytes()).expect_err("wrapper after prefix budget").code,
+        parse_x(oversized_prefix.as_bytes()).expect_err("wrapper after prefix budget").code,
         "unsupported_format_version"
     );
 }
@@ -726,12 +746,12 @@ fn x_deleted_tweets_are_bodyless_tombstones_and_absence_is_not_deletion() {
     let deleted = br#"window.YTD.deleted_tweets.part0 = [
       {"tweet":{"id_str":"51","created_at":"Thu Jul 23 12:00:00 +0000 2026"}}
     ]"#;
-    let rows = parse_tweets(
+    let rows = block_on(parse_tweets(
         deleted,
         Uuid::nil(),
         "data/deleted-tweets.js",
         FormatFamily::XGdpr,
-    )
+    ))
     .expect("explicit deleted-tweets rows");
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].state, ContentState::Deleted);
@@ -758,8 +778,8 @@ fn runtime_security_limits_match_the_cross_layer_plan_contract() {
     assert_eq!(MAX_JSON_NESTING, 64);
     assert_eq!(MAX_NORMALIZED_RECORDS, 2_000_000);
     assert_eq!(MAX_JS_PREFIX_BYTES, 4_096);
-    assert_eq!(MAX_IN_MEMORY_INDEX_BYTES, 32_777_216);
-    assert_eq!(MAX_DISK_INDEX_BYTES, 268_435_456);
+    assert_eq!(MAX_IN_MEMORY_INDEX_BYTES, 8_388_608);
+    assert_eq!(MAX_DISK_INDEX_BYTES, 1_073_741_824);
     assert_eq!(WORKER_IMPORT_MEMORY_BUDGET_BYTES, 805_306_368);
 }
 
@@ -882,13 +902,13 @@ fn archive_format_detection_fails_closed_on_ambiguous_or_declared_platform_misma
         },
     ]);
     assert_eq!(
-        error_code(SafeArchive::index(ambiguous, ArchivePlatform::Reddit)),
+        error_code(SafeArchive::index(Cursor::new(ambiguous), ArchivePlatform::Reddit)),
         "ambiguous_archive"
     );
 
     let mismatch = stored("data/tweets.js", x);
     assert_eq!(
-        error_code(SafeArchive::index(mismatch, ArchivePlatform::Reddit)),
+        error_code(SafeArchive::index(Cursor::new(mismatch), ArchivePlatform::Reddit)),
         "platform_mismatch"
     );
 }

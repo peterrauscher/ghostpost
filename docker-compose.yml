@@ -30,9 +30,9 @@ services:
     stop_grace_period: 30s
 
   minio:
-    # minio/minio:RELEASE.2024-10-02T17-50-41Z
-    # Digest: sha256:ea15e53e66f96f63e12f45509d2d2d8fad774808debb490f48508b3130bd22d3
-    image: minio/minio:RELEASE.2024-10-02T17-50-41Z@sha256:ea15e53e66f96f63e12f45509d2d2d8fad774808debb490f48508b3130bd22d3
+    # MinIO no longer publishes images to Docker Hub or Quay; Chainguard's
+    # build is the maintained distribution. Multi-arch index digest.
+    image: cgr.dev/chainguard/minio:latest@sha256:32c504bea4574d8f29d719b37bc0dad920ecf3e22b81dc5cea0bb105af2ce10f
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
       MINIO_ROOT_USER: ghostpost
@@ -46,9 +46,8 @@ services:
     restart: unless-stopped
 
   minio-init:
-    # minio/mc:RELEASE.2024-10-08T09-37-26Z
-    # Digest: sha256:c0d345a438dcac5677c1158e4ac46637069b67b3cc38e7b04c08cf93bdee4a62
-    image: minio/mc:RELEASE.2024-10-08T09-37-26Z@sha256:c0d345a438dcac5677c1158e4ac46637069b67b3cc38e7b04c08cf93bdee4a62
+    # `-dev` variant: the init script needs /bin/sh. Multi-arch index digest.
+    image: cgr.dev/chainguard/minio-client:latest-dev@sha256:d0bce838369160ea7db20589040bee94bdb3e76dbf7fd10aa3eb755ae17a506b
     depends_on:
       minio:
         condition: service_started
@@ -115,15 +114,13 @@ services:
       ARCHIVE_S3_ENDPOINT: http://minio:9000
       ARCHIVE_S3_PUBLIC_ENDPOINT: http://localhost:9000
       ARCHIVE_S3_REGION: us-east-1
-      # Plan 004 documented names (compose table). Runtime S3 SDK reads the
+      # Documented ARCHIVE_S3_* names. Runtime S3 SDK reads the
       # standard AWS credential chain — mirror into AWS_* for the default provider.
       ARCHIVE_S3_ACCESS_KEY_ID: ghostpost
       ARCHIVE_S3_SECRET_ACCESS_KEY: ghostpostsecret
       AWS_ACCESS_KEY_ID: ghostpost
       AWS_SECRET_ACCESS_KEY: ghostpostsecret
       ARCHIVE_S3_FORCE_PATH_STYLE: "true"
-      # MinIO has no AWS KMS; disable SSE-KMS policy fields for local signed POST.
-      ARCHIVE_S3_REQUIRE_KMS: "false"
       ARCHIVE_FINGERPRINT_KEYS: ${ARCHIVE_FINGERPRINT_KEYS:?ARCHIVE_FINGERPRINT_KEYS required}
       WORKOS_API_KEY: ${WORKOS_API_KEY:?WORKOS_API_KEY required — set in gitignored .env}
       WORKOS_CLIENT_ID: ${WORKOS_CLIENT_ID:?WORKOS_CLIENT_ID required}

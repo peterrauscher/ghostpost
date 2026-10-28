@@ -24,6 +24,8 @@
     "jest.config.js",
     "android",
     "ios",
-    "dist"
+    "dist",
+    "e2e",
+    "playwright.config.ts"
   ]
 }

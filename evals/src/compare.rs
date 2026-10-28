@@ -126,7 +126,6 @@ mod tests {
             invariant_violations: 0,
             cost_usd: 0.0,
             privacy_findings: 0,
-            approval_blocked: false,
             gate_failures: vec![],
             metrics: AggregateMetrics::default(),
             cases: vec![],

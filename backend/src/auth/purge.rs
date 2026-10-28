@@ -1,4 +1,4 @@
-//! `account.purge` checkpointed workflow (Plan 003 baseline local hook).
+//! `account.purge` checkpointed workflow.
 
 use crate::auth::provider::WorkosIdentityProvider;
 use crate::auth::store;
@@ -44,14 +44,12 @@ pub async fn handle_account_purge(
     let workos_user_id = user.workos_user_id.clone();
 
     if payload.local_purged_at.is_none() {
-        let versions = sqlx::query_as::<_, (Option<String>, Option<String>)>("SELECT raw_storage_key, raw_storage_version_id FROM archive_imports WHERE tenant_id=$1 AND user_id=$2")
+        let keys = sqlx::query_scalar::<_, Option<String>>("SELECT raw_storage_key FROM archive_imports WHERE tenant_id=$1 AND user_id=$2")
             .bind(tenant_id).bind(payload.user_id).fetch_all(pool).await?;
-        for (key, version) in versions {
-            if let (Some(key), Some(version)) = (key, version) {
-                match blob.delete_version(&key, &version).await {
-                    Ok(()) | Err(crate::blob::BlobError::NotFound) => {}
-                    Err(err) => return Err(AppError::Worker(format!("archive version purge failed: {err}"))),
-                }
+        for key in keys.into_iter().flatten() {
+            match blob.delete_object(&key).await {
+                Ok(()) | Err(crate::blob::BlobError::NotFound) => {}
+                Err(err) => return Err(AppError::Worker(format!("archive object purge failed: {err}"))),
             }
         }
         store::local_purge_profile(pool, tenant_id, payload.user_id).await?;

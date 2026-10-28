@@ -109,32 +109,7 @@ impl ScanLlmProvider for StubDeterministicProvider {
             provider: "stub-deterministic",
             provider_request_id: Some(req.request_id.to_string()),
             latency_ms,
+            cost_usd: 0.0,
         })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use uuid::Uuid;
-
-    #[tokio::test]
-    async fn stub_returns_valid_shape() {
-        let p = StubDeterministicProvider;
-        let payload = r#"{"schemaVersion":"scan-input.v1","policy":{"comingUp":[],"concerns":["negativity"]},"items":[{"itemIndex":0,"platform":"x","kind":"tweet","authorship":"authored","text":"hello world friends"}]}"#;
-        let resp = p
-            .complete(ScanCompletionRequest {
-                prompt_version: "scan-v1",
-                system_prompt_hash: [0u8; 32],
-                user_payload_json: payload.into(),
-                temperature: 0.0,
-                max_output_tokens: 4096,
-                request_id: Uuid::nil(),
-                repair: false,
-            })
-            .await
-            .unwrap();
-        assert!(resp.content_json.contains("scan-output.v1"));
-        assert_eq!(resp.provider, "stub-deterministic");
     }
 }

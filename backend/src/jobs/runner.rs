@@ -222,12 +222,17 @@ WHERE tenant_id = $1 AND id = $2 AND lease_owner = $3 AND status = 'running'
         let result = if item.kind == "import.normalize" {
             archive_import::normalize(pool, blob.clone(), item, lease_owner).await
         } else {
-            archive_import::purge_job(pool, blob.clone(), item).await
+            archive_import::purge_job(pool, blob.clone(), item).await.map(|()| archive_import::NormalizeOutcome::Completed)
         };
         match result {
-            Ok(()) => {
+            Ok(archive_import::NormalizeOutcome::Completed) => {
                 if !queue::commit_success(pool, item.tenant_id, item.id, lease_owner).await? {
                     warn!(kind = %item.kind, id = %item.id, "lost lease on archive success commit");
+                }
+            }
+            Ok(archive_import::NormalizeOutcome::Deferred { seconds }) => {
+                if !queue::defer(pool, item.tenant_id, item.id, lease_owner, seconds, "waiting for identical archive to finish").await? {
+                    warn!(kind = %item.kind, id = %item.id, "lost lease on archive defer");
                 }
             }
             Err(err) => {
@@ -237,7 +242,10 @@ WHERE tenant_id = $1 AND id = $2 AND lease_owner = $3 AND status = 'running'
                 if rejected {
                     queue::commit_success(pool, item.tenant_id, item.id, lease_owner).await?;
                 } else {
-                    queue::commit_failure(pool, item.tenant_id, item.id, lease_owner, &message, item.attempt_count, item.max_attempts).await?;
+                    let status = queue::commit_failure(pool, item.tenant_id, item.id, lease_owner, &message, item.attempt_count, item.max_attempts).await?;
+                    if status == "failed" && item.kind == "import.normalize" {
+                        archive_import::fail_terminal(pool, blob.clone(), item).await?;
+                    }
                 }
             }
         }
@@ -429,7 +437,7 @@ WHERE tenant_id = $1 AND id = $2 AND lease_owner = $3 AND status = 'running'
     Ok(())
 }
 
-/// Plan 002 ships no product handlers. `test.ping` echoes for integration tests.
+/// No product handlers are dispatched here. `test.ping` echoes for integration tests.
 fn handle_kind(item: &WorkItem) -> Result<(), String> {
     match item.kind.as_str() {
         "test.ping" => Ok(()),

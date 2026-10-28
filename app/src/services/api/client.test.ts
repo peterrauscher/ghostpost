@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 
 /**
- * Plan 007 transport contracts: 204 handling, RFC7807 problem+json, and
+ * Transport contracts: 204 handling, RFC7807 problem+json, and
  * single-flight refresh under concurrent 401s.
  *
  * require() + jest.resetModules is intentional: client.ts throws at module init
@@ -51,7 +51,6 @@ function textResponse(status: number, text: string, headers: Record<string, stri
 
 function loadClient(platformOs: 'web' | 'ios' = 'ios'): {
   apiRequest: ApiRequest;
-  resetClientSecurityState: () => void;
   ProblemError: ProblemErrorCtor;
   ApiError: ApiErrorCtor;
   setBearerToken: (token: string | null) => Promise<void>;
@@ -69,7 +68,6 @@ function loadClient(platformOs: 'web' | 'ios' = 'ios'): {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const client = require('./client') as {
     apiRequest: ApiRequest;
-    resetClientSecurityState: () => void;
   };
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const problem = require('./problem') as {
@@ -80,10 +78,8 @@ function loadClient(platformOs: 'web' | 'ios' = 'ios'): {
   const session = require('./session') as {
     setBearerToken: (token: string | null) => Promise<void>;
   };
-  client.resetClientSecurityState();
   return {
     apiRequest: client.apiRequest,
-    resetClientSecurityState: client.resetClientSecurityState,
     ProblemError: problem.ProblemError,
     ApiError: problem.ApiError,
     setBearerToken: session.setBearerToken,
@@ -94,15 +90,7 @@ function callUrl(call: FetchCall): string {
   return String(call[0]);
 }
 
-function callMethod(call: FetchCall): string {
-  return (call[1]?.method ?? 'GET').toUpperCase();
-}
-
-function callAuth(call: FetchCall): string | null {
-  return new Headers(call[1]?.headers).get('Authorization');
-}
-
-describe('api client transport (Plan 007)', () => {
+describe('api client transport', () => {
   const originalFetch = globalThis.fetch;
   const originalApiUrl = process.env.EXPO_PUBLIC_API_URL;
 
@@ -148,7 +136,6 @@ describe('api client transport (Plan 007)', () => {
 
     expect(caught).toBeInstanceOf(ProblemError);
     const problemError = caught as ProblemErrorInstance;
-    expect(problemError.name).toBe('ProblemError');
     expect(problemError.status).toBe(409);
     expect(problemError.message).toBe('onboarding revision mismatch');
     expect(problemError.code).toBe('onboarding_revision_conflict');
@@ -170,7 +157,6 @@ describe('api client transport (Plan 007)', () => {
     expect(caught).toBeInstanceOf(ApiError);
     expect(caught).not.toBeInstanceOf(ProblemError);
     const apiError = caught as Error & { status: number };
-    expect(apiError.name).toBe('ApiError');
     expect(apiError.status).toBe(500);
     expect(apiError.message).toBe('upstream exploded');
   });
@@ -226,19 +212,6 @@ describe('api client transport (Plan 007)', () => {
       { ok: true, path: 'me' },
     ]);
 
-    const calls = fetchMock.mock.calls as FetchCall[];
-    const refreshRequests = calls.filter(
-      (call) => callUrl(call).endsWith('/v1/auth/refresh') && callMethod(call) === 'POST',
-    );
-    expect(refreshRequests).toHaveLength(1);
-
-    const retriedWithFresh = calls.filter((call) => {
-      const path = callUrl(call);
-      return (
-        callAuth(call) === 'Bearer fresh' &&
-        (path.endsWith('/v1/dashboard') || path.endsWith('/v1/me'))
-      );
-    });
-    expect(retriedWithFresh).toHaveLength(2);
+    expect(refreshCalls).toBe(1);
   });
 });

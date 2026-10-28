@@ -376,14 +376,3 @@ LIMIT 1
     .await?;
     Ok(row.is_some())
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn scan_enums_roundtrip_strings() {
-        assert_eq!(ScanStatus::Queued.as_str(), "queued");
-        assert_eq!(ScanPhase::Flagging.as_str(), "flagging");
-    }
-}

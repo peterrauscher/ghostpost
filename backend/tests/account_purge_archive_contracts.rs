@@ -104,7 +104,7 @@ fn database_env() {
 async fn migrated_pool() -> PgPool {
     database_env();
     let config = Config::load_for_migrate().expect("migration configuration");
-    migrate::run(&config, false).await.expect("Plan 004 migrations");
+    migrate::run(&config, false).await.expect("migrations");
     PgPoolOptions::new()
         .max_connections(5)
         .connect(&std::env::var("DATABASE_URL_APP").expect("DATABASE_URL_APP"))
@@ -132,15 +132,15 @@ async fn account_purge_removes_every_archive_row_and_personal_field() {
         .await
         .expect("import");
     sqlx::query(
-        "UPDATE archive_imports SET raw_storage_key=$3,raw_storage_version_id=$4,status='ready',item_count=1 WHERE tenant_id=$1 AND id=$2",
+        "UPDATE archive_imports SET raw_storage_key=$3,raw_storage_etag=$4,status='ready',item_count=1 WHERE tenant_id=$1 AND id=$2",
     )
     .bind(tenant.id)
     .bind(import.id)
     .bind(format!("archive-imports/{}/source.zip", import.id))
-    .bind("synthetic-version-a")
+    .bind("\"synthetic-etag-a\"")
     .execute(&pool)
     .await
-    .expect("pin raw version");
+    .expect("pin raw archive");
     let item = archive_imports::insert_content_item(
         &pool,
         tenant.id,
@@ -266,7 +266,7 @@ async fn account_purge_checkpoints_local_deletion_before_provider_failure_and_re
         .await
         .expect("import");
     sqlx::query(
-        "UPDATE archive_imports SET raw_storage_key=$3,raw_storage_version_id='retry-version',status='ready' WHERE tenant_id=$1 AND id=$2",
+        "UPDATE archive_imports SET raw_storage_key=$3,raw_storage_etag='\"retry-etag\"',status='ready' WHERE tenant_id=$1 AND id=$2",
     )
     .bind(tenant.id)
     .bind(import.id)

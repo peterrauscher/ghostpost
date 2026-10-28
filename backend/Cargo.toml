@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "crates/scan-text"]
+members = [".", "crates/scan-text", "crates/scan-jev"]
 resolver = "2"
 
 [package]
@@ -72,11 +72,14 @@ csv = "1.4.0"
 zip = "8.6.0"
 unicode-normalization = "0.1.25"
 scan-text = { path = "crates/scan-text" }
+scan-jev = { path = "crates/scan-jev" }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 hex = "0.4"
+tempfile = { version = "3", default-features = false }
 
 [dev-dependencies]
 http-body-util = "0.1"
+libc = "0.2"
 parking_lot = "0.12"
 tower = { version = "0.5", features = ["util"] }
 

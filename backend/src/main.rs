@@ -108,39 +108,7 @@ fn build_auth_service(
 }
 
 async fn build_blob_store() -> anyhow::Result<Arc<dyn BlobStore>> {
-    let bucket = std::env::var("ARCHIVE_BUCKET")
-        .map_err(|_| AppError::Config("missing required env ARCHIVE_BUCKET".into()))?;
-    let region = std::env::var("ARCHIVE_S3_REGION")
-        .map_err(|_| AppError::Config("missing required env ARCHIVE_S3_REGION".into()))?;
-    let force_path_style = std::env::var("ARCHIVE_S3_FORCE_PATH_STYLE")
-        .map(|v| matches!(v.as_str(), "1" | "true" | "yes"))
-        .unwrap_or(false);
-    let endpoint_override = std::env::var("ARCHIVE_S3_ENDPOINT").ok();
-    let sdk = aws_config::defaults(aws_config::BehaviorVersion::latest())
-        .region(aws_sdk_s3::config::Region::new(region.clone()))
-        .load()
-        .await;
-    let provider = sdk.credentials_provider()
-        .ok_or_else(|| AppError::Config("AWS credentials provider missing from resolved config".into()))?;
-    let mut builder = aws_sdk_s3::config::Builder::from(&sdk).force_path_style(force_path_style);
-    if let Some(endpoint) = endpoint_override.as_deref() {
-        builder = builder.endpoint_url(endpoint);
-    }
-    let signing_endpoint = std::env::var("ARCHIVE_S3_PUBLIC_ENDPOINT").ok().or_else(|| endpoint_override.clone());
-    let endpoint = match signing_endpoint {
-        Some(base) if force_path_style => format!("{}/{}", base.trim_end_matches('/'), bucket),
-        Some(base) => base,
-        None => format!("https://{bucket}.s3.{region}.amazonaws.com"),
-    };
-    Ok(Arc::new(S3BlobStore::new_with_credentials_provider(
-        aws_sdk_s3::Client::from_conf(builder.build()),
-        provider,
-        bucket,
-        region,
-        endpoint,
-        std::env::var("ARCHIVE_S3_REQUIRE_KMS").map(|v| v != "false").unwrap_or(true),
-        std::env::var("ARCHIVE_S3_KMS_KEY_ID").ok(),
-    )))
+    Ok(Arc::new(S3BlobStore::from_env().await.map_err(|err| AppError::Config(err.to_string()))?))
 }
 
 async fn run_serve(config: Config, role: ServeRole) -> anyhow::Result<()> {

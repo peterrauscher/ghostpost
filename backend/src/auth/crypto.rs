@@ -151,8 +151,8 @@ mod tests {
     #[test]
     fn pkce_challenge_is_s256() {
         let pair = generate_pkce_pair();
-        let expected = base64::engine::general_purpose::URL_SAFE_NO_PAD
-            .encode(hash_token(pair.code_verifier.as_bytes()));
+        let digest = Sha256::digest(pair.code_verifier.as_bytes());
+        let expected = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(digest);
         assert_eq!(pair.code_challenge, expected);
     }
 }

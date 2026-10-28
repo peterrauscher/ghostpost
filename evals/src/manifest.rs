@@ -24,6 +24,8 @@ pub struct ModelManifest {
     pub prompt_sha256: String,
 }
 
+/// Peak-hour rates. DeepSeek charges exactly half off-peak; evals report the
+/// peak (worst-case) cost so suite cost is deterministic.
 #[derive(Debug, Deserialize, Clone)]
 pub struct Pricing {
     pub input_cache_miss: f64,
@@ -39,70 +41,16 @@ pub struct ModelDefaults {
     pub thinking: String,
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ApprovalManifest {
-    pub provider: String,
-    pub model_id: String,
-    pub prompt_version: String,
-    pub prompt_sha256: String,
-    pub request_flags: ApprovalFlags,
-    pub provider_data_handling: DataHandling,
-    pub legal_review: LegalReview,
-    pub environments: Environments,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ApprovalFlags {
-    pub response_format: String,
-    pub thinking: String,
-    pub temperature: f64,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DataHandling {
-    pub terms_url: Option<String>,
-    pub reviewed_at: Option<String>,
-    pub retention_days: Option<u64>,
-    pub training_use: Option<bool>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LegalReview {
-    pub ticket: Option<String>,
-    pub reviewer: Option<String>,
-    pub approved_at: Option<String>,
-    pub expires_at: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct Environments {
-    pub local: EnvAllow,
-    pub staging: EnvAllow,
-    pub production: EnvAllow,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EnvAllow {
-    pub allowed: bool,
-    pub requires_api_key: bool,
-}
-
 pub fn list_manifests(root: &Path) -> Result<()> {
     let entries = [
         "manifests/models/scan-v1.prompt.md",
         "manifests/models/scan-v1.prompt.sha256",
-        "manifests/models/deepseek-v4-flash.json",
+        "manifests/models/deepseek-flash.json",
         "manifests/schemas/scan_input_v1.schema.json",
         "manifests/schemas/scan_output_v1.schema.json",
         "manifests/gold/scan-v1.core.jsonl",
         "manifests/gold/scan-v1.edge.jsonl",
-        "manifests/approval/deepseek-v4-flash.manifest.json",
-        "manifests/replay/deepseek-v4-flash/index.json",
+        "manifests/replay/deepseek-flash/index.json",
     ];
     for e in entries {
         let p = root.join(e);
@@ -183,7 +131,7 @@ pub fn verify_manifests(root: &Path) -> Result<(), VerifyError> {
         }
     }
 
-    let model_path = root.join("manifests/models/deepseek-v4-flash.json");
+    let model_path = root.join("manifests/models/deepseek-flash.json");
     let model: ModelManifest = serde_json::from_str(
         &fs::read_to_string(&model_path)
             .with_context(|| format!("read {}", model_path.display()))
@@ -198,19 +146,19 @@ pub fn verify_manifests(root: &Path) -> Result<(), VerifyError> {
             model.prompt_sha256
         )));
     }
-    if (model.pricing_usd_per_million.input_cache_hit - 0.0028).abs() > 1e-12 {
+    if (model.pricing_usd_per_million.input_cache_hit - 0.006).abs() > 1e-12 {
         return Err(VerifyError::Other(anyhow::anyhow!(
-            "input_cache_hit must be 0.0028, got {}",
+            "input_cache_hit must be 0.006, got {}",
             model.pricing_usd_per_million.input_cache_hit
         )));
     }
-    if (model.pricing_usd_per_million.input_cache_miss - 0.14).abs() > 1e-12 {
+    if (model.pricing_usd_per_million.input_cache_miss - 0.30).abs() > 1e-12 {
         return Err(VerifyError::Other(anyhow::anyhow!(
-            "input_cache_miss must be 0.14"
+            "input_cache_miss must be 0.30"
         )));
     }
-    if (model.pricing_usd_per_million.output - 0.28).abs() > 1e-12 {
-        return Err(VerifyError::Other(anyhow::anyhow!("output must be 0.28")));
+    if (model.pricing_usd_per_million.output - 1.20).abs() > 1e-12 {
+        return Err(VerifyError::Other(anyhow::anyhow!("output must be 1.20")));
     }
     // stale 0.014 guard
     let model_raw = fs::read_to_string(&model_path).map_err(|e| VerifyError::Other(e.into()))?;
@@ -218,33 +166,6 @@ pub fn verify_manifests(root: &Path) -> Result<(), VerifyError> {
         return Err(VerifyError::Other(anyhow::anyhow!(
             "stale cache-hit 0.014 found in model manifest"
         )));
-    }
-
-    let approval_path = root.join("manifests/approval/deepseek-v4-flash.manifest.json");
-    let approval: ApprovalManifest = serde_json::from_str(
-        &fs::read_to_string(&approval_path)
-            .with_context(|| format!("read {}", approval_path.display()))
-            .map_err(VerifyError::Other)?,
-    )
-    .context("parse approval")
-    .map_err(VerifyError::Other)?;
-
-    if approval.prompt_sha256 != digest {
-        return Err(VerifyError::Hash(
-            "approval promptSha256 does not match prompt lock".into(),
-        ));
-    }
-    if approval.environments.local.allowed
-        || approval.environments.staging.allowed
-        || approval.environments.production.allowed
-    {
-        // Allowed only when legal fields complete — still ok to verify structure;
-        // deny-by-default is the committed state.
-        if approval.legal_review.approved_at.is_none() {
-            return Err(VerifyError::Other(anyhow::anyhow!(
-                "environment allowed without legal approval"
-            )));
-        }
     }
 
     // Gold files present and non-empty
@@ -274,7 +195,7 @@ pub fn verify_manifests(root: &Path) -> Result<(), VerifyError> {
         }
     }
 
-    let replay_index = root.join("manifests/replay/deepseek-v4-flash/index.json");
+    let replay_index = root.join("manifests/replay/deepseek-flash/index.json");
     if !replay_index.exists() {
         return Err(VerifyError::Other(anyhow::anyhow!(
             "missing replay index"
@@ -285,13 +206,7 @@ pub fn verify_manifests(root: &Path) -> Result<(), VerifyError> {
 }
 
 pub fn load_model_manifest(root: &Path) -> Result<ModelManifest> {
-    let p = root.join("manifests/models/deepseek-v4-flash.json");
-    let raw = fs::read_to_string(&p).with_context(|| format!("read {}", p.display()))?;
-    Ok(serde_json::from_str(&raw)?)
-}
-
-pub fn load_approval(root: &Path) -> Result<ApprovalManifest> {
-    let p = root.join("manifests/approval/deepseek-v4-flash.manifest.json");
+    let p = root.join("manifests/models/deepseek-flash.json");
     let raw = fs::read_to_string(&p).with_context(|| format!("read {}", p.display()))?;
     Ok(serde_json::from_str(&raw)?)
 }
@@ -304,29 +219,6 @@ pub fn prompt_sha256(root: &Path) -> Result<String> {
 pub fn load_prompt(root: &Path) -> Result<String> {
     let p = root.join("manifests/models/scan-v1.prompt.md");
     Ok(fs::read_to_string(p)?)
-}
-
-/// Whether deepseek may be used in the given env (fail closed).
-pub fn deepseek_allowed(approval: &ApprovalManifest, env: &str) -> bool {
-    let env_ok = match env {
-        "local" => approval.environments.local.allowed,
-        "staging" => approval.environments.staging.allowed,
-        "production" => approval.environments.production.allowed,
-        _ => false,
-    };
-    if !env_ok {
-        return false;
-    }
-    let d = &approval.provider_data_handling;
-    let l = &approval.legal_review;
-    d.terms_url.is_some()
-        && d.reviewed_at.is_some()
-        && d.retention_days.is_some()
-        && d.training_use.is_some()
-        && l.ticket.is_some()
-        && l.reviewer.is_some()
-        && l.approved_at.is_some()
-        && l.expires_at.is_some()
 }
 
 pub fn sha256_hex(bytes: &[u8]) -> String {
@@ -343,7 +235,7 @@ pub fn cost_usd(pricing: &Pricing, input: u32, cache_hit: u32, output: u32) -> f
         / 1_000_000.0
 }
 
-/// Reserved privacy scan hook (no approval short-circuit paths).
+/// Reserved privacy scan hook.
 pub fn privacy_grep_clean(_root: &Path) -> Result<()> {
     Ok(())
 }

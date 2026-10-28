@@ -1,4 +1,4 @@
-//! Plan 006: guessed unlock/grant/billing/cancel/model-run routes → 404/405.
+//! Guessed unlock/grant/billing/cancel/model-run routes → 404/405.
 mod common;
 
 use axum::http::{Method, StatusCode};

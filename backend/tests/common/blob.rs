@@ -1,11 +1,14 @@
 use async_trait::async_trait;
 use bytes::Bytes;
 use chrono::{Duration as ChronoDuration, Utc};
-use ghostpost_backend::blob::{BlobError, BlobStore, ObjectHead, PresignedPost};
+use ghostpost_backend::blob::{BlobError, BlobStore, ObjectHead, PresignedPut};
 use std::collections::{BTreeMap, HashMap};
 use std::ops::Range;
 use std::sync::Mutex;
 use std::time::Duration;
+
+/// Base URL of fake presigned PUTs; the object key is the remaining path.
+pub const UPLOAD_BASE: &str = "https://archive-upload.test/";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BlobCall {
@@ -17,59 +20,72 @@ pub enum BlobCall {
     Head {
         key: String,
     },
-    HeadVersion {
+    HeadIfMatch {
         key: String,
-        version_id: String,
+        etag: String,
     },
     GetRange {
         key: String,
-        version_id: String,
+        etag: String,
         range: Range<u64>,
     },
-    DeleteVersion {
+    Delete {
         key: String,
-        version_id: String,
     },
 }
 
 #[derive(Debug, Clone)]
 struct StoredObject {
+    etag: String,
     content_type: String,
     bytes: Bytes,
 }
 
 #[derive(Debug, Default)]
 struct State {
-    objects: HashMap<(String, String), StoredObject>,
-    latest: HashMap<String, String>,
+    objects: HashMap<String, StoredObject>,
     calls: Vec<BlobCall>,
     delete_failures_remaining: usize,
 }
 
+/// Unversioned store with S3 conditional-read semantics: a pinned read whose
+/// ETag no longer matches fails with `BlobError::Integrity` (HTTP 412).
 #[derive(Debug, Default)]
 pub struct InMemoryBlobStore {
     state: Mutex<State>,
 }
 
+/// Object key of a reservation minted by `InMemoryBlobStore`.
+pub fn reserved_key(reservation: &serde_json::Value) -> &str {
+    reservation["upload"]["url"]
+        .as_str()
+        .and_then(|url| url.strip_prefix(UPLOAD_BASE))
+        .expect("fake presigned PUT URL")
+}
+
 impl InMemoryBlobStore {
-    pub fn put_latest(
+    /// Stores (or overwrites) `key` with a new ETag, like an out-of-band PUT.
+    pub fn put(
         &self,
         key: impl Into<String>,
-        version_id: impl Into<String>,
+        etag: impl Into<String>,
         content_type: impl Into<String>,
         bytes: impl Into<Bytes>,
     ) {
-        let key = key.into();
-        let version_id = version_id.into();
         let object = StoredObject {
+            etag: etag.into(),
             content_type: content_type.into(),
             bytes: bytes.into(),
         };
-        let mut state = self.state.lock().expect("blob fixture mutex");
-        state
+        self.state
+            .lock()
+            .expect("blob fixture mutex")
             .objects
-            .insert((key.clone(), version_id.clone()), object);
-        state.latest.insert(key, version_id);
+            .insert(key.into(), object);
+    }
+
+    pub fn contains(&self, key: &str) -> bool {
+        self.state.lock().expect("blob fixture mutex").objects.contains_key(key)
     }
 
     pub fn set_delete_failures(&self, count: usize) {
@@ -91,38 +107,45 @@ impl InMemoryBlobStore {
         self.state.lock().expect("blob fixture mutex").calls.clear();
     }
 
-    fn object_head(version_id: String, object: &StoredObject) -> ObjectHead {
+    fn object_head(object: &StoredObject) -> ObjectHead {
         ObjectHead {
             content_length: object.bytes.len() as u64,
             content_type: Some(object.content_type.clone()),
-            version_id,
+            etag: object.etag.clone(),
             last_modified: None,
         }
+    }
+
+    fn matching<'a>(state: &'a State, key: &str, etag: &str) -> Result<&'a StoredObject, BlobError> {
+        let object = state.objects.get(key).ok_or(BlobError::NotFound)?;
+        if object.etag != etag {
+            return Err(BlobError::Integrity);
+        }
+        Ok(object)
     }
 }
 
 #[async_trait]
 impl BlobStore for InMemoryBlobStore {
-    async fn presign_post_archive(
+    async fn presign_put_archive(
         &self,
         key: &str,
         content_length: u64,
         content_type: &str,
         expires_in: Duration,
-    ) -> Result<PresignedPost, BlobError> {
+    ) -> Result<PresignedPut, BlobError> {
         let mut state = self.state.lock().expect("blob fixture mutex");
         state.calls.push(BlobCall::Presign {
             key: key.to_owned(),
             content_length,
             content_type: content_type.to_owned(),
         });
-        let mut fields = BTreeMap::new();
-        fields.insert("key".into(), key.into());
-        fields.insert("Content-Type".into(), content_type.into());
-        fields.insert("success_action_status".into(), "204".into());
-        Ok(PresignedPost {
-            url: "https://archive-upload.test".into(),
-            fields,
+        Ok(PresignedPut {
+            url: format!("{UPLOAD_BASE}{key}"),
+            headers: BTreeMap::from([
+                ("Content-Type".into(), content_type.into()),
+                ("If-None-Match".into(), "*".into()),
+            ]),
             expires_at: Utc::now()
                 + ChronoDuration::from_std(expires_in).map_err(|_| BlobError::Integrity)?,
         })
@@ -130,50 +153,27 @@ impl BlobStore for InMemoryBlobStore {
 
     async fn head_object(&self, key: &str) -> Result<ObjectHead, BlobError> {
         let mut state = self.state.lock().expect("blob fixture mutex");
-        state.calls.push(BlobCall::Head {
-            key: key.to_owned(),
-        });
-        let version_id = state.latest.get(key).cloned().ok_or(BlobError::NotFound)?;
-        let object = state
-            .objects
-            .get(&(key.to_owned(), version_id.clone()))
-            .ok_or(BlobError::NotFound)?;
-        Ok(Self::object_head(version_id, object))
+        state.calls.push(BlobCall::Head { key: key.to_owned() });
+        state.objects.get(key).map(Self::object_head).ok_or(BlobError::NotFound)
     }
 
-    async fn head_object_version(
-        &self,
-        key: &str,
-        version_id: &str,
-    ) -> Result<ObjectHead, BlobError> {
+    async fn head_object_if_match(&self, key: &str, etag: &str) -> Result<ObjectHead, BlobError> {
         let mut state = self.state.lock().expect("blob fixture mutex");
-        state.calls.push(BlobCall::HeadVersion {
+        state.calls.push(BlobCall::HeadIfMatch {
             key: key.to_owned(),
-            version_id: version_id.to_owned(),
+            etag: etag.to_owned(),
         });
-        let object = state
-            .objects
-            .get(&(key.to_owned(), version_id.to_owned()))
-            .ok_or(BlobError::NotFound)?;
-        Ok(Self::object_head(version_id.to_owned(), object))
+        Self::matching(&state, key, etag).map(Self::object_head)
     }
 
-    async fn get_range(
-        &self,
-        key: &str,
-        version_id: &str,
-        range: Range<u64>,
-    ) -> Result<Bytes, BlobError> {
+    async fn get_range(&self, key: &str, etag: &str, range: Range<u64>) -> Result<Bytes, BlobError> {
         let mut state = self.state.lock().expect("blob fixture mutex");
         state.calls.push(BlobCall::GetRange {
             key: key.to_owned(),
-            version_id: version_id.to_owned(),
+            etag: etag.to_owned(),
             range: range.clone(),
         });
-        let object = state
-            .objects
-            .get(&(key.to_owned(), version_id.to_owned()))
-            .ok_or(BlobError::NotFound)?;
+        let object = Self::matching(&state, key, etag)?;
         let start = usize::try_from(range.start).map_err(|_| BlobError::Integrity)?;
         let end = usize::try_from(range.end).map_err(|_| BlobError::Integrity)?;
         if start > end || end > object.bytes.len() {
@@ -182,23 +182,13 @@ impl BlobStore for InMemoryBlobStore {
         Ok(object.bytes.slice(start..end))
     }
 
-    async fn delete_version(&self, key: &str, version_id: &str) -> Result<(), BlobError> {
+    async fn delete_object(&self, key: &str) -> Result<(), BlobError> {
         let mut state = self.state.lock().expect("blob fixture mutex");
-        state.calls.push(BlobCall::DeleteVersion {
-            key: key.to_owned(),
-            version_id: version_id.to_owned(),
-        });
+        state.calls.push(BlobCall::Delete { key: key.to_owned() });
         if state.delete_failures_remaining > 0 {
             state.delete_failures_remaining -= 1;
             return Err(BlobError::Provider("synthetic delete failure".into()));
         }
-        state
-            .objects
-            .remove(&(key.to_owned(), version_id.to_owned()))
-            .ok_or(BlobError::NotFound)?;
-        if state.latest.get(key).map(String::as_str) == Some(version_id) {
-            state.latest.remove(key);
-        }
-        Ok(())
+        state.objects.remove(key).map(|_| ()).ok_or(BlobError::NotFound)
     }
 }

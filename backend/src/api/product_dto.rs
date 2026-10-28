@@ -1,4 +1,4 @@
-//! Shared camelCase product API DTOs (Plan 006).
+//! Shared camelCase product API DTOs.
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

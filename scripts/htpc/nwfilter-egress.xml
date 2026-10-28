@@ -1,0 +1,7 @@
+<filter name='ghostpost-egress' chain='root'>
+  <filterref filter='clean-traffic'/>
+  <filterref filter='ghostpost-no-lan'/>
+  <rule action='drop' direction='out' priority='500'>
+    <ipv6/>
+  </rule>
+</filter>

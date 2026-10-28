@@ -8,7 +8,7 @@ use clap::{Parser, Subcommand};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode as StdExit;
 
-/// Process exit codes per Plan 005.
+/// Process exit codes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum ExitCode {
@@ -16,7 +16,6 @@ pub enum ExitCode {
     Threshold = 10,
     Hash = 11,
     Privacy = 12,
-    Approval = 13,
     UserError = 20,
 }
 
@@ -66,7 +65,7 @@ pub enum Command {
 pub enum ManifestCmd {
     /// List known manifests under manifests/.
     List,
-    /// Verify prompt/schema hashes and model/approval references.
+    /// Verify prompt/schema hashes and model references.
     Verify,
 }
 
@@ -100,10 +99,6 @@ pub async fn run_cli() -> Result<ExitCode> {
             if outcome.privacy_findings > 0 {
                 eprintln!("privacy findings: {}", outcome.privacy_findings);
                 return Ok(ExitCode::Privacy);
-            }
-            if outcome.approval_blocked {
-                eprintln!("approval manifest blocked provider");
-                return Ok(ExitCode::Approval);
             }
             if !outcome.passed {
                 eprintln!("thresholds failed");

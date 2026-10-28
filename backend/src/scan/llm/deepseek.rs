@@ -1,6 +1,6 @@
-//! DeepSeek V4 Flash adapter — thinking disabled, JSON object mode.
+//! DeepSeek V4.1 Flash adapter — thinking disabled, JSON object mode.
 use super::{
-    cost_usd, ScanCompletionRequest, ScanCompletionResponse, ScanLlmError, ScanLlmProvider,
+    ScanCompletionRequest, ScanCompletionResponse, ScanLlmError, ScanLlmProvider,
     REPAIR_USER_PREFIX,
 };
 use async_trait::async_trait;
@@ -10,13 +10,13 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Semaphore;
 
-pub const PROVIDER_ID: &str = "deepseek-v4-flash";
-pub const MODEL_ID: &str = "deepseek-v4-flash";
-pub const API_BASE: &str = "https://api.deepseek.com/v1";
+pub const PROVIDER_ID: &str = "deepseek-flash";
+pub const MODEL_ID: &str = "deepseek-flash";
+pub const API_BASE: &str = "https://api.deepseek.com";
 pub const DEFAULT_MAX_TOKENS: u32 = 4096;
 pub const DEFAULT_TEMPERATURE: f32 = 0.0;
 
-pub struct DeepseekV4FlashProvider {
+pub struct DeepseekFlashProvider {
     api_key: String,
     api_base: String,
     client: reqwest::Client,
@@ -25,7 +25,7 @@ pub struct DeepseekV4FlashProvider {
     active: AtomicUsize,
 }
 
-impl DeepseekV4FlashProvider {
+impl DeepseekFlashProvider {
     pub fn new(api_key: impl Into<String>) -> Self {
         let max_inflight = std::env::var("SCAN_LLM_MAX_INFLIGHT")
             .ok()
@@ -78,7 +78,7 @@ struct Usage {
 }
 
 #[async_trait]
-impl ScanLlmProvider for DeepseekV4FlashProvider {
+impl ScanLlmProvider for DeepseekFlashProvider {
     fn provider_id(&self) -> &'static str {
         PROVIDER_ID
     }
@@ -162,13 +162,15 @@ impl ScanLlmProvider for DeepseekV4FlashProvider {
             .json()
             .await
             .map_err(|_| ScanLlmError::Transport)?;
+        // JSON mode can occasionally return empty/null content (documented upstream);
+        // hand it to validation so the repair retry runs instead of failing the scan.
         let content = parsed
             .choices
             .as_ref()
             .and_then(|c| c.first())
             .and_then(|c| c.message.as_ref())
             .and_then(|m| m.content.clone())
-            .ok_or(ScanLlmError::Rejected)?;
+            .unwrap_or_default();
 
         let input_tokens = parsed.usage.as_ref().and_then(|u| u.prompt_tokens).unwrap_or(0);
         let output_tokens = parsed
@@ -181,9 +183,6 @@ impl ScanLlmProvider for DeepseekV4FlashProvider {
             .as_ref()
             .and_then(|u| u.prompt_cache_hit_tokens)
             .unwrap_or(0);
-
-        // Touch pricing helper so cost path is covered when callers ask.
-        let _ = cost_usd(input_tokens, cache_hit_tokens, output_tokens);
 
         tracing::info!(
             request_id = %req.request_id,
@@ -205,6 +204,7 @@ impl ScanLlmProvider for DeepseekV4FlashProvider {
             provider: PROVIDER_ID,
             provider_request_id: parsed.id,
             latency_ms: start.elapsed().as_millis() as u32,
+            cost_usd: super::cost_usd(input_tokens, cache_hit_tokens, output_tokens, chrono::Utc::now()),
         })
     }
 }

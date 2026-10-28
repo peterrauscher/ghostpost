@@ -1,4 +1,4 @@
-//! Dashboard + read-only entitlement routes (Plan 006).
+//! Dashboard + read-only entitlement routes.
 use crate::api::problem::Problem;
 use crate::api::product_dto::{
     flag_row_to_response, focus_label, focus_symbol, gauge_for_level, DashboardResponse, FocusArea,

@@ -2,7 +2,7 @@ mod common;
 
 use axum::http::{Method, StatusCode};
 use common::*;
-use common::blob::{BlobCall, InMemoryBlobStore};
+use common::blob::{reserved_key, BlobCall, InMemoryBlobStore};
 use ghostpost_backend::r#import::limits::MAX_ARCHIVE_BYTES;
 use serde_json::{json, Value};
 use std::sync::Arc;
@@ -40,7 +40,7 @@ fn assert_archive_response_is_sanitized(body: &Value, expected_id: &str) {
     ));
     for forbidden in [
         "rawStorageKey",
-        "rawStorageVersionId",
+        "rawStorageEtag",
         "archiveFingerprint",
         "contentSha256",
         "etag",
@@ -169,13 +169,21 @@ async fn reserve_validates_platform_length_type_and_replays_one_server_minted_ke
     let first_body = first.json();
     let id = first_body["id"].as_str().expect("archive id");
     Uuid::parse_str(id).expect("UUID archive id");
-    assert_eq!(first_body["upload"]["method"], "POST");
-    assert_eq!(first_body["upload"]["fields"]["Content-Type"], "application/zip");
-    assert_eq!(first_body["upload"]["fields"]["success_action_status"], "204");
-    let key = first_body["upload"]["fields"]["key"]
-        .as_str()
-        .expect("server-minted object key");
-    assert!(key.starts_with("archive-imports/"));
+    assert_eq!(first_body["upload"]["method"], "PUT");
+    assert_eq!(
+        first_body["upload"]["headers"],
+        json!({"Content-Type": "application/zip", "If-None-Match": "*"}),
+        "the client must send the signed content type and create-once precondition"
+    );
+    let url = url::Url::parse(first_body["upload"]["url"].as_str().expect("upload URL")).unwrap();
+    let signed: std::collections::HashMap<_, _> = url.query_pairs().into_owned().collect();
+    assert_eq!(
+        signed.get("X-Amz-SignedHeaders").map(String::as_str),
+        Some("content-length;content-type;host;if-none-match"),
+        "length, type, and the create-once precondition are bound into the signature"
+    );
+    let key = url.path();
+    assert!(key.contains("/archive-imports/"));
     assert!(key.ends_with("/source.zip"));
     assert!(first_body.get("contentSha256").is_none());
 
@@ -438,7 +446,7 @@ async fn list_get_and_delete_are_tenant_scoped_sanitized_and_preserve_shared_con
 }
 
 #[tokio::test]
-async fn complete_verifies_latest_object_once_pins_its_version_and_replays_without_reheading() {
+async fn complete_verifies_uploaded_object_once_pins_its_etag_and_replays_without_reheading() {
     ensure_migrated().await;
     let pool = app_pool().await;
     let workos = Arc::new(MockWorkos::new());
@@ -467,10 +475,10 @@ async fn complete_verifies_latest_object_once_pins_its_version_and_replays_witho
     assert_eq!(reserve.status, StatusCode::CREATED, "{}", reserve.text());
     let reservation = reserve.json();
     let import_id = reservation["id"].as_str().unwrap();
-    let storage_key = reservation["upload"]["fields"]["key"].as_str().unwrap();
-    blob.put_latest(
+    let storage_key = reserved_key(&reservation);
+    blob.put(
         storage_key,
-        "immutable-version-a",
+        "\"etag-a\"",
         "application/zip",
         &b"PK synthetic"[..],
     );
@@ -512,7 +520,7 @@ async fn complete_verifies_latest_object_once_pins_its_version_and_replays_witho
         vec![BlobCall::Head {
             key: storage_key.into()
         }],
-        "completion verifies the latest object exactly once before pinning its immutable version"
+        "completion verifies the uploaded object exactly once before pinning its ETag"
     );
 
     let import_uuid = Uuid::parse_str(import_id).unwrap();
@@ -523,7 +531,7 @@ async fn complete_verifies_latest_object_once_pins_its_version_and_replays_witho
         .await
         .unwrap();
     let pinned: (String, Option<String>, bool) = sqlx::query_as(
-        "SELECT status,raw_storage_version_id,raw_delete_after IS NOT NULL FROM archive_imports WHERE tenant_id=$1 AND id=$2",
+        "SELECT status,raw_storage_etag,raw_delete_after IS NOT NULL FROM archive_imports WHERE tenant_id=$1 AND id=$2",
     )
     .bind(tenant_id)
     .bind(import_uuid)
@@ -532,7 +540,7 @@ async fn complete_verifies_latest_object_once_pins_its_version_and_replays_witho
     .unwrap();
     assert_eq!(
         pinned,
-        ("queued".into(), Some("immutable-version-a".into()), true)
+        ("queued".into(), Some("\"etag-a\"".into()), true)
     );
     let jobs: Vec<(String, serde_json::Value)> = sqlx::query_as(
         "SELECT kind,payload FROM work_items WHERE tenant_id=$1 AND payload->>'import_id'=$2",
@@ -549,15 +557,15 @@ async fn complete_verifies_latest_object_once_pins_its_version_and_replays_witho
             json!({
                 "import_id": import_id,
                 "key": storage_key,
-                "version_id": "immutable-version-a"
+                "etag": "\"etag-a\""
             })
         )],
-        "the queued worker payload contains only the server-pinned key and immutable version"
+        "the queued worker payload contains only the server-pinned key and ETag"
     );
 
-    blob.put_latest(
+    blob.put(
         storage_key,
-        "overwritten-version-b",
+        "\"etag-b\"",
         "application/zip",
         &b"PK replacement"[..],
     );
@@ -577,7 +585,7 @@ async fn complete_verifies_latest_object_once_pins_its_version_and_replays_witho
         vec![BlobCall::Head {
             key: storage_key.into()
         }],
-        "completion replay never replaces the immutable pin with a newer object version"
+        "completion replay never replaces the pin with a newer object"
     );
     let job_count: i64 = sqlx::query_scalar(
         "SELECT count(*)::bigint FROM work_items WHERE tenant_id=$1 AND kind='import.normalize' AND payload->>'import_id'=$2",
@@ -650,11 +658,11 @@ async fn complete_rejects_missing_length_and_type_mismatches_without_pinning_or_
         assert_eq!(reserve.status, StatusCode::CREATED, "case {name}: {}", reserve.text());
         let body = reserve.json();
         let import_id = body["id"].as_str().unwrap();
-        let storage_key = body["upload"]["fields"]["key"].as_str().unwrap();
+        let storage_key = reserved_key(&body);
         if let Some(bytes) = stored {
-            blob.put_latest(
+            blob.put(
                 storage_key,
-                format!("version-{name}"),
+                format!("\"etag-{name}\""),
                 stored_type,
                 bytes,
             );
@@ -684,7 +692,7 @@ async fn complete_rejects_missing_length_and_type_mismatches_without_pinning_or_
             "case {name}"
         );
         let state: (String, Option<String>) = sqlx::query_as(
-            "SELECT status,raw_storage_version_id FROM archive_imports WHERE tenant_id=$1 AND id=$2",
+            "SELECT status,raw_storage_etag FROM archive_imports WHERE tenant_id=$1 AND id=$2",
         )
         .bind(tenant_id)
         .bind(Uuid::parse_str(import_id).unwrap())

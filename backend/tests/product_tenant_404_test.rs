@@ -1,4 +1,4 @@
-//! Plan 006: cross-tenant scan/flag GET → 404.
+//! Cross-tenant scan/flag GET → 404.
 mod common;
 
 use axum::http::{Method, StatusCode};

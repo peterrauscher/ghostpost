@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ghostpost-app",
+  "account_id": "dc7e37bc337c69d10299f9ef70f843a9",
+  "compatibility_date": "2026-09-01",
+  "main": "worker/index.ts",
+  "routes": [{ "pattern": "app.getghostpost.com", "custom_domain": true }],
+  "assets": {
+    // Built by `npm run deploy:web` (expo export + scripts/prepare-web-dist.mjs).
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    // Worker code runs only for dynamic routes; everything else is a plain edge asset.
+    "run_worker_first": ["/review/*"]
+  },
+  "observability": { "enabled": true }
+}

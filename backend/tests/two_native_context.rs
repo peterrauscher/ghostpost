@@ -1,4 +1,4 @@
-//! Plan 003 Step 8 — two native contexts / exchange-proof binding.
+//! Two native contexts / exchange-proof binding.
 
 mod common;
 

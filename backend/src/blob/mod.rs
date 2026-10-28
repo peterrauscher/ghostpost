@@ -6,22 +6,28 @@ use std::{collections::BTreeMap, ops::Range, time::Duration};
 use uuid::Uuid;
 
 pub mod s3;
-pub mod signed_post;
+pub mod signed_put;
 
+/// Presigned create-once PUT. The client must send every entry in `headers`
+/// verbatim; the store derives `Content-Length` from the body.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PresignedPost { pub url: String, pub fields: BTreeMap<String, String>, pub expires_at: DateTime<Utc> }
+pub struct PresignedPut { pub url: String, pub headers: BTreeMap<String, String>, pub expires_at: DateTime<Utc> }
+/// `etag` is the store's opaque entity tag, quotes included, used verbatim in `If-Match`.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ObjectHead { pub content_length: u64, pub content_type: Option<String>, pub version_id: String, pub last_modified: Option<DateTime<Utc>> }
+pub struct ObjectHead { pub content_length: u64, pub content_type: Option<String>, pub etag: String, pub last_modified: Option<DateTime<Utc>> }
 #[derive(Debug, thiserror::Error)]
 pub enum BlobError { #[error("object not found")] NotFound, #[error("invalid storage configuration: {0}")] Config(String), #[error("storage integrity failure")] Integrity, #[error("storage operation failed: {0}")] Provider(String) }
 
+/// Raw archives are written once through a presigned PUT and pinned by ETag.
+/// Every pinned read sends `If-Match`, so bytes that changed after completion
+/// fail with `BlobError::Integrity` instead of being parsed.
 #[async_trait]
 pub trait BlobStore: Send + Sync {
- async fn presign_post_archive(&self,key:&str,content_length:u64,content_type:&str,expires_in:Duration)->Result<PresignedPost,BlobError>;
+ async fn presign_put_archive(&self,key:&str,content_length:u64,content_type:&str,expires_in:Duration)->Result<PresignedPut,BlobError>;
  async fn head_object(&self,key:&str)->Result<ObjectHead,BlobError>;
- async fn head_object_version(&self,key:&str,version_id:&str)->Result<ObjectHead,BlobError>;
- async fn get_range(&self,key:&str,version_id:&str,range:Range<u64>)->Result<Bytes,BlobError>;
- async fn delete_version(&self,key:&str,version_id:&str)->Result<(),BlobError>;
+ async fn head_object_if_match(&self,key:&str,etag:&str)->Result<ObjectHead,BlobError>;
+ async fn get_range(&self,key:&str,etag:&str,range:Range<u64>)->Result<Bytes,BlobError>;
+ async fn delete_object(&self,key:&str)->Result<(),BlobError>;
  async fn record_deletion_marker(&self,_:&AccountDeletionMarker)->Result<DeletionLedgerReceipt,BlobError>{Err(BlobError::Config("deletion ledger unavailable".into()))}
  async fn record_provider_complete(&self,_:&AccountDeletionMarker,_:&ProviderDeletionReceipt)->Result<(),BlobError>{Err(BlobError::Config("deletion ledger unavailable".into()))}
  async fn list_deletion_markers(&self,_:DateTime<Utc>)->Result<Vec<AccountDeletionMarker>,BlobError>{Err(BlobError::Config("deletion ledger unavailable".into()))}
@@ -35,11 +41,11 @@ pub struct UnavailableBlobStore;
 
 #[async_trait]
 impl BlobStore for UnavailableBlobStore {
- async fn presign_post_archive(&self,_:&str,_:u64,_:&str,_:Duration)->Result<PresignedPost,BlobError>{Err(BlobError::Config("archive blob store not configured".into()))}
+ async fn presign_put_archive(&self,_:&str,_:u64,_:&str,_:Duration)->Result<PresignedPut,BlobError>{Err(BlobError::Config("archive blob store not configured".into()))}
  async fn head_object(&self,_:&str)->Result<ObjectHead,BlobError>{Err(BlobError::NotFound)}
- async fn head_object_version(&self,_:&str,_:&str)->Result<ObjectHead,BlobError>{Err(BlobError::NotFound)}
+ async fn head_object_if_match(&self,_:&str,_:&str)->Result<ObjectHead,BlobError>{Err(BlobError::NotFound)}
  async fn get_range(&self,_:&str,_:&str,_:Range<u64>)->Result<Bytes,BlobError>{Err(BlobError::NotFound)}
- async fn delete_version(&self,_:&str,_:&str)->Result<(),BlobError>{Err(BlobError::NotFound)}
+ async fn delete_object(&self,_:&str)->Result<(),BlobError>{Err(BlobError::NotFound)}
 }
 
 #[derive(Debug, Default)]
@@ -47,16 +53,16 @@ pub struct DeterministicBlobStore;
 
 #[async_trait]
 impl BlobStore for DeterministicBlobStore {
- async fn presign_post_archive(&self,key:&str,length:u64,content_type:&str,ttl:Duration)->Result<PresignedPost,BlobError>{
-  signed_post::sign_post(
-   &signed_post::PostPolicyConfig{bucket:"ghostpost-archives".into(),region:"us-east-1".into(),endpoint:"https://ghostpost-archives.s3.us-east-1.amazonaws.com".into(),require_kms:false,kms_key_id:None},
-   &signed_post::SigningCredentials{access_key_id:"TESTACCESS".into(),secret_access_key:"test-secret-not-for-production".into(),session_token:None},
+ async fn presign_put_archive(&self,key:&str,length:u64,content_type:&str,ttl:Duration)->Result<PresignedPut,BlobError>{
+  signed_put::sign_put(
+   &signed_put::PutTarget{endpoint:"https://ghostpost-archives.s3.us-east-1.amazonaws.com".into(),region:"us-east-1".into()},
+   &signed_put::SigningCredentials{access_key_id:"TESTACCESS".into(),secret_access_key:"test-secret-not-for-production".into(),session_token:None},
    key,length,content_type,ttl,Utc::now())
  }
  async fn head_object(&self,_:&str)->Result<ObjectHead,BlobError>{Err(BlobError::NotFound)}
- async fn head_object_version(&self,_:&str,_:&str)->Result<ObjectHead,BlobError>{Err(BlobError::NotFound)}
+ async fn head_object_if_match(&self,_:&str,_:&str)->Result<ObjectHead,BlobError>{Err(BlobError::NotFound)}
  async fn get_range(&self,_:&str,_:&str,_:Range<u64>)->Result<Bytes,BlobError>{Err(BlobError::NotFound)}
- async fn delete_version(&self,_:&str,_:&str)->Result<(),BlobError>{Err(BlobError::NotFound)}
+ async fn delete_object(&self,_:&str)->Result<(),BlobError>{Err(BlobError::NotFound)}
  async fn record_deletion_marker(&self,marker:&AccountDeletionMarker)->Result<DeletionLedgerReceipt,BlobError>{Ok(DeletionLedgerReceipt{key:deletion_marker_key(marker)})}
  async fn record_provider_complete(&self,_:&AccountDeletionMarker,_:&ProviderDeletionReceipt)->Result<(),BlobError>{Ok(())}
  async fn list_deletion_markers(&self,_:DateTime<Utc>)->Result<Vec<AccountDeletionMarker>,BlobError>{Ok(Vec::new())}

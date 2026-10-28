@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build redacted-real Plan 004 fixtures from approved local exports."""
+"""Build redacted-real import fixtures from approved local exports."""
 
 from __future__ import annotations
 

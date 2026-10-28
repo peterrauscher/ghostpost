@@ -1,4 +1,4 @@
-//! Plan 006: retention sweeper + soft-deleted flags hidden from reads.
+//! Retention sweeper + soft-deleted flags hidden from reads.
 mod common;
 
 use axum::http::{Method, StatusCode};

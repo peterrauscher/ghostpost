@@ -1,10 +1,16 @@
+//! Safe ZIP indexing over any `Read + Seek` source (the spooled temp file in
+//! production, a `Cursor` in tests). Nothing here loads the archive or an
+//! entry into memory: the EOCD comes from a bounded tail read, the central
+//! directory is walked header by header, and selected entries are handed to
+//! parsers as streaming readers.
 use super::{limits::*, ArchivePlatform, ImportError, ImportErrorCode};
+use sha2::{Digest, Sha256};
 use std::{
-    collections::{BTreeMap, HashSet},
-    io::{Cursor, Read},
+    collections::HashSet,
+    io::{self, BufReader, Read, Seek, SeekFrom},
 };
-use zip::{CompressionMethod, ZipArchive};
 use unicode_normalization::UnicodeNormalization;
+use zip::{CompressionMethod, ZipArchive};
 
 #[derive(Debug, Clone)]
 pub struct SelectedEntry {
@@ -13,8 +19,8 @@ pub struct SelectedEntry {
     pub uncompressed_size: u64,
 }
 
-pub struct SafeArchive {
-    bytes: Vec<u8>,
+pub struct SafeArchive<R: Read + Seek> {
+    zip: ZipArchive<R>,
     pub selected: Vec<SelectedEntry>,
 }
 
@@ -85,22 +91,8 @@ fn valid_classic_month(name: &str) -> bool {
         && matches!(&stem[5..7], "01" | "02" | "03" | "04" | "05" | "06" | "07" | "08" | "09" | "10" | "11" | "12")
 }
 
-fn has_exact_eocd(bytes: &[u8]) -> bool {
-    let Some(offset) = bytes.windows(4).rposition(|window| window == b"PK\x05\x06") else {
-        return false;
-    };
-    if offset + 22 > bytes.len() {
-        return false;
-    }
-    let comment_len = u16::from_le_bytes([bytes[offset + 20], bytes[offset + 21]]) as usize;
-    offset + 22 + comment_len == bytes.len()
-}
-
-#[derive(Clone)]
-struct CentralEntry {
-    name: String,
-    flags: u16,
-    method: u16,
+fn unsupported(_: io::Error) -> ImportError {
+    ImportErrorCode::UnsupportedZip.into()
 }
 
 fn u16_at(bytes: &[u8], offset: usize) -> Option<u16> {
@@ -111,75 +103,159 @@ fn u32_at(bytes: &[u8], offset: usize) -> Option<u32> {
     Some(u32::from_le_bytes(bytes.get(offset..offset + 4)?.try_into().ok()?))
 }
 
-fn central_entries(bytes: &[u8]) -> Result<Vec<CentralEntry>, ImportError> {
-    let eocd = bytes.windows(4).rposition(|window| window == b"PK\x05\x06")
+/// 128-bit digest of a name: duplicate detection over up to `MAX_ZIP_ENTRIES`
+/// names without keeping every name in memory.
+fn name_digest(name: &str) -> [u8; 16] {
+    let digest = Sha256::digest(name.as_bytes());
+    let mut out = [0u8; 16];
+    out.copy_from_slice(&digest[..16]);
+    out
+}
+
+struct Eocd {
+    count: usize,
+    central_offset: u64,
+}
+
+/// The EOCD record must end the file exactly (comment included), so it lies
+/// within the last 22 + 65535 bytes; only that window is read.
+fn read_exact_eocd<R: Read + Seek>(reader: &mut R, len: u64) -> Result<Eocd, ImportError> {
+    const EOCD_LEN: usize = 22;
+    let window = len.min((EOCD_LEN + u16::MAX as usize) as u64);
+    reader.seek(SeekFrom::Start(len - window)).map_err(unsupported)?;
+    let mut tail = vec![0u8; window as usize];
+    reader.read_exact(&mut tail).map_err(unsupported)?;
+    let offset = tail
+        .windows(4)
+        .rposition(|window| window == b"PK\x05\x06")
         .ok_or_else(|| ImportError::from(ImportErrorCode::UnsupportedZip))?;
-    let count = u16_at(bytes, eocd + 10).ok_or_else(|| ImportError::from(ImportErrorCode::UnsupportedZip))? as usize;
-    if count > MAX_ZIP_ENTRIES {
+    if offset + EOCD_LEN > tail.len() {
+        return Err(ImportErrorCode::UnsupportedZip.into());
+    }
+    let comment_len = u16_at(&tail, offset + 20).ok_or_else(|| ImportError::from(ImportErrorCode::UnsupportedZip))? as usize;
+    if offset + EOCD_LEN + comment_len != tail.len() {
+        return Err(ImportErrorCode::UnsupportedZip.into());
+    }
+    let count = u16_at(&tail, offset + 10).ok_or_else(|| ImportError::from(ImportErrorCode::UnsupportedZip))? as usize;
+    let central_offset = u32_at(&tail, offset + 16).ok_or_else(|| ImportError::from(ImportErrorCode::UnsupportedZip))? as u64;
+    Ok(Eocd { count, central_offset })
+}
+
+struct CentralEntry {
+    name: String,
+    flags: u16,
+    method: u16,
+}
+
+struct CentralScan {
+    has_reddit: bool,
+    has_x: bool,
+    /// Only entries allowlisted for either platform; everything else is
+    /// validated and forgotten.
+    allowlisted: Vec<CentralEntry>,
+}
+
+/// Walks the central directory header by header from the raw bytes, before
+/// the zip crate parses it, so unsafe names, NFC duplicates, encryption flags,
+/// and compression methods are rejected without trusting a library's view.
+fn scan_central<R: Read + Seek>(reader: &mut R, eocd: &Eocd) -> Result<CentralScan, ImportError> {
+    if eocd.count > MAX_ZIP_ENTRIES {
         return Err(ImportErrorCode::ZipLimitExceeded.into());
     }
-    let mut offset = u32_at(bytes, eocd + 16).ok_or_else(|| ImportError::from(ImportErrorCode::UnsupportedZip))? as usize;
-    let mut entries = Vec::with_capacity(count);
-    let mut canonical_names = HashSet::with_capacity(count);
-    for _ in 0..count {
-        if bytes.get(offset..offset + 4) != Some(b"PK\x01\x02") {
+    reader.seek(SeekFrom::Start(eocd.central_offset)).map_err(unsupported)?;
+    let mut reader = BufReader::with_capacity(64 * 1024, reader);
+    let mut canonical_names = HashSet::with_capacity(eocd.count);
+    let mut scan = CentralScan { has_reddit: false, has_x: false, allowlisted: Vec::new() };
+    let mut header = [0u8; 46];
+    let mut raw_name = Vec::with_capacity(MAX_ENTRY_NAME_BYTES);
+    for _ in 0..eocd.count {
+        reader.read_exact(&mut header).map_err(unsupported)?;
+        if &header[0..4] != b"PK\x01\x02" {
             return Err(ImportErrorCode::UnsupportedZip.into());
         }
-        let flags = u16_at(bytes, offset + 8).ok_or_else(|| ImportError::from(ImportErrorCode::UnsupportedZip))?;
-        let method = u16_at(bytes, offset + 10).ok_or_else(|| ImportError::from(ImportErrorCode::UnsupportedZip))?;
-        let name_len = u16_at(bytes, offset + 28).ok_or_else(|| ImportError::from(ImportErrorCode::UnsupportedZip))? as usize;
-        let extra_len = u16_at(bytes, offset + 30).ok_or_else(|| ImportError::from(ImportErrorCode::UnsupportedZip))? as usize;
-        let comment_len = u16_at(bytes, offset + 32).ok_or_else(|| ImportError::from(ImportErrorCode::UnsupportedZip))? as usize;
-        let raw_name = bytes.get(offset + 46..offset + 46 + name_len)
-            .ok_or_else(|| ImportError::from(ImportErrorCode::UnsupportedZip))?;
-        let name = std::str::from_utf8(raw_name)
-            .map_err(|_| ImportError::from(ImportErrorCode::UnsafeZipEntry))?.to_owned();
-        if !safe_path(&name) || name.to_ascii_lowercase().ends_with(".zip") {
+        let flags = u16_at(&header, 8).expect("fixed header");
+        let method = u16_at(&header, 10).expect("fixed header");
+        let name_len = u16_at(&header, 28).expect("fixed header") as usize;
+        let extra_len = u16_at(&header, 30).expect("fixed header") as i64;
+        let comment_len = u16_at(&header, 32).expect("fixed header") as i64;
+        raw_name.resize(name_len, 0);
+        reader.read_exact(&mut raw_name).map_err(unsupported)?;
+        reader.seek_relative(extra_len + comment_len).map_err(unsupported)?;
+        let name = std::str::from_utf8(&raw_name)
+            .map_err(|_| ImportError::from(ImportErrorCode::UnsafeZipEntry))?;
+        if !safe_path(name) || name.to_ascii_lowercase().ends_with(".zip") {
             return Err(ImportErrorCode::UnsafeZipEntry.into());
         }
         let canonical: String = name.nfc().collect();
-        if !canonical_names.insert(canonical) {
+        if !canonical_names.insert(name_digest(&canonical)) {
             return Err(ImportErrorCode::DuplicateZipEntry.into());
         }
-        entries.push(CentralEntry { name, flags, method });
-        offset = offset.checked_add(46 + name_len + extra_len + comment_len)
-            .ok_or_else(|| ImportError::from(ImportErrorCode::UnsupportedZip))?;
+        let reddit = allowed(ArchivePlatform::Reddit, name);
+        let x = allowed(ArchivePlatform::X, name);
+        scan.has_reddit |= reddit;
+        scan.has_x |= x;
+        if reddit || x {
+            scan.allowlisted.push(CentralEntry { name: name.to_owned(), flags, method });
+        }
     }
-    Ok(entries)
+    Ok(scan)
 }
 
-impl SafeArchive {
-    pub fn index(bytes: Vec<u8>, platform: ArchivePlatform) -> Result<Self, ImportError> {
-        if bytes.len() as u64 > MAX_ARCHIVE_BYTES {
+/// Counts decompressed bytes and remembers whether the underlying ZIP stream
+/// failed, so a CRC or inflate error is reported as `IntegrityMismatch` even
+/// when a parser surfaces it as its own error.
+struct VerifiedReader<R> {
+    inner: R,
+    limit: u64,
+    read: u64,
+    io_failed: bool,
+}
+
+impl<R: Read> Read for VerifiedReader<R> {
+    fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
+        match self.inner.read(buffer) {
+            Ok(n) => {
+                self.read += n as u64;
+                if self.read > self.limit {
+                    self.io_failed = true;
+                    return Err(io::Error::new(io::ErrorKind::InvalidData, "entry longer than its central size"));
+                }
+                Ok(n)
+            }
+            Err(err) => {
+                self.io_failed = true;
+                Err(err)
+            }
+        }
+    }
+}
+
+impl<R: Read + Seek> SafeArchive<R> {
+    pub fn index(mut reader: R, platform: ArchivePlatform) -> Result<Self, ImportError> {
+        let len = reader.seek(SeekFrom::End(0)).map_err(unsupported)?;
+        if len > MAX_ARCHIVE_BYTES {
             return Err(ImportErrorCode::UploadTooLarge.into());
         }
-        if !matches!(
-            bytes.get(0..4),
-            Some(b"PK\x03\x04") | Some(b"PK\x05\x06") | Some(b"PK\x07\x08")
-        ) {
+        let mut magic = [0u8; 4];
+        reader.seek(SeekFrom::Start(0)).map_err(unsupported)?;
+        if len < 4 || reader.read_exact(&mut magic).is_err()
+            || !matches!(&magic, b"PK\x03\x04" | b"PK\x05\x06" | b"PK\x07\x08")
+        {
             return Err(ImportErrorCode::NotZip.into());
         }
-        if !has_exact_eocd(&bytes) {
-            return Err(ImportErrorCode::UnsupportedZip.into());
-        }
-        let central = central_entries(&bytes)?;
-        let has_reddit = central.iter().any(|entry| allowed(ArchivePlatform::Reddit, &entry.name));
-        let has_x = central.iter().any(|entry| allowed(ArchivePlatform::X, &entry.name));
-        if has_reddit && has_x {
+        let eocd = read_exact_eocd(&mut reader, len)?;
+        let central = scan_central(&mut reader, &eocd)?;
+        if central.has_reddit && central.has_x {
             return Err(ImportErrorCode::AmbiguousArchive.into());
         }
-        let declared_present = match platform {
-            ArchivePlatform::Reddit => has_reddit,
-            ArchivePlatform::X => has_x,
-        };
-        let other_present = match platform {
-            ArchivePlatform::Reddit => has_x,
-            ArchivePlatform::X => has_reddit,
+        let (declared_present, other_present) = match platform {
+            ArchivePlatform::Reddit => (central.has_reddit, central.has_x),
+            ArchivePlatform::X => (central.has_x, central.has_reddit),
         };
         if !declared_present && other_present {
             return Err(ImportErrorCode::PlatformMismatch.into());
         }
-        for entry in central.iter().filter(|entry| allowed(platform, &entry.name)) {
+        for entry in central.allowlisted.iter().filter(|entry| allowed(platform, &entry.name)) {
             if entry.flags & 1 != 0 {
                 return Err(ImportErrorCode::EncryptedZip.into());
             }
@@ -187,12 +263,14 @@ impl SafeArchive {
                 return Err(ImportErrorCode::UnsupportedCompression.into());
             }
         }
-        let mut zip = ZipArchive::new(Cursor::new(&bytes))
+        drop(central);
+        reader.seek(SeekFrom::Start(0)).map_err(unsupported)?;
+        let mut zip = ZipArchive::new(reader)
             .map_err(|_| ImportError::from(ImportErrorCode::UnsupportedZip))?;
         if zip.len() > MAX_ZIP_ENTRIES {
             return Err(ImportErrorCode::ZipLimitExceeded.into());
         }
-        let mut names = HashSet::new();
+        let mut names = HashSet::with_capacity(zip.len());
         let mut selected = Vec::new();
         let mut total_uncompressed = 0u64;
         let mut total_compressed = 0u64;
@@ -201,18 +279,17 @@ impl SafeArchive {
                 .by_index_raw(index)
                 .map_err(|_| ImportError::from(ImportErrorCode::UnsupportedZip))?;
             let name = std::str::from_utf8(file.name_raw())
-                .map_err(|_| ImportError::from(ImportErrorCode::UnsafeZipEntry))?
-                .to_owned();
-            if !safe_path(&name)
+                .map_err(|_| ImportError::from(ImportErrorCode::UnsafeZipEntry))?;
+            if !safe_path(name)
                 || name.to_ascii_lowercase().ends_with(".zip")
                 || file.unix_mode().is_some_and(|mode| mode & 0o170000 == 0o120000)
             {
                 return Err(ImportErrorCode::UnsafeZipEntry.into());
             }
-            if !names.insert(name.clone()) {
+            if !names.insert(name_digest(name)) {
                 return Err(ImportErrorCode::DuplicateZipEntry.into());
             }
-            if allowed(platform, &name) {
+            if allowed(platform, name) {
                 if file.encrypted() {
                     return Err(ImportErrorCode::EncryptedZip.into());
                 }
@@ -233,7 +310,7 @@ impl SafeArchive {
                 total_uncompressed = total_uncompressed.saturating_add(file.size());
                 total_compressed = total_compressed.saturating_add(compressed);
                 selected.push(SelectedEntry {
-                    name,
+                    name: name.to_owned(),
                     compressed_size: compressed,
                     uncompressed_size: file.size(),
                 });
@@ -264,27 +341,39 @@ impl SafeArchive {
         if platform != ArchivePlatform::X || !selected.iter().any(|entry| part_number(&entry.name).is_some()) {
             selected.sort_by(|left, right| left.name.cmp(&right.name));
         }
-        drop(zip);
-        Ok(Self { bytes, selected })
+        Ok(Self { zip, selected })
     }
 
-    pub fn read_selected(&self) -> Result<BTreeMap<String, Vec<u8>>, ImportError> {
-        let mut zip = ZipArchive::new(Cursor::new(&self.bytes))
-            .map_err(|_| ImportError::from(ImportErrorCode::UnsupportedZip))?;
-        let mut output = BTreeMap::new();
-        for entry in &self.selected {
-            let file = zip
-                .by_name(&entry.name)
-                .map_err(|_| ImportError::from(ImportErrorCode::IntegrityMismatch))?;
-            let mut bytes = Vec::with_capacity(entry.uncompressed_size.min(1024 * 1024) as usize);
-            file.take(entry.uncompressed_size + 1)
-                .read_to_end(&mut bytes)
-                .map_err(|_| ImportError::from(ImportErrorCode::IntegrityMismatch))?;
-            if bytes.len() as u64 != entry.uncompressed_size {
-                return Err(ImportErrorCode::IntegrityMismatch.into());
-            }
-            output.insert(entry.name.clone(), bytes);
+    /// Streams one selected entry into `parse`. The reader yields exactly the
+    /// central-directory size; a short, long, or corrupt entry (CRC/inflate
+    /// failure) is `IntegrityMismatch` whatever error the parser reports.
+    pub fn read_entry<T>(
+        &mut self,
+        name: &str,
+        parse: impl FnOnce(&mut dyn Read) -> Result<T, ImportError>,
+    ) -> Result<T, ImportError> {
+        let expected = self
+            .selected
+            .iter()
+            .find(|entry| entry.name == name)
+            .map(|entry| entry.uncompressed_size)
+            .ok_or_else(|| ImportError::from(ImportErrorCode::IntegrityMismatch))?;
+        let file = self
+            .zip
+            .by_name(name)
+            .map_err(|_| ImportError::from(ImportErrorCode::IntegrityMismatch))?;
+        let mut reader = VerifiedReader { inner: file, limit: expected, read: 0, io_failed: false };
+        let result = parse(&mut reader);
+        if reader.io_failed {
+            return Err(ImportErrorCode::IntegrityMismatch.into());
         }
-        Ok(output)
+        let value = result?;
+        // Drain what the parser did not need so the CRC is always checked.
+        io::copy(&mut reader, &mut io::sink())
+            .map_err(|_| ImportError::from(ImportErrorCode::IntegrityMismatch))?;
+        if reader.io_failed || reader.read != expected {
+            return Err(ImportErrorCode::IntegrityMismatch.into());
+        }
+        Ok(value)
     }
 }

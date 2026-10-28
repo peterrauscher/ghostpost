@@ -1,4 +1,4 @@
-//! Plan 006: POST /v1/scans → poll GET /v1/scans/{id} to terminal.
+//! POST /v1/scans → poll GET /v1/scans/{id} to terminal.
 mod common;
 
 use axum::http::{Method, StatusCode};

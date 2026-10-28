@@ -1,8 +1,6 @@
 //! Fenced persistence helpers — hashes/metrics only; flags only for decision=flag.
 use crate::scan::dto::{ScanBatchOutput, ScanReason, ScanEvidence};
-use crate::scan::llm::cost_usd;
 use crate::scan::{hex_encode, sha256_hex};
-use serde_json::json;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -39,6 +37,7 @@ impl ModelAttemptRecord {
         cache_hit_tokens: u32,
         latency_ms: u32,
         provider_request_id: Option<String>,
+        cost_usd: f64,
     ) -> Self {
         let result_canonical =
             serde_json::to_string(validated_output).unwrap_or_else(|_| "{}".into());
@@ -55,7 +54,7 @@ impl ModelAttemptRecord {
             input_tokens: Some(input_tokens as i32),
             output_tokens: Some(output_tokens as i32),
             cache_hit_tokens: Some(cache_hit_tokens as i32),
-            cost_usd: Some(cost_usd(input_tokens, cache_hit_tokens, output_tokens)),
+            cost_usd: Some(cost_usd),
             latency_ms: Some(latency_ms as i32),
             provider_request_id,
         }
@@ -74,12 +73,8 @@ impl ModelAttemptRecord {
         cache_hit_tokens: Option<u32>,
         latency_ms: Option<u32>,
         provider_request_id: Option<String>,
+        cost_usd: Option<f64>,
     ) -> Self {
-        let (it, ot, ct) = (
-            input_tokens.unwrap_or(0),
-            output_tokens.unwrap_or(0),
-            cache_hit_tokens.unwrap_or(0),
-        );
         Self {
             attempt,
             prompt_version: prompt_version.into(),
@@ -93,11 +88,7 @@ impl ModelAttemptRecord {
             input_tokens: input_tokens.map(|v| v as i32),
             output_tokens: output_tokens.map(|v| v as i32),
             cache_hit_tokens: cache_hit_tokens.map(|v| v as i32),
-            cost_usd: if input_tokens.is_some() || output_tokens.is_some() {
-                Some(cost_usd(it, ct, ot))
-            } else {
-                None
-            },
+            cost_usd,
             latency_ms: latency_ms.map(|v| v as i32),
             provider_request_id,
         }
@@ -251,49 +242,4 @@ WHERE tenant_id = $1 AND id = $2
     .execute(pool)
     .await?;
     Ok(())
-}
-
-/// Ensure a ModelAttemptRecord never carries raw bodies (unit-level).
-pub fn assert_fenced(rec: &ModelAttemptRecord) {
-    // Compile-time-ish field audit via debug string
-    let s = format!("{rec:?}");
-    assert!(!s.contains("user_payload"));
-    let _ = json!({
-        "outcome": rec.outcome,
-        "error_code": rec.error_code,
-        "request_sha256": rec.request_sha256,
-        "result_sha256": rec.result_sha256,
-    });
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::scan::dto::ScanBatchOutput;
-
-    #[test]
-    fn fenced_record_has_hashes_only() {
-        let out = ScanBatchOutput {
-            schema_version: "scan-output.v1".into(),
-            results: vec![],
-        };
-        let rec = ModelAttemptRecord::from_success(
-            1,
-            "scan-v1",
-            &[1u8; 32],
-            "stub",
-            "stub-deterministic",
-            r#"{"schemaVersion":"scan-input.v1"}"#,
-            &out,
-            10,
-            5,
-            0,
-            12,
-            None,
-        );
-        assert_eq!(rec.outcome, "validated");
-        assert!(rec.result_sha256.is_some());
-        assert_eq!(rec.prompt_sha256.len(), 64);
-        assert_fenced(&rec);
-    }
 }

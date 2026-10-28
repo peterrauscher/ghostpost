@@ -6,7 +6,7 @@ use ghostpost_backend::auth::{
     WorkosIdentityProvider,
 };
 use ghostpost_backend::blob::{
-    AccountDeletionMarker, BlobError, BlobStore, DeletionLedgerReceipt, ObjectHead, PresignedPost,
+    AccountDeletionMarker, BlobError, BlobStore, DeletionLedgerReceipt, ObjectHead, PresignedPut,
     ProviderDeletionReceipt,
 };
 use ghostpost_backend::config::Config;
@@ -32,25 +32,25 @@ struct Ledger {
 }
 #[async_trait]
 impl BlobStore for Ledger {
-    async fn presign_post_archive(
+    async fn presign_put_archive(
         &self,
         _: &str,
         _: u64,
         _: &str,
         _: StdDuration,
-    ) -> Result<PresignedPost, BlobError> {
+    ) -> Result<PresignedPut, BlobError> {
         unreachable!()
     }
     async fn head_object(&self, _: &str) -> Result<ObjectHead, BlobError> {
         Err(BlobError::NotFound)
     }
-    async fn head_object_version(&self, _: &str, _: &str) -> Result<ObjectHead, BlobError> {
+    async fn head_object_if_match(&self, _: &str, _: &str) -> Result<ObjectHead, BlobError> {
         Err(BlobError::NotFound)
     }
     async fn get_range(&self, _: &str, _: &str, _: Range<u64>) -> Result<Bytes, BlobError> {
         Err(BlobError::NotFound)
     }
-    async fn delete_version(&self, _: &str, _: &str) -> Result<(), BlobError> {
+    async fn delete_object(&self, _: &str) -> Result<(), BlobError> {
         Ok(())
     }
     async fn record_deletion_marker(

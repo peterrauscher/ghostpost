@@ -1,0 +1,142 @@
+# Production stack on the ghostpost VM (see docs/deployment-plan.md).
+# Deployed by scripts/deploy-htpc.sh into /opt/ghostpost/releases/<sha> with
+# secrets in /opt/ghostpost/.env.production (keys: .env.production.example).
+# Nothing publishes a host port: the API is reachable only via the tunnel.
+name: ghostpost
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "20m", max-file: "5" }
+
+x-backend-build: &backend-build
+  context: ./backend
+  dockerfile: Dockerfile
+  target: runtime
+
+services:
+  postgres:
+    image: postgres:17-bookworm@sha256:4f736ae292687621d4dbe0d499ffd024a36bd2ee7d8ca6f2ccd4c800f047b394
+    environment:
+      POSTGRES_DB: ghostpost
+      POSTGRES_USER: ghostpost
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?}
+      POSTGRES_MIGRATOR_PASSWORD: ${POSTGRES_MIGRATOR_PASSWORD:?}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres-prod-init.sh:/docker-entrypoint-initdb.d/001-roles.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ghostpost -d ghostpost"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    shm_size: 256mb
+    restart: unless-stopped
+    stop_grace_period: 60s
+    logging: *logging
+
+  migrate:
+    build: *backend-build
+    image: ghostpost-backend:${GHOSTPOST_RELEASE:-local}
+    command: ["migrate"]
+    environment:
+      DATABASE_URL: postgres://ghostpost_migrator:${POSTGRES_MIGRATOR_PASSWORD:?}@postgres:5432/ghostpost
+      DATABASE_APP_ROLE: ghostpost_app
+      MIGRATION_MAX_CONNECTIONS: "2"
+      MIGRATION_LOCK_TIMEOUT_SECS: "60"
+      RUST_LOG: info
+      LOG_FORMAT: json
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+    logging: *logging
+
+  api:
+    image: ghostpost-backend:${GHOSTPOST_RELEASE:-local}
+    command: ["serve", "--role", "all"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    environment:
+      DATABASE_URL: postgres://ghostpost_app:${POSTGRES_APP_PASSWORD:?}@postgres:5432/ghostpost
+      DATABASE_URL_APP: postgres://ghostpost_app:${POSTGRES_APP_PASSWORD:?}@postgres:5432/ghostpost
+      GHOSTPOST_ENV: production
+      BIND_ADDR: 0.0.0.0:8080
+      RUST_LOG: info,sqlx=warn
+      LOG_FORMAT: json
+      INSTANCE_ID: ghostpost-vm
+      DATABASE_APP_ROLE: ghostpost_app
+      DB_MAX_CONNECTIONS: "10"
+      SHUTDOWN_DEADLINE_SECS: "30"
+      WORKER_LEASE_SECS: "60"
+      WORKER_HEARTBEAT_SECS: "20"
+      WORKER_SWEEPER_SECS: "30"
+      CORS_ALLOWED_ORIGINS: https://app.getghostpost.com
+      AUTH_WEB_ORIGINS: https://app.getghostpost.com
+      AUTH_WEB_REDIRECT_URI: https://app.getghostpost.com/auth/callback
+      AUTH_NATIVE_REDIRECT_URI: ghostpost://auth/callback
+      WORKOS_API_KEY: ${WORKOS_API_KEY:?}
+      WORKOS_CLIENT_ID: ${WORKOS_CLIENT_ID:?}
+      WORKOS_WEBHOOK_SECRET: ${WORKOS_WEBHOOK_SECRET:?}
+      WORKOS_COOKIE_PASSWORD: ${WORKOS_COOKIE_PASSWORD:?}
+      APP_SESSION_KEYS: ${APP_SESSION_KEYS:?}
+      ARCHIVE_BUCKET: ghostpost-archives
+      ARCHIVE_S3_REGION: auto
+      ARCHIVE_S3_ENDPOINT: https://${R2_ACCOUNT_ID:?}.r2.cloudflarestorage.com
+      ARCHIVE_S3_FORCE_PATH_STYLE: "true"
+      AWS_ACCESS_KEY_ID: ${R2_ARCHIVE_ACCESS_KEY_ID:?}
+      AWS_SECRET_ACCESS_KEY: ${R2_ARCHIVE_SECRET_ACCESS_KEY:?}
+      ARCHIVE_FINGERPRINT_KEYS: ${ARCHIVE_FINGERPRINT_KEYS:?}
+      IMPORT_SPOOL_DIR: /var/spool/ghostpost
+      SCAN_LLM_PROVIDER: ${SCAN_LLM_PROVIDER:?}
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:?}
+      SCAN_BATCH_HMAC_KEYS: ${SCAN_BATCH_HMAC_KEYS:?}
+    volumes:
+      - import-spool:/var/spool/ghostpost
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+    stop_grace_period: 45s
+    logging: *logging
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest@sha256:0e56c13c7058fcef9c4f0e7d83372f82330548dbf8f8b366f3d8b506526d93b2
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?}
+    depends_on:
+      api: { condition: service_healthy }
+    restart: unless-stopped
+    logging: *logging
+
+  backup:
+    build: ./docker/backup
+    image: ghostpost-backup:${GHOSTPOST_RELEASE:-local}
+    command: ["loop"]
+    environment:
+      PGHOST: postgres
+      PGUSER: ghostpost
+      PGPASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?}
+      PGDATABASE: ghostpost
+      BACKUP_AGE_RECIPIENT: ${BACKUP_AGE_RECIPIENT:?}
+      BACKUP_BUCKET: ghostpost-backups
+      BACKUP_HOUR_UTC: "10"
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:?}
+      R2_BACKUP_ACCESS_KEY_ID: ${R2_BACKUP_ACCESS_KEY_ID:?}
+      R2_BACKUP_SECRET_ACCESS_KEY: ${R2_BACKUP_SECRET_ACCESS_KEY:?}
+    volumes:
+      - backup-spool:/var/spool/ghostpost-backup
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: unless-stopped
+    logging: *logging
+
+volumes:
+  postgres-data:
+  import-spool:
+  backup-spool:

@@ -1,4 +1,4 @@
-//! Durable `scan_posts` worker: pack → LLM → validate → fenced persist.
+//! Durable `scan_posts` worker: pack → classifier → validate → fenced persist.
 use crate::error::{AppError, AppResult};
 use crate::repository::work_items::WorkItem;
 use crate::scan::dto::{
@@ -9,7 +9,6 @@ use crate::scan::persist::{
     self, FlagInsert, ModelAttemptRecord,
 };
 use crate::scan::validate::parse_and_validate;
-use crate::scan::{scan_v1_prompt_sha256, SCAN_V1_PROMPT_VERSION};
 use sha2::Digest;
 use scan_text::{
     aggregate_source_results, pack_batches, Authorship, BatchHmacKey, BatchLimits, NormalizedRow,
@@ -253,7 +252,7 @@ ORDER BY c.source_logical_id NULLS LAST, c.id
 
     let keys = load_batch_keys()?;
     let key = keys.last().expect("non-empty keys");
-    let prompt_hash = scan_v1_prompt_sha256();
+    let prompt_hash = provider.prompt_sha256();
     let limits = batch_limits_from_env();
     let batches = pack_batches(&normalized, scan_id, &prompt_hash, key, &limits);
 
@@ -325,7 +324,6 @@ ORDER BY c.source_logical_id NULLS LAST, c.id
             provider.as_ref(),
             &input,
             &payload_json,
-            &prompt_hash,
         )
         .await
         {
@@ -453,14 +451,32 @@ async fn run_batch_with_budget(
     provider: &dyn ScanLlmProvider,
     input: &ScanBatchInput,
     payload_json: &str,
-    prompt_hash: &[u8; 32],
 ) -> Result<crate::scan::dto::ScanBatchOutput, String> {
+    let prompt_version = provider.prompt_version();
+    let prompt_hash = provider.prompt_sha256();
     let mut http_calls = 0u32;
     let mut valid_responses = 0u32;
     let mut attempt_no = 0i32;
     let mut repair = false;
     let mut backoff_idx = 0usize;
     const BACKOFF_MS: &[u64] = &[1000, 2000, 4000];
+    let transport_failure = |attempt_no: i32, code: &str| {
+        ModelAttemptRecord::from_failure(
+            attempt_no,
+            prompt_version,
+            &prompt_hash,
+            provider.provider_id(),
+            provider.provider_id(),
+            payload_json,
+            code,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+    };
 
     loop {
         if http_calls >= MAX_HTTP_CALLS {
@@ -474,8 +490,8 @@ async fn run_batch_with_budget(
         http_calls += 1;
         let request_id = Uuid::new_v4();
         let req = ScanCompletionRequest {
-            prompt_version: SCAN_V1_PROMPT_VERSION,
-            system_prompt_hash: *prompt_hash,
+            prompt_version,
+            system_prompt_hash: prompt_hash,
             user_payload_json: payload_json.to_string(),
             temperature: 0.0,
             max_output_tokens: 4096,
@@ -490,8 +506,8 @@ async fn run_batch_with_budget(
                     Ok(out) => {
                         let rec = ModelAttemptRecord::from_success(
                             attempt_no,
-                            SCAN_V1_PROMPT_VERSION,
-                            prompt_hash,
+                            prompt_version,
+                            &prompt_hash,
                             &resp.model_id,
                             resp.provider,
                             payload_json,
@@ -501,18 +517,18 @@ async fn run_batch_with_budget(
                             resp.cache_hit_tokens,
                             resp.latency_ms,
                             resp.provider_request_id,
+                            resp.cost_usd,
                         );
-                        let _ = persist::record_attempt(pool, tenant_id, scan_id, batch_id, &rec)
+                        persist::record_attempt(pool, tenant_id, scan_id, batch_id, &rec)
                             .await
                             .map_err(|e| e.to_string())?;
-                        // Drop resp.content_json by moving out
                         return Ok(out);
                     }
                     Err(ve) => {
                         let rec = ModelAttemptRecord::from_failure(
                             attempt_no,
-                            SCAN_V1_PROMPT_VERSION,
-                            prompt_hash,
+                            prompt_version,
+                            &prompt_hash,
                             &resp.model_id,
                             resp.provider,
                             payload_json,
@@ -522,8 +538,9 @@ async fn run_batch_with_budget(
                             Some(resp.cache_hit_tokens),
                             Some(resp.latency_ms),
                             resp.provider_request_id,
+                            Some(resp.cost_usd),
                         );
-                        let _ = persist::record_attempt(pool, tenant_id, scan_id, batch_id, &rec)
+                        persist::record_attempt(pool, tenant_id, scan_id, batch_id, &rec)
                             .await
                             .map_err(|e| e.to_string())?;
                         // one repair allowed if we still have budget for another valid response
@@ -536,40 +553,8 @@ async fn run_batch_with_budget(
                 }
             }
             Err(err) => {
+                let _ = persist::record_attempt(pool, tenant_id, scan_id, batch_id, &transport_failure(attempt_no, err.code())).await;
                 if matches!(err, ScanLlmError::PrivacyGuard) {
-                    let rec = ModelAttemptRecord::from_failure(
-                        attempt_no,
-                        SCAN_V1_PROMPT_VERSION,
-                        prompt_hash,
-                        provider.provider_id(),
-                        provider.provider_id(),
-                        payload_json,
-                        err.code(),
-                        None,
-                        None,
-                        None,
-                        None,
-                        None,
-                    );
-                    let _ = persist::record_attempt(pool, tenant_id, scan_id, batch_id, &rec).await;
-                    return Err(err.code().into());
-                }
-                if matches!(err, ScanLlmError::NotApproved(_)) {
-                    let rec = ModelAttemptRecord::from_failure(
-                        attempt_no,
-                        SCAN_V1_PROMPT_VERSION,
-                        prompt_hash,
-                        provider.provider_id(),
-                        provider.provider_id(),
-                        payload_json,
-                        err.code(),
-                        None,
-                        None,
-                        None,
-                        None,
-                        None,
-                    );
-                    let _ = persist::record_attempt(pool, tenant_id, scan_id, batch_id, &rec).await;
                     return Err(err.code().into());
                 }
                 if err.is_retryable_transport() && http_calls < MAX_HTTP_CALLS {
@@ -583,47 +568,17 @@ async fn run_batch_with_budget(
                     // jitter up to 250ms
                     delay += (request_id.as_u128() % 250) as u64;
                     backoff_idx = (backoff_idx + 1).min(BACKOFF_MS.len().saturating_sub(1));
-                    let rec = ModelAttemptRecord::from_failure(
-                        attempt_no,
-                        SCAN_V1_PROMPT_VERSION,
-                        prompt_hash,
-                        provider.provider_id(),
-                        provider.provider_id(),
-                        payload_json,
-                        err.code(),
-                        None,
-                        None,
-                        None,
-                        None,
-                        None,
-                    );
-                    let _ = persist::record_attempt(pool, tenant_id, scan_id, batch_id, &rec).await;
                     tokio::time::sleep(Duration::from_millis(delay)).await;
                     continue;
                 }
                 // terminal 4xx or exhausted
-                let rec = ModelAttemptRecord::from_failure(
-                    attempt_no,
-                    SCAN_V1_PROMPT_VERSION,
-                    prompt_hash,
-                    provider.provider_id(),
-                    provider.provider_id(),
-                    payload_json,
-                    err.code(),
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                );
-                let _ = persist::record_attempt(pool, tenant_id, scan_id, batch_id, &rec).await;
                 return Err(err.code().into());
             }
         }
     }
 }
 
-/// Build provider for worker; fails closed for deepseek without approval.
+/// Build the configured scan provider for the worker.
 pub fn build_scan_provider() -> AppResult<Arc<dyn ScanLlmProvider>> {
     llm::build_provider_from_env().map_err(|e| worker_err(e.to_string()))
 }

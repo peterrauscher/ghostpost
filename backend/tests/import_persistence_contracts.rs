@@ -1,7 +1,8 @@
 use ghostpost_backend::config::Config;
 use ghostpost_backend::db::migrate;
 use ghostpost_backend::r#import::commit::commit_staged;
-use ghostpost_backend::r#import::staging::{stage, BoundedIndex};
+use ghostpost_backend::r#import::limits::MAX_IN_MEMORY_INDEX_BYTES;
+use ghostpost_backend::r#import::staging::{stage, BoundedIndex, SpillTarget};
 use ghostpost_backend::r#import::{
     ArchivePlatform, Authorship, ContentState, FormatConfidence, FormatFamily,
     NormalizedArchiveRecord, RecordProvenance, RecordType, RelationConfidence, TextFormat,
@@ -36,7 +37,7 @@ fn database_env() {
 async fn migrated_pool() -> PgPool {
     database_env();
     let config = Config::load_for_migrate().expect("migration configuration");
-    migrate::run(&config, false).await.expect("Plan 004 migrations");
+    migrate::run(&config, false).await.expect("migrations");
     PgPoolOptions::new()
         .max_connections(5)
         .connect(
@@ -115,18 +116,14 @@ RETURNING id
 async fn staging_spills_only_after_the_memory_budget_and_enforces_import_scope() {
     let pool = migrated_pool().await;
     let (tenant_id, _user_id, import_id) = tenant_user_import(&pool).await;
-    let mut index = BoundedIndex::default();
+    let mut index = BoundedIndex::new(
+        Some(SpillTarget { pool: &pool, tenant_id, import_id }),
+        "x_note_ts",
+    );
 
-    let memory_payload = vec![0x41; 32_777_216 - "memory".len()];
+    let memory_payload = vec![0x41; MAX_IN_MEMORY_INDEX_BYTES - "memory".len()];
     index
-        .insert(
-            &pool,
-            tenant_id,
-            import_id,
-            "x_note_ts",
-            "memory".into(),
-            memory_payload,
-        )
+        .insert("memory".into(), memory_payload)
         .await
         .expect("entry exactly at in-memory limit");
     let rows_before: i64 = sqlx::query_scalar(
@@ -140,16 +137,10 @@ async fn staging_spills_only_after_the_memory_budget_and_enforces_import_scope()
     assert_eq!(rows_before, 0, "the exact in-memory boundary must not spill early");
 
     index
-        .insert(
-            &pool,
-            tenant_id,
-            import_id,
-            "x_note_ts",
-            "spill".into(),
-            b"bounded spill payload".to_vec(),
-        )
+        .insert("spill".into(), b"bounded spill payload".to_vec())
         .await
         .expect("first over-budget entry spills");
+    assert!(index.get("memory").await.unwrap().is_some(), "in-memory entries stay readable after a spill");
     let spilled: (String, Vec<u8>) = sqlx::query_as(
         "SELECT entry_key,entry_payload FROM import_index_entries WHERE tenant_id=$1 AND import_id=$2 AND index_kind='x_note_ts'",
     )

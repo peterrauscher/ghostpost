@@ -1,0 +1,49 @@
+#cloud-config
+hostname: ghostpost
+preserve_hostname: false
+ssh_pwauth: false
+disable_root: true
+users:
+  - name: ghostpost
+    shell: /bin/bash
+    groups: [sudo]
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: true
+    ssh_authorized_keys:
+      - __SSH_PUBKEY__
+package_update: true
+package_upgrade: true
+packages:
+  - ca-certificates
+  - curl
+  - ufw
+  - unattended-upgrades
+  - qemu-guest-agent
+swap:
+  filename: /swapfile
+  size: 2147483648
+write_files:
+  - path: /etc/ssh/sshd_config.d/10-ghostpost.conf
+    content: |
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PermitRootLogin no
+  - path: /etc/docker/daemon.json
+    content: |
+      {"log-driver":"json-file","log-opts":{"max-size":"20m","max-file":"5"}}
+runcmd:
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu noble stable" > /etc/apt/sources.list.d/docker.list
+  - apt-get update
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  - usermod -aG docker ghostpost
+  - install -d -o ghostpost -g ghostpost -m 0750 /opt/ghostpost /opt/ghostpost/releases /opt/ghostpost/backups
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow 22/tcp
+  - ufw --force enable
+  - systemctl enable --now qemu-guest-agent docker
+  - systemctl restart ssh
+  - touch /var/lib/ghostpost-provisioned

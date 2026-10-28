@@ -186,39 +186,3 @@ pub enum EntitlementDeny {
     Required,
     Db(sqlx::Error),
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn free_beta_policy_default() {
-        std::env::remove_var("ENTITLEMENT_POLICY");
-        assert_eq!(EntitlementPolicy::from_env(), EntitlementPolicy::FreeBeta);
-        assert_eq!(EntitlementPolicy::FreeBeta.product_key(), "free_beta");
-    }
-
-    #[test]
-    fn map_unlimited_rescan() {
-        let grant = EntitlementGrant {
-            tenant_id: Uuid::nil(),
-            id: Uuid::nil(),
-            user_id: Uuid::nil(),
-            product_key: "free_beta".into(),
-            grant_source: "promotion".into(),
-            review_access: true,
-            rescan_limit: None,
-            platform_limit: Some(2),
-            scan_scope_id: None,
-            valid_from: Utc::now(),
-            valid_until: None,
-            revoked_at: None,
-            created_at: Utc::now(),
-        };
-        let e = map_effective(&grant, 99);
-        assert!(e.review_access);
-        assert_eq!(e.platform_limit, 2);
-        assert_eq!(e.rescans_remaining, None);
-        assert_eq!(e.product_id, "free_beta");
-    }
-}

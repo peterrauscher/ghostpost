@@ -1,4 +1,4 @@
-//! Plan 003 Step 7 — two independent web cookie jars.
+//! Two independent web cookie jars.
 
 mod common;
 

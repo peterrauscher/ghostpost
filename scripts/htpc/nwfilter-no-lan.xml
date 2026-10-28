@@ -1,0 +1,32 @@
+<!-- Drop VM traffic to private, link-local, and tailnet (CGNAT) ranges.
+     The libvirt gateway 192.168.150.1 is the htpc host itself (Plex, Immich,
+     ... listen on all interfaces), so the only traffic allowed to it is DNS
+     and replies to the host's SSH ProxyJump. DHCP uses broadcast.
+     All rules are <ip> (ebtables, layer 2) so accepts and drops are evaluated
+     in the same table. "out" = leaving the VM. -->
+<filter name='ghostpost-no-lan' chain='ipv4' priority='-650'>
+  <rule action='accept' direction='out' priority='100'>
+    <ip dstipaddr='192.168.150.1' protocol='udp' dstportstart='53'/>
+  </rule>
+  <rule action='accept' direction='out' priority='100'>
+    <ip dstipaddr='192.168.150.1' protocol='tcp' dstportstart='53'/>
+  </rule>
+  <rule action='accept' direction='out' priority='100'>
+    <ip dstipaddr='192.168.150.1' protocol='tcp' srcportstart='22'/>
+  </rule>
+  <rule action='drop' direction='out' priority='200'>
+    <ip dstipaddr='10.0.0.0' dstipmask='8'/>
+  </rule>
+  <rule action='drop' direction='out' priority='200'>
+    <ip dstipaddr='172.16.0.0' dstipmask='12'/>
+  </rule>
+  <rule action='drop' direction='out' priority='200'>
+    <ip dstipaddr='192.168.0.0' dstipmask='16'/>
+  </rule>
+  <rule action='drop' direction='out' priority='200'>
+    <ip dstipaddr='169.254.0.0' dstipmask='16'/>
+  </rule>
+  <rule action='drop' direction='out' priority='200'>
+    <ip dstipaddr='100.64.0.0' dstipmask='10'/>
+  </rule>
+</filter>

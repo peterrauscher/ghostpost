@@ -1,4 +1,4 @@
-pub mod archive;pub mod commit;pub mod limits;pub mod reddit;pub mod staging;pub mod x;
+pub mod archive;pub mod commit;pub mod limits;pub mod pipeline;pub mod reddit;pub mod staging;pub mod x;
 use chrono::{DateTime,Utc};use serde::{Deserialize,Serialize};use uuid::Uuid;
 #[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]#[serde(rename_all="snake_case")]pub enum ArchivePlatform{Reddit,X}
 #[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]#[serde(rename_all="snake_case")]pub enum RecordType{Post,Comment,Reply,Repost,Quote}

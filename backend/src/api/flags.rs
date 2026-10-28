@@ -1,4 +1,4 @@
-//! Flag list/detail/review-actions (Plan 006). No social HTTP.
+//! Flag list/detail/review-actions. No social HTTP.
 use crate::api::idempotency::{self, IdemClaim};
 use crate::api::problem::Problem;
 use crate::api::product_dto::{

@@ -123,6 +123,33 @@ WHERE tenant_id = $1
     Ok(result.rows_affected() == 1)
 }
 
+/// Puts a running item back to `pending` after `delay_secs` without spending
+/// the attempt (waiting on another item is not a failure). The attempt row is
+/// closed as `retry`. Returns false on a lease fence miss.
+pub async fn defer(
+    pool: &PgPool,
+    tenant_id: Uuid,
+    id: Uuid,
+    lease_owner: &str,
+    delay_secs: i64,
+    reason: &str,
+) -> Result<bool, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    let updated = sqlx::query(
+        "UPDATE work_items SET status='pending', attempt_count=GREATEST(attempt_count-1,0), lease_owner=NULL, lease_expires_at=NULL, heartbeat_at=NULL, last_error=$4, run_after=now()+make_interval(secs => $5), updated_at=now() WHERE tenant_id=$1 AND id=$2 AND lease_owner=$3 AND status='running'",
+    )
+    .bind(tenant_id).bind(id).bind(lease_owner).bind(reason).bind(delay_secs as f64)
+    .execute(&mut *tx).await?;
+    if updated.rows_affected() != 1 {
+        return Ok(false);
+    }
+    sqlx::query("UPDATE work_item_attempts SET outcome='retry', error_text=$4, finished_at=now() WHERE tenant_id=$1 AND work_item_id=$2 AND lease_owner=$3 AND finished_at IS NULL")
+        .bind(tenant_id).bind(id).bind(lease_owner).bind(reason)
+        .execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(true)
+}
+
 pub async fn commit_success(
     pool: &PgPool,
     tenant_id: Uuid,

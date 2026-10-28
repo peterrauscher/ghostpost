@@ -49,7 +49,7 @@ function entitlement(reviewAccess: boolean): Entitlement {
   };
 }
 
-describe('deriveLifecycleGate (Plan 007)', () => {
+describe('deriveLifecycleGate', () => {
   it.each<{ name: string; input: LifecycleInputs; expected: LifecycleGate }>([
     {
       name: 'unauthenticated → welcome',
@@ -59,6 +59,22 @@ describe('deriveLifecycleGate (Plan 007)', () => {
     {
       name: 'authenticated without onboarding → onboarding',
       input: { authenticated: true },
+      expected: 'onboarding',
+    },
+    {
+      name: 'authenticated with not_started onboarding → onboarding',
+      input: {
+        authenticated: true,
+        onboarding: {
+          ...onboarding('not_started', [], 1),
+          answers: {
+            comingUp: [],
+            concerns: [],
+            platforms: [],
+            disclosureConsent: { accepted: false, version: consent.version },
+          },
+        },
+      },
       expected: 'onboarding',
     },
     {
@@ -72,6 +88,15 @@ describe('deriveLifecycleGate (Plan 007)', () => {
         authenticated: true,
         onboarding: onboarding('completed', ['facebook', 'instagram']),
         imports: [archive('ready', 'facebook')],
+      },
+      expected: 'awaiting_import',
+    },
+    {
+      name: 'completed onboarding with no imports → awaiting_import',
+      input: {
+        authenticated: true,
+        onboarding: onboarding('completed', ['reddit']),
+        imports: [],
       },
       expected: 'awaiting_import',
     },
@@ -103,27 +128,27 @@ describe('deriveLifecycleGate (Plan 007)', () => {
       },
       expected: 'awaiting_import',
     },
-    {
-      name: 'ready imports with in-flight scan → scanning',
+    ...(['queued', 'running'] as const).map((status) => ({
+      name: `ready imports with ${status} scan → scanning`,
       input: {
         authenticated: true,
         onboarding: onboarding('completed', ['reddit']),
         imports: [archive('ready', 'reddit')],
-        scan: scan('running'),
+        scan: scan(status),
       },
-      expected: 'scanning',
-    },
-    {
-      name: 'terminal failed scan → awaiting_import (not app, not locked)',
+      expected: 'scanning' as const,
+    })),
+    ...[false, true].map((reviewAccess) => ({
+      name: `failed scan with reviewAccess=${reviewAccess} → awaiting_import`,
       input: {
         authenticated: true,
         onboarding: onboarding('completed', ['reddit']),
         imports: [archive('ready', 'reddit')],
         scan: scan('failed'),
-        entitlement: entitlement(true),
+        entitlement: entitlement(reviewAccess),
       },
-      expected: 'awaiting_import',
-    },
+      expected: 'awaiting_import' as const,
+    })),
     {
       name: 'terminal cancelled scan → awaiting_import',
       input: {
@@ -158,52 +183,5 @@ describe('deriveLifecycleGate (Plan 007)', () => {
     },
   ])('$name', ({ input, expected }) => {
     expect(deriveLifecycleGate(input)).toBe(expected);
-  });
-
-  it('never emits a locked gate for any launch free_beta input', () => {
-    const cases: LifecycleInputs[] = [
-      { authenticated: false },
-      { authenticated: true, onboarding: onboarding('not_started', [], 1) },
-      { authenticated: true, onboarding: onboarding('completed', ['reddit']), imports: [] },
-      {
-        authenticated: true,
-        onboarding: onboarding('completed', ['reddit', 'x']),
-        imports: [archive('ready', 'reddit')],
-      },
-      {
-        authenticated: true,
-        onboarding: onboarding('completed', ['reddit']),
-        imports: [archive('ready', 'reddit')],
-        scan: scan('queued'),
-      },
-      {
-        authenticated: true,
-        onboarding: onboarding('completed', ['reddit']),
-        imports: [archive('ready', 'reddit')],
-        scan: scan('failed'),
-        entitlement: entitlement(false),
-      },
-      {
-        authenticated: true,
-        onboarding: onboarding('completed', ['reddit']),
-        imports: [archive('ready', 'reddit')],
-        scan: scan('succeeded'),
-        entitlement: entitlement(false),
-      },
-      {
-        authenticated: true,
-        onboarding: onboarding('completed', ['reddit']),
-        imports: [archive('ready', 'reddit')],
-        scan: scan('succeeded'),
-        entitlement: entitlement(true),
-      },
-    ];
-
-    const allowed: LifecycleGate[] = ['welcome', 'onboarding', 'awaiting_import', 'scanning', 'app'];
-    for (const input of cases) {
-      const gate = deriveLifecycleGate(input);
-      expect(allowed).toContain(gate);
-      expect(String(gate)).not.toBe('locked');
-    }
   });
 });

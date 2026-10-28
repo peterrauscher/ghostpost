@@ -1,4 +1,4 @@
-//! Offline replay provider reading manifests/replay/deepseek-v4-flash/.
+//! Offline replay provider reading manifests/replay/deepseek-flash/.
 
 use super::{CompletionRequest, CompletionResponse, EvalLlmProvider};
 use anyhow::{bail, Context, Result};
@@ -32,7 +32,7 @@ pub struct ReplayFixtureProvider {
 
 impl ReplayFixtureProvider {
     pub fn new(root: &Path) -> Result<Self> {
-        let dir = root.join("manifests/replay/deepseek-v4-flash");
+        let dir = root.join("manifests/replay/deepseek-flash");
         let index_path = dir.join("index.json");
         let raw = fs::read_to_string(&index_path)
             .with_context(|| format!("read {}", index_path.display()))?;
@@ -76,6 +76,7 @@ impl EvalLlmProvider for ReplayFixtureProvider {
             model_id: self.index.model_id.clone(),
             provider: "replay-fixture",
             http_calls: 1,
+            cost_usd: None,
         })
     }
 }

@@ -1,4 +1,4 @@
-//! Plan 003 Step 9 — CSRF rotation on GET /csrf and refresh.
+//! CSRF rotation on GET /csrf and refresh.
 
 mod common;
 

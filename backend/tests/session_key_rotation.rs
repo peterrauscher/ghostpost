@@ -1,4 +1,4 @@
-//! Plan 003 Step 9 — APP_SESSION_KEYS rotation.
+//! APP_SESSION_KEYS rotation.
 
 mod common;
 

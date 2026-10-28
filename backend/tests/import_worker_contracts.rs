@@ -3,7 +3,8 @@ mod common;
 use common::blob::{BlobCall, InMemoryBlobStore};
 use ghostpost_backend::config::Config;
 use ghostpost_backend::db::migrate;
-use ghostpost_backend::jobs::archive_import::{normalize, purge_one, sweep_due};
+use ghostpost_backend::import::ImportErrorCode;
+use ghostpost_backend::jobs::archive_import::{normalize, purge_one, reject_if_deterministic, sweep_due};
 use ghostpost_backend::repository::{archive_imports, users, work_items};
 use serde_json::json;
 use sqlx::postgres::PgPoolOptions;
@@ -39,7 +40,7 @@ fn database_env() {
 async fn migrated_pool() -> PgPool {
     database_env();
     let config = Config::load_for_migrate().expect("migration configuration");
-    migrate::run(&config, false).await.expect("Plan 004 migrations");
+    migrate::run(&config, false).await.expect("migrations");
     PgPoolOptions::new()
         .max_connections(5)
         .connect(&std::env::var("DATABASE_URL_APP").expect("DATABASE_URL_APP"))
@@ -91,7 +92,7 @@ async fn pinned_import(
     platform: &str,
     bytes: &[u8],
     key: &str,
-    version_id: &str,
+    etag: &str,
     status: &str,
 ) -> (Uuid, Uuid, Uuid) {
     let tenant = users::create_tenant(pool).await.expect("tenant");
@@ -108,13 +109,13 @@ async fn pinned_import(
         .await
         .expect("archive import");
     sqlx::query(
-        "UPDATE archive_imports SET status=$3,raw_storage_key=$4,raw_storage_version_id=$5,byte_size=$6,content_type='application/zip',raw_delete_after=now()+interval '24 hours' WHERE tenant_id=$1 AND id=$2",
+        "UPDATE archive_imports SET status=$3,raw_storage_key=$4,raw_storage_etag=$5,byte_size=$6,content_type='application/zip',raw_delete_after=now()+interval '24 hours' WHERE tenant_id=$1 AND id=$2",
     )
     .bind(tenant.id)
     .bind(import.id)
     .bind(status)
     .bind(key)
-    .bind(version_id)
+    .bind(etag)
     .bind(i64::try_from(bytes.len()).unwrap())
     .execute(pool)
     .await
@@ -128,7 +129,7 @@ async fn running_normalize_item(
     user_id: Uuid,
     import_id: Uuid,
     key: &str,
-    version_id: &str,
+    etag: &str,
     lease_owner: &str,
 ) -> ghostpost_backend::repository::work_items::WorkItem {
     let id: Uuid = sqlx::query_scalar(
@@ -136,7 +137,7 @@ async fn running_normalize_item(
     )
     .bind(tenant_id)
     .bind(user_id)
-    .bind(json!({"import_id":import_id,"key":key,"version_id":version_id}))
+    .bind(json!({"import_id":import_id,"key":key,"etag":etag}))
     .bind(lease_owner)
     .fetch_one(pool)
     .await
@@ -149,7 +150,7 @@ async fn running_normalize_item(
 
 #[tokio::test(flavor = "current_thread")]
 #[ignore = "requires migrated local Postgres"]
-async fn worker_reads_only_the_pinned_version_then_atomically_commits_multifile_records_without_scan_or_model_work() {
+async fn worker_reads_only_the_pinned_etag_then_atomically_commits_multifile_records_without_scan_or_model_work() {
     let _fingerprint_key = EnvRestore::set(
         "ARCHIVE_FINGERPRINT_KEYS",
         r#"[{"version":7,"secret":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}]"#,
@@ -166,13 +167,13 @@ async fn worker_reads_only_the_pinned_version_then_atomically_commits_multifile_
         ),
     ]);
     let key = format!("archive-imports/{}/source.zip", Uuid::new_v4());
-    let pinned_version = "immutable-version-a";
+    let pinned_etag = "\"etag-a\"";
     let (tenant_id, user_id, import_id) = pinned_import(
         &pool,
         "reddit",
         &archive,
         &key,
-        pinned_version,
+        pinned_etag,
         "queued",
     )
     .await;
@@ -182,23 +183,12 @@ async fn worker_reads_only_the_pinned_version_then_atomically_commits_multifile_
         user_id,
         import_id,
         &key,
-        pinned_version,
+        pinned_etag,
         "current-owner",
     )
     .await;
     let blob = Arc::new(InMemoryBlobStore::default());
-    blob.put_latest(
-        &key,
-        pinned_version,
-        "application/zip",
-        archive.clone(),
-    );
-    blob.put_latest(
-        &key,
-        "newer-overwrite",
-        "application/zip",
-        &b"not the pinned archive"[..],
-    );
+    blob.put(&key, pinned_etag, "application/zip", archive.clone());
 
     let stale = normalize(&pool, blob.clone(), &item, "stale-owner")
         .await
@@ -207,13 +197,13 @@ async fn worker_reads_only_the_pinned_version_then_atomically_commits_multifile_
     assert_eq!(
         blob.calls(),
         vec![
-            BlobCall::HeadVersion {
+            BlobCall::HeadIfMatch {
                 key: key.clone(),
-                version_id: pinned_version.into(),
+                etag: pinned_etag.into(),
             },
             BlobCall::GetRange {
                 key: key.clone(),
-                version_id: pinned_version.into(),
+                etag: pinned_etag.into(),
                 range: 0..archive.len() as u64,
             },
         ],
@@ -245,21 +235,18 @@ async fn worker_reads_only_the_pinned_version_then_atomically_commits_multifile_
     assert_eq!(
         blob.calls(),
         vec![
-            BlobCall::HeadVersion {
+            BlobCall::HeadIfMatch {
                 key: key.clone(),
-                version_id: pinned_version.into(),
+                etag: pinned_etag.into(),
             },
             BlobCall::GetRange {
                 key: key.clone(),
-                version_id: pinned_version.into(),
+                etag: pinned_etag.into(),
                 range: 0..archive.len() as u64,
             },
-            BlobCall::DeleteVersion {
-                key: key.clone(),
-                version_id: pinned_version.into(),
-            },
+            BlobCall::Delete { key: key.clone() },
         ],
-        "the winning attempt reads and immediately purges that same exact version"
+        "the winning attempt reads the pinned ETag and immediately purges the key"
     );
 
     let committed: Vec<(String, String, Option<String>, Option<String>)> = sqlx::query_as(
@@ -384,26 +371,21 @@ async fn x_worker_orders_shards_joins_notes_preserves_tombstones_and_coalesces_c
         ),
     ]);
     let key = format!("archive-imports/{}/x-source.zip", Uuid::new_v4());
-    let pinned_version = "x-orchestration-version";
+    let pinned_etag = "\"x-orchestration-etag\"";
     let (tenant_id, user_id, import_id) =
-        pinned_import(&pool, "x", &archive, &key, pinned_version, "queued").await;
+        pinned_import(&pool, "x", &archive, &key, pinned_etag, "queued").await;
     let item = running_normalize_item(
         &pool,
         tenant_id,
         user_id,
         import_id,
         &key,
-        pinned_version,
+        pinned_etag,
         "x-current-owner",
     )
     .await;
     let blob = Arc::new(InMemoryBlobStore::default());
-    blob.put_latest(
-        &key,
-        pinned_version,
-        "application/zip",
-        archive.clone(),
-    );
+    blob.put(&key, pinned_etag, "application/zip", archive.clone());
 
     let stale = normalize(&pool, blob.clone(), &item, "x-stale-owner")
         .await
@@ -549,21 +531,21 @@ async fn x_worker_rejects_an_incomplete_cross_shard_edit_chain_without_partial_p
         ),
     ]);
     let key = format!("archive-imports/{}/invalid-x-source.zip", Uuid::new_v4());
-    let pinned_version = "x-incomplete-chain-version";
+    let pinned_etag = "\"x-incomplete-chain-etag\"";
     let (tenant_id, user_id, import_id) =
-        pinned_import(&pool, "x", &archive, &key, pinned_version, "queued").await;
+        pinned_import(&pool, "x", &archive, &key, pinned_etag, "queued").await;
     let item = running_normalize_item(
         &pool,
         tenant_id,
         user_id,
         import_id,
         &key,
-        pinned_version,
+        pinned_etag,
         "x-invalid-owner",
     )
     .await;
     let blob = Arc::new(InMemoryBlobStore::default());
-    blob.put_latest(&key, pinned_version, "application/zip", archive);
+    blob.put(&key, pinned_etag, "application/zip", archive);
 
     let error = normalize(&pool, blob, &item, "x-invalid-owner")
         .await
@@ -597,28 +579,22 @@ async fn x_worker_rejects_an_incomplete_cross_shard_edit_chain_without_partial_p
 
 #[tokio::test]
 #[ignore = "requires migrated local Postgres"]
-async fn immediate_raw_purge_retries_provider_failure_without_marking_or_changing_the_exact_version() {
+async fn immediate_raw_purge_retries_provider_failure_without_marking_the_checkpoint() {
     let pool = migrated_pool().await;
     let archive = b"synthetic raw archive";
     let key = format!("archive-imports/{}/source.zip", Uuid::new_v4());
-    let version = "purge-version-a";
+    let etag = "\"purge-etag-a\"";
     let (tenant_id, _user_id, import_id) =
-        pinned_import(&pool, "reddit", archive, &key, version, "deleting").await;
+        pinned_import(&pool, "reddit", archive, &key, etag, "deleting").await;
     let blob = Arc::new(InMemoryBlobStore::default());
-    blob.put_latest(&key, version, "application/zip", &archive[..]);
-    blob.put_latest(
-        &key,
-        "surviving-newer-version",
-        "application/zip",
-        &b"newer raw archive"[..],
-    );
+    blob.put(&key, etag, "application/zip", &archive[..]);
     blob.set_delete_failures(1);
 
     purge_one(&pool, blob.clone(), tenant_id, import_id)
         .await
         .expect_err("provider failure must remain retryable");
-    let after_failure: (String, bool, Option<String>) = sqlx::query_as(
-        "SELECT status,raw_deleted_at IS NOT NULL,raw_storage_version_id FROM archive_imports WHERE tenant_id=$1 AND id=$2",
+    let after_failure: (String, bool) = sqlx::query_as(
+        "SELECT status,raw_deleted_at IS NOT NULL FROM archive_imports WHERE tenant_id=$1 AND id=$2",
     )
     .bind(tenant_id)
     .bind(import_id)
@@ -627,66 +603,113 @@ async fn immediate_raw_purge_retries_provider_failure_without_marking_or_changin
     .unwrap();
     assert_eq!(
         after_failure,
-        ("deleting".into(), false, Some(version.into())),
-        "failed exact-version deletion cannot advance the durable checkpoint"
+        ("deleting".into(), false),
+        "failed deletion cannot advance the durable checkpoint"
     );
+    assert!(blob.contains(&key), "the raw archive survives the failed attempt");
 
     purge_one(&pool, blob.clone(), tenant_id, import_id)
         .await
-        .expect("durable retry deletes the exact pin");
-    let after_retry: (String, bool) = sqlx::query_as(
-        "SELECT status,raw_deleted_at IS NOT NULL FROM archive_imports WHERE tenant_id=$1 AND id=$2",
+        .expect("durable retry deletes the raw archive");
+    let after_retry: (String, bool, Option<String>) = sqlx::query_as(
+        "SELECT status,raw_deleted_at IS NOT NULL,raw_storage_etag FROM archive_imports WHERE tenant_id=$1 AND id=$2",
     )
     .bind(tenant_id)
     .bind(import_id)
     .fetch_one(&pool)
     .await
     .unwrap();
-    assert_eq!(after_retry, ("deleted".into(), true));
     assert_eq!(
-        blob.calls(),
-        vec![
-            BlobCall::DeleteVersion {
-                key: key.clone(),
-                version_id: version.into(),
-            },
-            BlobCall::DeleteVersion {
-                key,
-                version_id: version.into(),
-            },
-        ],
-        "retries never broaden deletion from the immutable pin to the latest key"
+        after_retry,
+        ("deleted".into(), true, None),
+        "the content-derived ETag is dropped with the bytes"
     );
+    assert!(!blob.contains(&key), "the raw archive is physically gone");
+
+    blob.clear_calls();
+    purge_one(&pool, blob.clone(), tenant_id, import_id)
+        .await
+        .expect("purging an already-purged import is a no-op");
+    assert!(blob.calls().is_empty(), "a completed purge never touches storage again");
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[ignore = "requires migrated local Postgres"]
+async fn worker_rejects_bytes_replaced_after_completion_and_purges_them() {
+    let _fingerprint_key = EnvRestore::set(
+        "ARCHIVE_FINGERPRINT_KEYS",
+        r#"[{"version":7,"secret":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}]"#,
+    );
+    let pool = migrated_pool().await;
+    let archive = zip(&[(
+        "comments.csv",
+        &b"id,permalink,date,subreddit,parent,body\nc1,/r/s/comments/t3_p1/c1,2026-07-23T12:01:00Z,s,t3_p1,comment body\n"[..],
+    )]);
+    let key = format!("archive-imports/{}/source.zip", Uuid::new_v4());
+    let (tenant_id, user_id, import_id) =
+        pinned_import(&pool, "reddit", &archive, &key, "\"etag-completed\"", "queued").await;
+    let item = running_normalize_item(
+        &pool,
+        tenant_id,
+        user_id,
+        import_id,
+        &key,
+        "\"etag-completed\"",
+        "replaced-owner",
+    )
+    .await;
+    let blob = Arc::new(InMemoryBlobStore::default());
+    blob.put(&key, "\"etag-replaced\"", "application/zip", archive);
+
+    let error = normalize(&pool, blob.clone(), &item, "replaced-owner")
+        .await
+        .expect_err("bytes whose ETag changed after completion are never parsed");
+    assert!(
+        error.to_string().contains(ImportErrorCode::IntegrityMismatch.as_str()),
+        "replacement surfaces as a deterministic integrity rejection: {error}"
+    );
+    assert!(
+        reject_if_deterministic(&pool, blob.clone(), &item, &error.to_string())
+            .await
+            .expect("rejection bookkeeping"),
+        "the runner rejects instead of retrying"
+    );
+    let state: (String, Option<String>, bool) = sqlx::query_as(
+        "SELECT status,error_code,raw_deleted_at IS NOT NULL FROM archive_imports WHERE tenant_id=$1 AND id=$2",
+    )
+    .bind(tenant_id)
+    .bind(import_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        state,
+        ("rejected".into(), Some(ImportErrorCode::IntegrityMismatch.as_str().into()), true)
+    );
+    assert!(!blob.contains(&key), "the replaced bytes are purged");
+    let published: i64 = sqlx::query_scalar(
+        "SELECT count(*)::bigint FROM content_items WHERE tenant_id=$1 AND user_id=$2",
+    )
+    .bind(tenant_id)
+    .bind(user_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(published, 0, "nothing from the replaced archive is published");
 }
 
 #[tokio::test]
 #[ignore = "requires migrated local Postgres"]
-async fn scheduled_raw_purge_deletes_only_due_exact_versions() {
+async fn scheduled_raw_purge_deletes_only_due_archives() {
     let pool = migrated_pool().await;
     let due_bytes = b"due archive";
     let future_bytes = b"future archive";
     let due_key = format!("archive-imports/{}/source.zip", Uuid::new_v4());
     let future_key = format!("archive-imports/{}/source.zip", Uuid::new_v4());
-    let due_version = "due-version";
-    let future_version = "future-version";
-    let (due_tenant, _due_user, due_import) = pinned_import(
-        &pool,
-        "reddit",
-        due_bytes,
-        &due_key,
-        due_version,
-        "ready",
-    )
-    .await;
-    let (future_tenant, _future_user, future_import) = pinned_import(
-        &pool,
-        "reddit",
-        future_bytes,
-        &future_key,
-        future_version,
-        "ready",
-    )
-    .await;
+    let (due_tenant, _due_user, due_import) =
+        pinned_import(&pool, "reddit", due_bytes, &due_key, "\"due-etag\"", "ready").await;
+    let (future_tenant, _future_user, future_import) =
+        pinned_import(&pool, "reddit", future_bytes, &future_key, "\"future-etag\"", "ready").await;
     sqlx::query(
         "UPDATE archive_imports SET raw_delete_after=now()-interval '1 second' WHERE tenant_id=$1 AND id=$2",
     )
@@ -696,19 +719,14 @@ async fn scheduled_raw_purge_deletes_only_due_exact_versions() {
     .await
     .unwrap();
     let due_before: i64 = sqlx::query_scalar(
-        "SELECT count(*)::bigint FROM archive_imports WHERE raw_deleted_at IS NULL AND raw_storage_key IS NOT NULL AND raw_storage_version_id IS NOT NULL AND raw_delete_after<=now()",
+        "SELECT count(*)::bigint FROM archive_imports WHERE raw_deleted_at IS NULL AND raw_storage_key IS NOT NULL AND raw_storage_etag IS NOT NULL AND raw_delete_after<=now()",
     )
     .fetch_one(&pool)
     .await
     .unwrap();
     let blob = Arc::new(InMemoryBlobStore::default());
-    blob.put_latest(&due_key, due_version, "application/zip", &due_bytes[..]);
-    blob.put_latest(
-        &future_key,
-        future_version,
-        "application/zip",
-        &future_bytes[..],
-    );
+    blob.put(&due_key, "\"due-etag\"", "application/zip", &due_bytes[..]);
+    blob.put(&future_key, "\"future-etag\"", "application/zip", &future_bytes[..]);
 
     let swept = sweep_due(&pool, blob.clone())
         .await
@@ -730,20 +748,8 @@ async fn scheduled_raw_purge_deletes_only_due_exact_versions() {
     .fetch_one(&pool)
     .await
     .unwrap();
-    assert!(due_deleted, "the due immutable version is purged");
+    assert!(due_deleted, "the due archive is purged");
     assert!(!future_deleted, "a future deadline is not purged early");
-    assert!(
-        blob.calls().contains(&BlobCall::DeleteVersion {
-            key: due_key,
-            version_id: due_version.into(),
-        }),
-        "the sweeper deletes the due exact version"
-    );
-    assert!(
-        !blob.calls().contains(&BlobCall::DeleteVersion {
-            key: future_key,
-            version_id: future_version.into(),
-        }),
-        "the sweeper does not touch a future exact version"
-    );
+    assert!(!blob.contains(&due_key), "the sweeper deletes the due archive");
+    assert!(blob.contains(&future_key), "the sweeper does not touch a future archive");
 }

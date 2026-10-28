@@ -1,6 +1,6 @@
-//! Plan 003 auth surface.
+//! Auth surface.
 //!
-//! Local smoke / Plan 008 session harness:
+//! Local smoke / session harness:
 //! - Preferred automated path: `cargo test --locked --manifest-path backend/Cargo.toml auth::local_session_fixture -- --ignored --nocapture`
 //!   (requires `DATABASE_URL`/`DATABASE_URL_APP` plus `WORKOS_*` / `APP_SESSION_KEYS` / `AUTH_*`).
 //! - Manual path: `GET /v1/auth/authorize` → frontend WorkOS callback → `POST /v1/auth/exchange`,

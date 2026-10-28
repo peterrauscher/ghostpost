@@ -1,4 +1,4 @@
-//! Plan 006: flag JSON omits engagement fields at launch.
+//! Flag JSON omits engagement fields at launch.
 mod common;
 
 use axum::http::{Method, StatusCode};

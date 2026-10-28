@@ -1,0 +1,51 @@
+name: app-auth-e2e
+
+# Real deployed-app verification, not a substitute for testing PR source.
+on:
+  workflow_dispatch:
+  deployment_status:
+  schedule:
+    - cron: '23 10 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-auth-e2e
+  cancel-in-progress: false
+
+jobs:
+  authentication:
+    if: >-
+      github.event_name != 'deployment_status' ||
+      (github.event.deployment_status.state == 'success' &&
+       github.event.deployment.environment == 'production' &&
+       github.event.deployment_status.environment_url ==
+         (vars.APP_E2E_BASE_URL || 'https://app.getghostpost.com'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app
+    env:
+      E2E_BASE_URL: ${{ vars.APP_E2E_BASE_URL || 'https://app.getghostpost.com' }}
+      E2E_WORKOS_API_KEY: ${{ secrets.WORKOS_E2E_API_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Require the WorkOS test credential
+        run: test -n "$E2E_WORKOS_API_KEY" || { echo 'WORKOS_E2E_API_KEY is required'; exit 1; }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: app-auth-e2e
+          path: app/e2e/artifacts
+          retention-days: 14

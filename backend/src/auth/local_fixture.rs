@@ -1,4 +1,4 @@
-//! Ignored local session fixture for smoke scripts (Plan 003 Step 12).
+//! Ignored local session fixture for smoke scripts.
 //!
 //! This module intentionally does not mint sessions unless `--ignored` is passed and
 //! live WorkOS + database env are present. Integration suites under `backend/tests`

@@ -7,10 +7,11 @@ export interface NativeSession { kind: 'bearer'; token: string; expiresAt: strin
 export interface NativeExchangeResponse { user: UserProfile; session: NativeSession }
 export interface PlatformCatalogItem { id: PlatformId; label: string; archiveEnabled: boolean; status?: string; glyph?: string; color?: string }
 export interface PlatformCatalog { revision: string; platforms: PlatformCatalogItem[] }
-export interface SignedPost { method: 'POST'; url: string; fields: Record<string, string> }
-export interface ArchiveImport { id: string; platform: PlatformId; status: 'reserved'|'uploaded'|'queued'|'normalizing'|'ready'|'failed'|'deleted'|'cancelled'; errorCode?: string | null; upload?: SignedPost; expiresAt?: string }
+/** Presigned create-once PUT: send `headers` verbatim with the raw file as the body. */
+export interface SignedPut { method: 'PUT'; url: string; headers: Record<string, string> }
+export interface ArchiveImport { id: string; platform: PlatformId; status: 'reserved'|'uploaded'|'queued'|'normalizing'|'ready'|'failed'|'deleted'|'cancelled'; errorCode?: string | null; upload?: SignedPut; expiresAt?: string }
 export interface ArchiveImportList { items: ArchiveImport[]; nextCursor?: string | null }
-export interface ReserveArchiveResponse { id: string; upload: SignedPost; expiresAt: string }
+export interface ReserveArchiveResponse { id: string; upload: SignedPut; expiresAt: string }
 export interface Entitlement { status: string; productId: 'free_beta'; validFrom: string; expiresAt: string | null; scanId: string | null; capabilities: { reviewAccess: boolean; rescansRemaining: number | null; platformLimit: number } }
 export interface ReviewListQuery { scanId?: string; risk?: 'all'|'high'|'medium'|'low'; status?: string; cursor?: string; limit?: number }
 

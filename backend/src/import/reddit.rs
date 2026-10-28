@@ -26,17 +26,37 @@ fn valid_id(value: &str) -> bool {
         && value.bytes().all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit())
 }
 
+/// Raw-byte ceiling for one CSV record (quotes, separators, and doubled
+/// quotes included). The csv crate grows its record buffer without bound, so
+/// this guard caps memory; the exact limit is still enforced per record on the
+/// decoded fields (`MAX_CSV_RECORD_BYTES`).
+const MAX_RAW_CSV_RECORD_BYTES: usize = 2 * limits::MAX_CSV_RECORD_BYTES + 65_536;
+
+#[derive(Default)]
+struct QuoteState {
+    odd_quotes: Cell<bool>,
+    oversized: Cell<bool>,
+}
+
 struct QuoteReader<R> {
     inner: R,
-    odd_quotes: Rc<Cell<bool>>,
+    state: Rc<QuoteState>,
+    record_bytes: usize,
 }
 
 impl<R: Read> Read for QuoteReader<R> {
     fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
         let read = self.inner.read(buffer)?;
         for byte in &buffer[..read] {
-            if *byte == b'"' {
-                self.odd_quotes.set(!self.odd_quotes.get());
+            match *byte {
+                b'"' => self.state.odd_quotes.set(!self.state.odd_quotes.get()),
+                b'\n' | b'\r' if !self.state.odd_quotes.get() => { self.record_bytes = 0; continue; }
+                _ => {}
+            }
+            self.record_bytes += 1;
+            if self.record_bytes > MAX_RAW_CSV_RECORD_BYTES {
+                self.state.oversized.set(true);
+                return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "CSV record too large"));
             }
         }
         Ok(read)
@@ -49,17 +69,27 @@ fn permalink_id(permalink: &str, is_comment: bool) -> Option<&str> {
     if is_comment { segments.last().copied() } else { segments.get(comments + 1).copied() }
 }
 
-pub fn parse_csv<R: Read>(reader: R, file: &str, import_id: Uuid) -> Result<Vec<NormalizedArchiveRecord>, ImportError> {
+/// Streams `file` row by row, handing each normalized record to `emit`.
+/// Returns the number of records emitted. Nothing is accumulated here.
+pub fn parse_csv<R: Read>(
+    reader: R,
+    file: &str,
+    import_id: Uuid,
+    emit: &mut dyn FnMut(NormalizedArchiveRecord) -> Result<(), ImportError>,
+) -> Result<usize, ImportError> {
     let expected = match file {
         "comments.csv" => &COMMENTS_HEADER[..],
         "posts.csv" => &POSTS_HEADER[..],
-        _ => return Ok(Vec::new()),
+        _ => return Ok(0),
     };
     let is_comment = file == "comments.csv";
-    let odd_quotes = Rc::new(Cell::new(false));
-    let checked = QuoteReader { inner: reader, odd_quotes: Rc::clone(&odd_quotes) };
+    let state = Rc::new(QuoteState::default());
+    let checked = QuoteReader { inner: reader, state: Rc::clone(&state), record_bytes: 0 };
     let mut csv = csv::ReaderBuilder::new().has_headers(true).flexible(false).from_reader(checked);
-    let headers = csv.headers().map_err(|_| ImportError::from(ImportErrorCode::InvalidSchema))?.clone();
+    let row_error = |state: &QuoteState, otherwise: ImportErrorCode| -> ImportError {
+        if state.oversized.get() { ImportErrorCode::ResourceLimit.into() } else { otherwise.into() }
+    };
+    let headers = csv.headers().map_err(|_| row_error(&state, ImportErrorCode::InvalidSchema))?.clone();
     if headers.as_byte_record().as_slice().len() > limits::MAX_CSV_HEADER_BYTES {
         return Err(ImportErrorCode::ResourceLimit.into());
     }
@@ -70,12 +100,12 @@ pub fn parse_csv<R: Read>(reader: R, file: &str, import_id: Uuid) -> Result<Vec<
     }
     let exact_header = header_names == expected;
     let index = |name: &str| header_names.iter().position(|value| *value == name).unwrap();
-    let mut output = Vec::new();
+    let mut emitted = 0usize;
     for (ordinal, row) in csv.records().enumerate() {
-        if output.len() >= limits::MAX_NORMALIZED_RECORDS {
+        if emitted >= limits::MAX_NORMALIZED_RECORDS {
             return Err(ImportErrorCode::ResourceLimit.into());
         }
-        let row = row.map_err(|_| ImportError::from(ImportErrorCode::InvalidRecord))?;
+        let row = row.map_err(|_| row_error(&state, ImportErrorCode::InvalidRecord))?;
         if row.as_byte_record().as_slice().len() > limits::MAX_CSV_RECORD_BYTES {
             return Err(ImportErrorCode::ResourceLimit.into());
         }
@@ -113,7 +143,8 @@ pub fn parse_csv<R: Read>(reader: R, file: &str, import_id: Uuid) -> Result<Vec<
                 .ok_or_else(|| ImportError::from(ImportErrorCode::InvalidRecord))?;
             Some(parent.to_owned())
         } else { None };
-        output.push(NormalizedArchiveRecord {
+        emitted += 1;
+        emit(NormalizedArchiveRecord {
             schema_version: 1, import_id, platform: ArchivePlatform::Reddit,
             source_logical_id: id.into(), source_revision_id: id.into(),
             record_type: if is_comment { RecordType::Comment } else { RecordType::Post },
@@ -128,11 +159,11 @@ pub fn parse_csv<R: Read>(reader: R, file: &str, import_id: Uuid) -> Result<Vec<
                 format_confidence: if is_comment && exact_header { FormatConfidence::Confirmed }
                     else if is_comment { FormatConfidence::Compatible } else { FormatConfidence::Provisional },
             },
-        });
+        })?;
     }
     drop(csv);
-    if odd_quotes.get() {
+    if state.odd_quotes.get() {
         return Err(ImportErrorCode::InvalidRecord.into());
     }
-    Ok(output)
+    Ok(emitted)
 }
