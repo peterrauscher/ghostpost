@@ -792,9 +792,13 @@ pub async fn local_purge_profile(
     user_id: Uuid,
 ) -> Result<(), sqlx::Error> {
     let mut tx = pool.begin().await?;
-    // Archive-owned rows must be removed before the user is reduced to the
-    // provider retry tombstone. Import/staging joins cascade from imports;
-    // normalized content is user-owned and may otherwise outlive every import.
+    // Scans own the scan/archive joins, whose import foreign key is restrictive.
+    // Remove scans before imports; normalized content is independently user-owned.
+    sqlx::query(r#"DELETE FROM scans WHERE tenant_id = $1 AND user_id = $2"#)
+        .bind(tenant_id)
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
     sqlx::query(r#"DELETE FROM content_items WHERE tenant_id = $1 AND user_id = $2"#)
         .bind(tenant_id)
         .bind(user_id)

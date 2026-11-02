@@ -141,6 +141,34 @@ async fn account_purge_removes_every_archive_row_and_personal_field() {
     .execute(&pool)
     .await
     .expect("pin raw archive");
+    let scan_id: Uuid = sqlx::query_scalar(
+        "INSERT INTO scans(tenant_id,user_id) VALUES($1,$2) RETURNING id",
+    )
+    .bind(tenant.id)
+    .bind(user.id)
+    .fetch_one(&pool)
+    .await
+    .expect("scan");
+    sqlx::query(
+        "INSERT INTO scan_archive_imports(tenant_id,scan_id,archive_import_id) VALUES($1,$2,$3)",
+    )
+    .bind(tenant.id)
+    .bind(scan_id)
+    .bind(import.id)
+    .execute(&pool)
+    .await
+    .expect("scan/archive link");
+    let peer = users::create_user(&pool, tenant.id, None, None, Some("Peer archive owner"))
+        .await
+        .expect("peer");
+    let peer_scan_id: Uuid = sqlx::query_scalar(
+        "INSERT INTO scans(tenant_id,user_id) VALUES($1,$2) RETURNING id",
+    )
+    .bind(tenant.id)
+    .bind(peer.id)
+    .fetch_one(&pool)
+    .await
+    .expect("peer scan");
     let item = archive_imports::insert_content_item(
         &pool,
         tenant.id,
@@ -202,6 +230,33 @@ async fn account_purge_removes_every_archive_row_and_personal_field() {
     .await
     .unwrap();
     assert_eq!(archive_rows, 0, "pinned archive metadata is purged");
+    let scan_rows: i64 = sqlx::query_scalar(
+        "SELECT count(*)::bigint FROM scans WHERE tenant_id=$1 AND user_id=$2",
+    )
+    .bind(tenant.id)
+    .bind(user.id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(scan_rows, 0, "the deleted account's scans are purged");
+    let links: i64 = sqlx::query_scalar(
+        "SELECT count(*)::bigint FROM scan_archive_imports WHERE tenant_id=$1 AND scan_id=$2",
+    )
+    .bind(tenant.id)
+    .bind(scan_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(links, 0, "scan/archive relationships are purged");
+    let peer_scan_survives: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM scans WHERE tenant_id=$1 AND id=$2)",
+    )
+    .bind(tenant.id)
+    .bind(peer_scan_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(peer_scan_survives, "another account's scan must survive");
     let content_rows: i64 = sqlx::query_scalar(
         "SELECT count(*)::bigint FROM content_items WHERE tenant_id=$1 AND user_id=$2",
     )

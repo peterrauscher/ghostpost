@@ -205,6 +205,13 @@ Against production, with a dedicated test account:
 5. Delete the account. Its rows and sessions are gone, its R2 keys are gone,
    and a ledger marker plus the provider-complete companion exist.
 
+Use an account that completed a scan and review, not just an empty account.
+Account purge deletes owned scans first so their scan/archive links cascade
+before imports are removed; another account's scans must remain untouched.
+The populated-account regression is in `backend/tests/account_purge_archive_contracts.rs`
+and runs with `cargo test --locked --test account_purge_archive_contracts -- --ignored`
+against a migrated test Postgres database.
+
 Save a report containing status codes, IDs and timings (no archive content)
 as `smoke-reports/<sha>.json` in the VM.
 
