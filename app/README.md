@@ -88,6 +88,13 @@ not proof for a physical iPhone or an installed Home Screen web app.
 
 The document picker supplies an opaque ZIP. The app reserves a presigned create-once PUT with the API, uploads the file directly to object storage (R2 in production, MinIO locally) sending the returned headers verbatim, and asks the backend to complete and pin the object's ETag. Web uploads the picked `File` with `fetch`; native streams it from disk with `expo-file-system`'s `File.upload`. The ZIP is never base64-encoded, hashed, buffered in JS, or proxied through the API process.
 
+The scan tab shows separate ZIP upload cards for X and Reddit, with live upload,
+processing, failure, and ready states. Adding the other supported platform keeps
+the existing setup answers and disclosure consent. A scan is enabled only after
+every selected platform has a ready archive and none is processing. Instagram,
+TikTok, and Facebook are marked coming soon; these are not OAuth connections.
+Choose files through the platform picker; drag-and-drop is not advertised.
+
 ## Gates
 
 ```bash
