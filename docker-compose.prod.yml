@@ -1,7 +1,8 @@
-# Production stack on the ghostpost VM (see docs/deployment-plan.md).
-# Deployed by scripts/deploy-htpc.sh into /opt/ghostpost/releases/<sha> with
+# Production stack on the ghostpost VPS (see docs/deployment-plan.md).
+# Deployed by scripts/deploy-vps.sh into /opt/ghostpost/releases/<sha> with
 # secrets in /opt/ghostpost/.env.production (keys: .env.production.example).
-# Nothing publishes a host port: the API is reachable only via the tunnel.
+# Only Caddy publishes host ports (TCP 80/443, TLS for api.getghostpost.com);
+# Postgres and the API are reachable only on the internal compose network.
 name: ghostpost
 
 x-logging: &logging
@@ -65,7 +66,7 @@ services:
       BIND_ADDR: 0.0.0.0:8080
       RUST_LOG: info,sqlx=warn
       LOG_FORMAT: json
-      INSTANCE_ID: ghostpost-vm
+      INSTANCE_ID: ghostpost-vps
       DATABASE_APP_ROLE: ghostpost_app
       DB_MAX_CONNECTIONS: "10"
       SHUTDOWN_DEADLINE_SECS: "30"
@@ -104,11 +105,15 @@ services:
     stop_grace_period: 45s
     logging: *logging
 
-  cloudflared:
-    image: cloudflare/cloudflared:latest@sha256:0e56c13c7058fcef9c4f0e7d83372f82330548dbf8f8b366f3d8b506526d93b2
-    command: ["tunnel", "--no-autoupdate", "run"]
-    environment:
-      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?}
+  caddy:
+    image: caddy:2-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
     depends_on:
       api: { condition: service_healthy }
     restart: unless-stopped
@@ -140,3 +145,5 @@ volumes:
   postgres-data:
   import-spool:
   backup-spool:
+  caddy-data:
+  caddy-config:
