@@ -58,10 +58,8 @@ after a day.
 
 ## Host constraints
 
-The VPS size is not recorded in this repository and is not assumed here. Read
-CPU, RAM and disk from the OVH panel and the host (`nproc`, `free -h`,
-`df -h /var/lib/docker`) before the first build and keep the numbers in your
-notes.
+Initial host capacity and provisioning measurements are recorded in
+[the VPS runbook](vps.md). Re-measure CPU, RAM and disk before future builds.
 
 - **Import spool.** The worker streams archives rather than holding them in
   memory: `import.normalize` spools the pinned object to an unlinked temporary
@@ -140,7 +138,7 @@ device upload.
      static export's dynamic routes (`review/[id]`) resolve; set the
      `not_found_handling` that makes them work.
    - `api.getghostpost.com` is a DNS-only **A** record to `40.160.254.201`,
-     created and changed through the Cloudflare DNS API. The old tunnel record
+     managed in the Cloudflare DNS dashboard. The old tunnel record
      is removed at cutover. An AAAA record for `2604:2dc0:301::4:0:1bc` is added
      only after IPv6 reachability and the served certificate are verified from
      outside. See [DNS](vps.md#dns).
@@ -256,10 +254,9 @@ Expo, prepares dynamic-route assets and the 404 page, and deploys to Cloudflare.
   `BACKUP_AGE_RECIPIENT`, and restore that with the current release. This
   loses no data.
 - **A stale backup needs explicit acceptance.** If the source is unreachable,
-  restore the newest R2 backup. The newest found so far is
-  `postgres/2026/11/11/20261111T100246Z.dump.age` (264,453 bytes, 2026-11-11
-  10:02 UTC); everything written after it is lost. Having the restore script
-  does not authorise using it. Accept the loss first.
+  list the current R2 backups and establish the latest snapshot time. Everything
+  written after the chosen snapshot is lost. Having the restore script does not
+  authorise accepting that loss.
 - **Restore point is the dump's start, not its end.** `--restore-point` must be
   at or before the moment the dump's transaction snapshot began: for a final
   dump, record a timestamp just before starting `pg_dump`; for an R2 backup, use
@@ -288,11 +285,10 @@ Expo, prepares dynamic-route assets and the 404 page, and deploys to Cloudflare.
 
 ## Verification after cutover
 
-None of this has been run against the VPS yet. Do not mark the migration done
-from a green deploy alone: the deploy script's own smoke is a minimal public
-API check (health, WorkOS authorize, and the peer-IP check above), not these
-journeys. A restore rehearsal into a throwaway target has also not been done;
-do it before relying on the new backups.
+A green deploy proves only the minimal public API checks (health, WorkOS
+authorization and the peer-IP check), not these journeys. Run them against the
+deployed backend, and prove a new encrypted backup restores into an isolated
+throwaway database before relying on the backup path.
 
 1. **Health.** `scripts/smoke-health.sh https://api.getghostpost.com` and
    `scripts/smoke-workos-authorize.sh https://api.getghostpost.com`, plus a
@@ -370,8 +366,8 @@ iPhone/Home Screen verification.
   stage). Re-run the identical command to resume at migrate/replay; a
   different backup, release or restore point is refused. Do not delete the
   database to retry.
-- Rehearse once before relying on it, with a throwaway account that was deleted
-  after the dump was taken. This has not been done for the VPS.
+- Rehearse restoration into an isolated throwaway target. A separate
+  deletion-replay rehearsal should include an account deleted after the dump.
 
 ## Launch blockers outside infrastructure
 
@@ -397,5 +393,6 @@ The HTPC libvirt VM (`ghostpost`) was the previous production origin behind
 `cloudflared`. It stays only as a data source to recover from; its provisioning
 files under `scripts/htpc/` are legacy tools, not a bootstrap path for the VPS.
 Recovery facts are in the [legacy appendix](vps.md#appendix-legacy-htpc-source-recovery).
-Today the laptop route to it fails with "No route to host", so a fresh final
-dump may not be obtainable.
+The VM was recovered on 2026-11-13 and supplied the final dump before cutover.
+Its API, tunnel and backup containers are stopped with restart policy `no`;
+its database is stale and must not become a writer again.
