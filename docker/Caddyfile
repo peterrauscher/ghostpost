@@ -1,0 +1,25 @@
+# TLS terminator for the production API (docker-compose.prod.yml `caddy`).
+# Certificates are obtained and renewed automatically via ACME; state lives in
+# the persistent /data volume (caddy-data). Only TCP 80/443 are published, so
+# HTTP/3 (UDP) is disabled.
+{
+	servers {
+		protocols h1 h2
+	}
+}
+
+api.getghostpost.com {
+	encode zstd gzip
+
+	log {
+		output stdout
+		format json
+	}
+
+	reverse_proxy api:8080 {
+		# Fail fast on a dead upstream instead of hanging clients.
+		transport http {
+			dial_timeout 5s
+		}
+	}
+}
