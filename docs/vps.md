@@ -13,9 +13,9 @@ smoke checks are in [the deployment plan](deployment-plan.md). The HTPC libvirt
 VM that served production before is documented only in the
 [legacy source appendix](#appendix-legacy-htpc-source-recovery).
 
-Do not assume the VPS CPU, RAM or disk size. Read them from the OVH panel and
-from `nproc`, `free -h` and `df -h /var/lib/docker` on the host, and record the
-values in your own notes before the first build.
+Initial provisioning was verified on 2026-11-13: Debian 13.4 amd64, 2 vCPU,
+3.8 GiB RAM, a 40 GiB root filesystem and 2 GiB swap. Re-measure with `nproc`,
+`free -h` and `df -h /var/lib/docker` before future builds.
 
 ## What stays outside the VPS
 
@@ -247,8 +247,26 @@ writes (see [Rollback after new writes](#rollback-after-new-writes)).
 
 ## First cutover
 
-Preferred order. Nothing below has been run for this move yet; treat each step
-as a gate, not a log.
+Initial cutover completed on 2026-11-13 with the first OVH release. The source
+writers were stopped before the final dump at `2026-11-13T18:19:20Z`; that
+encrypted dump was restored and deletion replay completed before starting the
+VPS API. Public health, WorkOS authorization and the VPS peer-IP check passed.
+
+The released authentication suite passed all 8 Chromium/mobile-WebKit cases.
+A valid-format **synthetic** X + Reddit smoke also passed upload, normalization,
+scan (14 flags), review and populated-account purge against the real providers.
+This does not establish compatibility with raw user exports: the approved
+redacted Reddit comments fixture has unprefixed/empty parent IDs rejected by
+the parser, and its original raw ZIP is unavailable. Do not relax parsing just
+to accommodate that fixture.
+
+Sensitive local evidence is under the OVH cutover directory in
+`backend/target/e2e-artifacts/`. The sanitized deployment report is in
+`/opt/ghostpost/smoke-reports/` on the VPS. Purge evidence
+distinguishes removed content/sessions from retained entitlement, auth-flow,
+work-item and nulled-user-tombstone metadata.
+
+The procedure for a future migration is:
 
 0. [Bootstrap](#debian-bootstrap) the host with `scripts/bootstrap-vps.sh`
    through the verified key session.
@@ -289,16 +307,15 @@ as a gate, not a log.
 
 ### Stale restore
 
-The newest R2 backup found before this migration is
-`postgres/2026/11/11/20261111T100246Z.dump.age` (264,453 bytes, 2026-11-11
-10:02 UTC). Restoring it loses everything written after that time: accounts,
-imports, scans and reviews. A stale restore needs explicit acceptance of that
-data loss. Having the tool is not authorisation.
+List the current objects in R2 before choosing a backup; never treat a filename
+in an old deployment report as the latest backup. A stale restore loses accounts,
+imports, scans and reviews written after its snapshot. It needs explicit
+acceptance of that data loss. Having the tool is not authorisation.
 
 If you accept it:
 
-- The 21-day ledger retention covers this backup's age, but only the replay
-  stops deleted accounts from reappearing. It must succeed before any traffic.
+- The backup must fall within the 21-day ledger retention. Only successful replay
+  stops deleted accounts from reappearing; it must finish before any traffic.
 - Deleted users' WorkOS state is independent of the database; replay is what
   re-applies the provider-side deletions the ledger records, so it must
   succeed before traffic.
@@ -317,12 +334,12 @@ before the first write, and only if the old database was untouched.
 
 ## DNS
 
-- Add `api.getghostpost.com` as an API-managed **A** record to
-  `the VPS public IPv4 address`, DNS-only (not proxied) so Caddy answers directly and ACME
-  validation reaches the VPS.
-- Remove the old tunnel `CNAME` for the name at cutover, not before. Public
-  health was observed returning HTTP 530 and the source VM does not answer
-  from here; the cause of the 530 has not been established.
+- `api.getghostpost.com` is a DNS-only **A** record to the VPS public IPv4
+  address, so Caddy answers directly and ACME validation reaches the VPS.
+  Manage it in Cloudflare DNS; the initial cutover changed only this record.
+- The old tunnel `CNAME` was replaced at cutover. Its source VM was recovered
+  before the final dump; its API, tunnel and backup containers are now stopped
+  with restart policy `no`. Do not re-enable them against the stale database.
 - Add an **AAAA** record for the VPS public IPv6 address only after you have
   verified from outside the VPS that IPv6 reaches Caddy on 80 and 443 and the
   certificate is served. An AAAA that does not answer breaks clients that
@@ -370,27 +387,30 @@ needs:
   memory settings; measure after real imports.
 - **Native Rust build.** The backend image compiles on the VPS (`dc build`),
   which needs CPU time, RAM for the linker and disk for build cache and image
-  layers. There is no benchmark for this host. Run the first `--prepare`, watch
-  `docker stats`, `free -h` and `df -h`, and record the result. If the build is
-  killed or the disk fills, resize the VPS or prune the build cache; do not
-  change the release to hide it.
+  layers. The initial `--prepare` completed in 337 seconds, including the native
+  build and PostgreSQL startup; peak RAM was not measured. Measure resources for
+  later builds. If one is killed or the disk fills, resize the VPS or prune
+  build cache; do not change the release to hide it.
 
 ## Backups
 
-The `backup` service writes `postgres/YYYY/MM/DD/<timestamp>.dump.age` nightly
-to R2 `ghostpost-backups` (lifecycle: 14 days). The private age key stays on
-the laptop at `~/.config/ghostpost/backup-age.key`; it is never copied to the
-VPS. A restore rehearsal has **not** been run for this host. Run one into a
-throwaway target before relying on backups here.
+The `backup` service writes `postgres/YYYY/MM/DD/<timestamp>.dump.age` at 10:00 UTC
+daily to R2 `ghostpost-backups` (lifecycle: 14 days). The private age key stays on
+the laptop at `~/.config/ghostpost/backup-age.key`; it is never copied to the VPS.
+The first manual OVH backup, `postgres/2026/11/13/20261113T182336Z.dump.age`,
+was decrypted and restored into isolated PostgreSQL on 2026-11-13: 26 tables,
+16 applied migrations, and all application tables owned by the migrator.
+The rehearsal target had no network or published ports and was removed afterwards.
 
 ## Appendix: legacy HTPC source recovery
 
-Retained only to read data from the previous production VM if it comes back.
-It is not a production bootstrap, and `scripts/htpc/` must not be used to
-create the new host. Facts below describe the old system and are unverified
-today: the laptop's `ghostpost-vm` ProxyJump through `htpc` currently fails
-with "No route to host", and the cause has not been diagnosed at the
-hypervisor.
+Retained for recovery of the previous production VM, not for production
+bootstrap. `scripts/htpc/` must not be used to create the new host.
+On 2026-11-13, a libvirt disk snapshot
+`pre-ovh-recovery-20261113T170417324Z` was taken before a user-approved reset.
+SSH and the old API recovered, allowing a fresh final dump. After cutover only
+its PostgreSQL container remains running; the former writers are stopped with
+restart policy `no`, and no Ghostpost systemd units exist.
 
 The old VM ran inside libvirt on `htpc-ubuntu` with LAN egress blocked at the
 hypervisor level (ebtables nwfilter).
@@ -417,8 +437,8 @@ Old layout inside the VM: `/opt/ghostpost/releases/<sha>`,
 `ghostpost_postgres-data`, `ghostpost_import-spool`, `ghostpost_backup-spool`.
 It ran `cloudflared` for ingress.
 
-Recovery order when the source is reachable again: stop its API and worker
-first, take a fresh dump of the database, encrypt it with the backup recipient,
-and use [the first cutover](#first-cutover). When it stays unreachable, the R2
-backup path applies, with the stale-restore conditions above. The old backup
-scheduler (the old `backup` service) must stay stopped once the VPS is live.
+The source database is now stale. Do not start its API, tunnel or backup
+scheduler, even if OVH becomes unavailable. Fix forward, or take a fresh dump
+from the active VPS and restore it onto whichever host should become active,
+with the other writer stopped. Keep the legacy disk and snapshot until recovery
+is no longer needed; do not delete them as part of an ordinary deployment.
