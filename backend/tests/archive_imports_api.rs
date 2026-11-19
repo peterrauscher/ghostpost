@@ -20,7 +20,7 @@ fn assert_archive_response_is_sanitized(body: &Value, expected_id: &str) {
     assert_eq!(body["id"], expected_id);
     assert!(matches!(
         body["platform"].as_str(),
-        Some("reddit" | "x")
+        Some("reddit" | "x" | "instagram" | "tiktok")
     ));
     assert!(matches!(
         body["status"].as_str(),
@@ -713,5 +713,26 @@ async fn complete_rejects_missing_length_and_type_mismatches_without_pinning_or_
         .await
         .unwrap();
         assert_eq!(jobs, 0, "case {name}: mismatch cannot enqueue normalization");
+    }
+}
+
+#[tokio::test]
+#[ignore = "requires migrated local Postgres"]
+async fn instagram_and_tiktok_accept_archive_reservations() {
+    ensure_migrated().await;
+    let pool = app_pool().await;
+    let mock = Arc::new(MockWorkos::new());
+    let app = build_app(pool, mock.clone(), KEY_K1_JSON);
+    let (_, token) = login_native(&app, &mock, &unique_workos_id("new-platform-reserve")).await;
+    for platform in ["instagram", "tiktok"] {
+        let headers = with_idempotency(bearer_headers(&token), &format!("reserve-{platform}"));
+        let response = call(&app, Method::POST, "/v1/archive-imports", None, &headers,
+            Some(json!({"platform":platform,"contentLength":128,"contentType":"application/zip"}))).await;
+        assert_eq!(response.status, StatusCode::CREATED, "{}", response.text());
+        let id = response.json()["id"].as_str().unwrap().to_owned();
+        let imported = call(&app, Method::GET, &format!("/v1/archive-imports/{id}"), None, &bearer_headers(&token), None).await;
+        assert_eq!(imported.status, StatusCode::OK, "{}", imported.text());
+        assert_eq!(imported.json()["platform"], platform);
+        assert_eq!(response.json()["upload"]["method"], "PUT");
     }
 }
