@@ -1,0 +1,20 @@
+{
+  "Direct Messages": {
+    "Direct Messages": {
+      "ChatHistory": {
+        "Chat History with dm_only_friend:": [
+          {
+            "Date": "2024-06-02 00:00:00",
+            "From": "dm_only_friend",
+            "Content": "PRIVATE_MUST_NOT_IMPORT direct message only"
+          }
+        ]
+      }
+    }
+  },
+  "Comment": {
+    "Comments": {
+      "CommentsList": []
+    }
+  }
+}

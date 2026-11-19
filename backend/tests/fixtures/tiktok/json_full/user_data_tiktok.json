@@ -1,0 +1,83 @@
+{
+  "Profile": {
+    "Profile Information": {
+      "ProfileMap": {
+        "userName": "tiktok_fixture_owner",
+        "nickName": "Fixture Owner",
+        "emailAddress": "PRIVATE_MUST_NOT_IMPORT@example.invalid"
+      }
+    }
+  },
+  "Comment": {
+    "Comments": {
+      "CommentsList": [
+        {
+          "Date": "2024-01-02 03:04:05",
+          "Comment": "First public comment from the archive owner.",
+          "Link": "https://www.tiktok.com/@tiktok_fixture_owner/video/7300000000000000001",
+          "Likes": 4,
+          "User Name": "PRIVATE_MUST_NOT_IMPORT"
+        },
+        {
+          "Date": "2024-01-03 04:05:06",
+          "Comment content": "Second public comment with a question mark?",
+          "Original post landing page link": "https://www.tiktok.com/@friend_account/video/7300000000000000002"
+        }
+      ]
+    }
+  },
+  "Post": {
+    "Posts": {
+      "VideoList": [
+        {
+          "Date": "2024-02-02 03:04:05",
+          "Title": "First public post caption",
+          "Posted Video Download Link": "https://www.tiktok.com/@tiktok_fixture_owner/video/7300000000000000001",
+          "Received Likes num": 12,
+          "Who can view": "Everyone",
+          "Allow comments": "On",
+          "Location": "PRIVATE_MUST_NOT_IMPORT"
+        },
+        {
+          "Date": "2024-02-03 04:05:06",
+          "Title": "Second public post caption",
+          "Link": "https://www.tiktok.com/@tiktok_fixture_owner/video/7300000000000000003",
+          "Who can view": "Everyone"
+        }
+      ]
+    },
+    "Recently Deleted Posts": {
+      "VideoList": [
+        {
+          "Date": "2024-02-04 05:06:07",
+          "Title": "DO_NOT_IMPORT deleted post",
+          "Link": "https://www.tiktok.com/@tiktok_fixture_owner/video/7300000000000000004"
+        }
+      ]
+    }
+  },
+  "Your Activity": {
+    "Like List": {
+      "ItemFavoriteList": [
+        {
+          "Date": "2024-02-05 06:07:08",
+          "Link": "https://www.tiktok.com/@someone/video/7300000000000000005",
+          "Title": "DO_NOT_IMPORT liked video"
+        }
+      ]
+    }
+  },
+  "Direct Messages": {
+    "Direct Messages": {
+      "ChatHistory": {
+        "Chat History with friend_account:": [
+          {
+            "Date": "2024-02-06 07:08:09",
+            "From": "tiktok_fixture_owner",
+            "Content": "PRIVATE_MUST_NOT_IMPORT message"
+          }
+        ]
+      }
+    }
+  }
+}

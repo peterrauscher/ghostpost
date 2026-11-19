@@ -1,0 +1,11 @@
+{
+  "Comment": {
+    "Comments": {
+      "CommentsList": [
+        {
+          "Comment": "A comment with no date must fail the import"
+        }
+      ]
+    }
+  }
+}
