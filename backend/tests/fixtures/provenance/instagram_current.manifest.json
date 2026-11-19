@@ -1,0 +1,15 @@
+{
+  "family": "InstagramJson",
+  "fixture": "instagram/synthetic_current_v1",
+  "fixtureKind": "synthetic_tree",
+  "fixtureSha256": "3ddc529a2c903abaf5f3f91cad59c3e67f2049ee9947198d203d3e23faebefb4",
+  "exportGenerationDate": "2026-11-18",
+  "observedWrappers": [
+    "ig_stories",
+    "ig_reels_media",
+    "comments_media_comments",
+    "comments_reels_comments"
+  ],
+  "redactionTransform": "Fully synthetic fixture authored for parser tests: no real account, export, caption, comment, media, handle, URL, or interaction data. Every identifier, timestamp, caption, comment, handle, and media path is invented. DMs, likes, saved posts, followers, and profile photos are included only as DO_NOT_IMPORT markers to prove they are excluded.",
+  "approvedForProduction": false
+}

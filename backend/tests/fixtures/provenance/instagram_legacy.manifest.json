@@ -1,0 +1,13 @@
+{
+  "family": "InstagramJson",
+  "fixture": "instagram/synthetic_legacy_v1",
+  "fixtureKind": "synthetic_tree",
+  "fixtureSha256": "c1eb3ed395d2019fab31708150e85e53d165f87c39168bf29d66bffac74cd537",
+  "exportGenerationDate": "2026-11-18",
+  "observedWrappers": [
+    "ig_stories",
+    "comments_media_comments"
+  ],
+  "redactionTransform": "Fully synthetic fixture authored for parser tests: no real account, export, caption, comment, media, handle, URL, or interaction data. Legacy content/ and comments/ paths plus the comments_media_comments/string_list_data shape are invented. DMs, likes, saved posts, and followers are included only as DO_NOT_IMPORT markers to prove they are excluded.",
+  "approvedForProduction": false
+}

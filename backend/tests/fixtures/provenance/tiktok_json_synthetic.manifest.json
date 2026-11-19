@@ -1,0 +1,9 @@
+{
+  "family": "TikTokJson",
+  "fixture": "tiktok/json_full",
+  "fixtureSha256": "3ad4dc77915fd4a4b285370ba8979e145a771b59b20d26d30e1044a9bcd2e93d",
+  "exportGenerationDate": "2026-11-18",
+  "fixtureKind": "synthetic_tree",
+  "redactionTransform": "Synthetic only: invented account, dates, comments, captions, and identifiers; example.invalid links; no real account data. Direct messages and profile fields are present only to prove they are ignored.",
+  "approvedForProduction": false
+}
