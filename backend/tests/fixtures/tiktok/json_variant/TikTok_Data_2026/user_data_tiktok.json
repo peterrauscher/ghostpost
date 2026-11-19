@@ -1,0 +1,41 @@
+{
+  "profile": {
+    "Profile Information": {
+      "ProfileMap": {
+        "userName": "tiktok_variant_owner"
+      }
+    }
+  },
+  "video": {
+    "videos": {
+      "videolist": [
+        {
+          "date": "2024-03-01 09:00:00",
+          "title": "Variant public video caption",
+          "link": "https://www.tiktok.com/@tiktok_variant_owner/video/7300000000000000010",
+          "who can view": "Everyone"
+        }
+      ]
+    }
+  },
+  "COMMENT": {
+    "CommentsList": [
+      {
+        "DATE": "2024-03-02 09:00:00",
+        "COMMENT": "Variant public comment.",
+        "LINK": "https://www.tiktok.com/@tiktok_variant_owner/video/7300000000000000010"
+      }
+    ]
+  },
+  "Direct Messages": {
+    "ChatHistory": {
+      "Chat History with variant_friend:": [
+        {
+          "Date": "2024-03-03 10:00:00",
+          "From": "variant_friend",
+          "Content": "PRIVATE_MUST_NOT_IMPORT variant message"
+        }
+      ]
+    }
+  }
+}
