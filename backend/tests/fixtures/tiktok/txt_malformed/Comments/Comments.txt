@@ -1,0 +1,2 @@
+Date: not-a-valid-date
+Comment: A TXT comment with a malformed date must fail the import
