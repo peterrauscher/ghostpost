@@ -3,7 +3,7 @@
 use serde::Serialize;
 
 pub const CURRENT_DISCLOSURE_VERSION: &str = "2026-07-23";
-pub const PLATFORMS_REVISION: &str = "2026-07-23";
+pub const PLATFORMS_REVISION: &str = "2026-11-18";
 
 pub const COMING_UP_IDS: &[&str] = &[
     "rush",
@@ -24,7 +24,7 @@ pub const CONCERN_IDS: &[&str] = &[
     "other",
 ];
 
-pub const ARCHIVE_ENABLED_PLATFORMS: &[&str] = &["reddit", "x"];
+pub const ARCHIVE_ENABLED_PLATFORMS: &[&str] = &["reddit", "x", "instagram", "tiktok"];
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -79,7 +79,7 @@ pub fn platforms_catalog() -> PlatformsCatalog {
                 glyph: "ig",
                 color: "#E1306C",
                 use_image: Some(true),
-                archive_enabled: false,
+                archive_enabled: true,
             },
             PlatformOption {
                 id: "tiktok",
@@ -87,7 +87,7 @@ pub fn platforms_catalog() -> PlatformsCatalog {
                 glyph: "♪",
                 color: "#111111",
                 use_image: Some(true),
-                archive_enabled: false,
+                archive_enabled: true,
             },
             PlatformOption {
                 id: "x",
