@@ -1,0 +1,24 @@
+{
+  "comments_media_comments": [
+    {
+      "title": "synthetic_friend",
+      "string_list_data": [
+        {
+          "value": "Legacy comment text",
+          "timestamp": 1578096000
+        }
+      ],
+      "media_list_data": []
+    },
+    {
+      "title": "synthetic_friend",
+      "string_list_data": [
+        {
+          "value": "Another legacy comment",
+          "timestamp": 1578182400
+        }
+      ],
+      "media_list_data": []
+    }
+  ]
+}

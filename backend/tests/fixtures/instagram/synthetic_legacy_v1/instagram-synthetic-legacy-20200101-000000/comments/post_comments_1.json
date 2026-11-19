@@ -1,0 +1,18 @@
+[
+  {
+    "media_owner": "synthetic_friend",
+    "string_map_data": {
+      "Comment": {
+        "value": "Legacy sharded comment"
+      },
+      "Time": {
+        "value": "",
+        "timestamp": 1578268800
+      },
+      "Media Owner": {
+        "value": "synthetic_friend",
+        "timestamp": 0
+      }
+    }
+  }
+]
