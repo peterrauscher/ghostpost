@@ -1,0 +1,23 @@
+{
+  "ig_stories": [
+    {
+      "uri": "media/stories/202601/2000000000000000001.jpg",
+      "creation_timestamp": 1767312000,
+      "title": "Story text overlay",
+      "media_metadata": {
+        "photo_metadata": {
+          "exif_data": []
+        }
+      }
+    },
+    {
+      "uri": "media/stories/202601/2000000000000000002.mp4",
+      "creation_timestamp": 1767398400,
+      "media_metadata": {
+        "video_metadata": {
+          "exif_data": []
+        }
+      }
+    }
+  ]
+}
