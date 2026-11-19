@@ -1,0 +1,20 @@
+{
+  "comments_reels_comments": [
+    {
+      "media_owner": "synthetic_friend",
+      "string_map_data": {
+        "Comment": {
+          "value": "Great reel"
+        },
+        "Time": {
+          "value": "",
+          "timestamp": 1767610800
+        },
+        "Media Owner": {
+          "value": "synthetic_friend",
+          "timestamp": 0
+        }
+      }
+    }
+  ]
+}

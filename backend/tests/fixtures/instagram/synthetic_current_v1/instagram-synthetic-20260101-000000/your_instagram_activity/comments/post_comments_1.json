@@ -1,0 +1,34 @@
+[
+  {
+    "media_owner": "synthetic_friend",
+    "string_map_data": {
+      "Comment": {
+        "value": "Lovely light!"
+      },
+      "Time": {
+        "value": "",
+        "timestamp": 1767600000
+      },
+      "Media Owner": {
+        "value": "synthetic_friend",
+        "timestamp": 0
+      }
+    }
+  },
+  {
+    "media_owner": "synthetic_friend",
+    "string_map_data": {
+      "Comment": {
+        "value": "CafÃ© comments work"
+      },
+      "Time": {
+        "value": "",
+        "timestamp": 1767603600
+      },
+      "Media Owner": {
+        "value": "synthetic_friend",
+        "timestamp": 0
+      }
+    }
+  }
+]
