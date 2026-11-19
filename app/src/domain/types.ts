@@ -1,6 +1,11 @@
 export type RiskLevel = 'high' | 'medium' | 'low';
 export type OverallRiskLevel = RiskLevel | 'none';
 export type PlatformId = 'facebook' | 'reddit' | 'instagram' | 'tiktok' | 'x';
+export const ARCHIVE_PLATFORM_IDS = ['instagram', 'reddit', 'tiktok', 'x'] as const satisfies readonly PlatformId[];
+export type ArchivePlatformId = (typeof ARCHIVE_PLATFORM_IDS)[number];
+export function isArchivePlatformId(id: PlatformId): id is ArchivePlatformId {
+  return (ARCHIVE_PLATFORM_IDS as readonly PlatformId[]).includes(id);
+}
 export type ComingUpOption = 'rush'|'college_apps'|'job_interviews'|'friends_family'|'just_concerned'|'something_else';
 export type ConcernOption = 'inappropriate_language'|'drinking_drugs'|'political_takes'|'controversial_topics'|'negativity'|'public_image'|'other';
 export type ReviewAction = 'delete_local' | 'archive' | 'keep' | 'resolve';

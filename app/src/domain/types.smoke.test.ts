@@ -1,9 +1,11 @@
 /// <reference types="jest" />
 
 import {
+  ARCHIVE_PLATFORM_IDS,
   COMING_UP_OPTIONS,
   CONCERN_OPTIONS,
   PLATFORM_OPTIONS,
+  isArchivePlatformId,
 } from '@/domain/types';
 
 describe('domain option catalogs', () => {
@@ -25,6 +27,15 @@ describe('domain option catalogs', () => {
     expect(PLATFORM_OPTIONS.map((p) => p.id).sort()).toEqual(
       ['facebook', 'instagram', 'reddit', 'tiktok', 'x'].sort(),
     );
+  });
+
+  it('enables Instagram and TikTok archive imports while Facebook stays coming soon', () => {
+    expect([...ARCHIVE_PLATFORM_IDS].sort()).toEqual(
+      ['instagram', 'reddit', 'tiktok', 'x'].sort(),
+    );
+    for (const platform of PLATFORM_OPTIONS) {
+      expect(isArchivePlatformId(platform.id)).toBe(platform.id !== 'facebook');
+    }
   });
 
   it('exposes concern ids used by onboarding', () => {
