@@ -12,6 +12,8 @@ use uuid::Uuid;
 #[derive(Debug)]
 pub enum ParsedItem {
     Reddit(NormalizedArchiveRecord),
+    Instagram(NormalizedArchiveRecord),
+    TikTok(NormalizedArchiveRecord),
     X(XItem),
 }
 
@@ -52,6 +54,24 @@ pub fn produce<R: Read + Seek>(
                     x::stream_file(reader, import_id, &name, family, &mut |item| send(&tx, ParsedItem::X(item)))
                 })?;
             }
+        }
+        ArchivePlatform::Instagram | ArchivePlatform::TikTok => {
+            let mut emitted = 0usize;
+            for name in &names {
+                archive.read_entry(name, |reader| {
+                    let mut emit = |record| {
+                        if emitted >= super::limits::MAX_NORMALIZED_RECORDS { return Err(ImportErrorCode::ResourceLimit.into()); }
+                        emitted += 1;
+                        send(&tx, if platform == ArchivePlatform::Instagram { ParsedItem::Instagram(record) } else { ParsedItem::TikTok(record) })
+                    };
+                    if platform == ArchivePlatform::Instagram {
+                        super::instagram::parse_file(reader, name, import_id, &mut emit)
+                    } else {
+                        super::tiktok::parse_file(reader, name, import_id, &mut emit)
+                    }
+                })?;
+            }
+            if emitted == 0 { return Err(ImportErrorCode::NoSupportedContent.into()); }
         }
     }
     if names.is_empty() { return Err(ImportErrorCode::NoSupportedContent.into()); }

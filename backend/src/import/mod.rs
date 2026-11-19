@@ -1,12 +1,13 @@
-pub mod archive;pub mod commit;pub mod limits;pub mod pipeline;pub mod reddit;pub mod staging;pub mod x;
+pub mod archive;pub mod commit;pub mod limits;pub mod pipeline;pub mod reddit;pub mod staging;pub mod x;pub mod instagram;pub mod tiktok;
+pub(crate) mod json;
 use chrono::{DateTime,Utc};use serde::{Deserialize,Serialize};use uuid::Uuid;
-#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]#[serde(rename_all="snake_case")]pub enum ArchivePlatform{Reddit,X}
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]#[serde(rename_all="snake_case")]pub enum ArchivePlatform{Reddit,X,Instagram,#[serde(rename="tiktok")]TikTok}
 #[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]#[serde(rename_all="snake_case")]pub enum RecordType{Post,Comment,Reply,Repost,Quote}
 #[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]#[serde(rename_all="snake_case")]pub enum TextFormat{Standard,LongFormNote}
 #[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]#[serde(rename_all="snake_case")]pub enum Authorship{OwnerAuthored,Reshared}
 #[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]#[serde(rename_all="snake_case")]pub enum ContentState{Active,Deleted,Removed}
 #[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]#[serde(rename_all="snake_case")]pub enum RelationConfidence{None,Explicit,Heuristic}
-#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]pub enum FormatFamily{RedditGdprCsv,XGdpr,XClassic}
+#[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]pub enum FormatFamily{RedditGdprCsv,XGdpr,XClassic,#[serde(rename="instagram_json")]InstagramJson,#[serde(rename="tiktok_json")]TikTokJson,#[serde(rename="tiktok_txt")]TikTokTxt}
 #[derive(Debug,Clone,Copy,Serialize,Deserialize,PartialEq,Eq)]#[serde(rename_all="snake_case")]pub enum FormatConfidence{Confirmed,Compatible,Provisional}
 #[derive(Debug,Clone,Serialize,Deserialize,PartialEq,Eq)]pub struct RecordProvenance{pub source_file:String,pub source_ordinal:u64,pub format_family:FormatFamily,pub format_confidence:FormatConfidence}
 #[derive(Debug,Clone,Serialize,Deserialize,PartialEq,Eq)]pub struct NormalizedArchiveRecord{pub schema_version:u16,pub import_id:Uuid,pub platform:ArchivePlatform,pub source_logical_id:String,pub source_revision_id:String,pub record_type:RecordType,pub text_format:TextFormat,pub authorship:Authorship,pub state:ContentState,pub created_at:Option<DateTime<Utc>>,pub title:Option<String>,pub body:Option<String>,pub parent_source_id:Option<String>,pub quoted_source_id:Option<String>,pub relation_confidence:RelationConfidence,pub text_truncated:bool,pub provenance:RecordProvenance}
