@@ -15,6 +15,7 @@ import {
 import { AppText, Button, Screen, SurfaceCard } from '@/components';
 import { DisclosureConsent } from '@/components/DisclosureConsent';
 import { PlatformIcon } from '@/components/PlatformIcon';
+import { isArchivePlatformId, type ArchivePlatformId } from '@/domain/types';
 import {
   useOnboardingQuery,
   useStartScanMutation,
@@ -25,16 +26,16 @@ import { api } from '@/services/api';
 import { bodyFromPickerAsset, putArchiveBytes } from '@/services/api/archive-upload';
 import { colors, radii } from '@/theme';
 
-type SupportedPlatform = 'reddit' | 'x';
+type SupportedPlatform = ArchivePlatformId;
 
 const supported: { id: SupportedPlatform; label: string }[] = [
   { id: 'x', label: 'X (Twitter)' },
   { id: 'reddit', label: 'Reddit' },
+  { id: 'instagram', label: 'Instagram' },
+  { id: 'tiktok', label: 'TikTok' },
 ];
 
 const upcoming = [
-  { id: 'instagram', label: 'Instagram' },
-  { id: 'tiktok', label: 'TikTok' },
   { id: 'facebook', label: 'Facebook' },
 ] as const;
 
@@ -77,9 +78,7 @@ export default function ScanTabScreen() {
   const [focused, setFocused] = useState<SupportedPlatform | null>(null);
   const operation = useRef(false);
 
-  const selected = onboarding.data?.answers.platforms.filter(
-    (id): id is SupportedPlatform => id === 'reddit' || id === 'x',
-  ) ?? [];
+  const selected = onboarding.data?.answers.platforms.filter(isArchivePlatformId) ?? [];
 
   const consented = onboarding.data?.answers.disclosureConsent.accepted === true;
 
@@ -115,7 +114,7 @@ export default function ScanTabScreen() {
   let hint = 'Your selected archives are ready.';
 
   if (selected.length === 0) {
-    hint = 'Add X or Reddit to include a platform in your scan.';
+    hint = 'Add a platform below to include it in your scan.';
   } else if (!consented) {
     hint = 'Accept the privacy consent to continue.';
   } else if (selectedProcessing || pendingUploads.length > 0) {
