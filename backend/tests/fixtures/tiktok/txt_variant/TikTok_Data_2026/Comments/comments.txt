@@ -1,0 +1,9 @@
+date: 2024-05-01 10:00:00
+comment content: Lowercase public comment line one
+line two with a colon: still comment text
+Url: https://www.tiktok.com/@txt_variant_owner/video/7300000000000000020
+Photo: None
+
+date: 2024-05-02 11:00:00
+Comment content: Second lowercase public comment
+Video Link: https://www.tiktok.com/@friend_account/video/7300000000000000021

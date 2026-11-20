@@ -1,3 +1,5 @@
+#[path = "common/archive_fixtures.rs"]
+mod archive_fixtures;
 use ghostpost_backend::r#import::archive::SafeArchive;
 use ghostpost_backend::r#import::reddit::parse_csv;
 use ghostpost_backend::r#import::x::parse_tweets;
@@ -911,4 +913,153 @@ fn archive_format_detection_fails_closed_on_ambiguous_or_declared_platform_misma
         error_code(SafeArchive::index(Cursor::new(mismatch), ArchivePlatform::Reddit)),
         "platform_mismatch"
     );
+}
+
+fn new_platforms() -> [(ArchivePlatform, &'static str); 2] {
+    [
+        (ArchivePlatform::Instagram, "your_instagram_activity/media/posts_1.json"),
+        (ArchivePlatform::TikTok, "user_data_tiktok.json"),
+    ]
+}
+
+#[test]
+fn new_platforms_use_the_same_zip_safety_and_detection() {
+    for (platform, source) in new_platforms() {
+        for path in ["/unsafe.json", "a/../unsafe.json", "nested.zip", "a\\unsafe.json"] {
+            assert_eq!(error_code(SafeArchive::index(Cursor::new(stored(path, b"[]")), platform)), "unsafe_zip_entry");
+        }
+        let mut encrypted = stored(source, b"[]");
+        set_zip_flag(&mut encrypted, 1);
+        assert_eq!(error_code(SafeArchive::index(Cursor::new(encrypted), platform)), "encrypted_zip");
+        let mut compression = stored(source, b"[]");
+        patch_zip_header_u16(&mut compression, 8, 10, 99);
+        assert_eq!(error_code(SafeArchive::index(Cursor::new(compression), platform)), "unsupported_compression");
+        // Give both headers of a same-length second filename the first filename.
+        let placeholder = "z".repeat(source.len());
+        let duplicate = {
+            let mut bytes = zip(&[
+                ZipEntry { name: source, bytes: b"[]", compression: CompressionMethod::Stored },
+                ZipEntry { name: &placeholder, bytes: b"[]", compression: CompressionMethod::Stored },
+            ]);
+            replace_all(&mut bytes, placeholder.as_bytes(), source.as_bytes());
+            bytes
+        };
+        assert_eq!(error_code(SafeArchive::index(Cursor::new(duplicate), platform)), "duplicate_zip_entry");
+        let bomb = zip(&[ZipEntry { name: source, bytes: &vec![b'a'; 256 * 1024], compression: CompressionMethod::Deflated }]);
+        assert_eq!(error_code(SafeArchive::index(Cursor::new(bomb), platform)), "zip_limit_exceeded");
+        let mut oversized = stored(source, b"[]");
+        let central = oversized.windows(4).position(|w| w == b"PK\x01\x02").unwrap();
+        oversized[central + 24..central + 28].copy_from_slice(&134_217_729u32.to_le_bytes());
+        assert_eq!(error_code(SafeArchive::index(Cursor::new(oversized), platform)), "zip_limit_exceeded");
+        assert_eq!(error_code(SafeArchive::index(Cursor::new(stored(source, b"[]")), ArchivePlatform::Reddit)), "platform_mismatch");
+        let mixed = zip(&[
+            ZipEntry { name: source, bytes: b"[]", compression: CompressionMethod::Stored },
+            ZipEntry { name: "comments.csv", bytes: b"ignored", compression: CompressionMethod::Stored },
+        ]);
+        assert_eq!(error_code(SafeArchive::index(Cursor::new(mixed), platform)), "ambiguous_archive");
+        assert_eq!(error_code(SafeArchive::index(Cursor::new(stored("messages/inbox/private.json", b"private")), platform)), "no_supported_content");
+    }
+    let mixed = zip(&[
+        ZipEntry { name: new_platforms()[0].1, bytes: b"[]", compression: CompressionMethod::Stored },
+        ZipEntry { name: new_platforms()[1].1, bytes: b"{}", compression: CompressionMethod::Stored },
+    ]);
+    for (platform, _) in new_platforms() {
+        assert_eq!(error_code(SafeArchive::index(Cursor::new(mixed.clone()), platform)), "ambiguous_archive");
+    }
+}
+
+fn parse_fixture_tree(root: &str, platform: ArchivePlatform, family: FormatFamily) -> Result<Vec<ghostpost_backend::r#import::NormalizedArchiveRecord>, ghostpost_backend::r#import::ImportError> {
+    use ghostpost_backend::r#import::pipeline::{produce, ParsedItem};
+    let archive = SafeArchive::index(Cursor::new(archive_fixtures::fixture_zip(root)), platform)?;
+    let (tx, mut rx) = tokio::sync::mpsc::channel(16);
+    let worker = std::thread::spawn(move || produce(archive, platform, Uuid::nil(), family, tx));
+    let mut records = Vec::new();
+    while let Some(item) = rx.blocking_recv() {
+        match item {
+            ParsedItem::Instagram(record) | ParsedItem::TikTok(record) => records.push(record),
+            _ => panic!("wrong platform emitted"),
+        }
+    }
+    worker.join().unwrap()?;
+    Ok(records)
+}
+
+#[test]
+fn synthetic_new_platform_archives_reach_the_normalized_pipeline_without_private_text() {
+    for (root, platform, family) in [
+        ("instagram/synthetic_current_v1", ArchivePlatform::Instagram, FormatFamily::InstagramJson),
+        ("instagram/synthetic_legacy_v1", ArchivePlatform::Instagram, FormatFamily::InstagramJson),
+        ("tiktok/json_full", ArchivePlatform::TikTok, FormatFamily::TikTokJson),
+        ("tiktok/json_variant", ArchivePlatform::TikTok, FormatFamily::TikTokJson),
+        ("tiktok/txt_full", ArchivePlatform::TikTok, FormatFamily::TikTokTxt),
+        ("tiktok/txt_variant", ArchivePlatform::TikTok, FormatFamily::TikTokTxt),
+    ] {
+        let records = parse_fixture_tree(root, platform, family).unwrap();
+        assert!(records.iter().any(|record| record.record_type == RecordType::Post), "{root}: post captions");
+        assert!(records.iter().any(|record| record.record_type == RecordType::Comment), "{root}: comments");
+        let mut ids = std::collections::BTreeSet::new();
+        for record in &records {
+            assert_eq!(record.schema_version, 1);
+            assert_eq!(record.platform, platform);
+            assert_eq!(record.authorship, Authorship::OwnerAuthored);
+            let staged = serde_json::to_value(record).unwrap();
+            assert_eq!(staged["platform"], if platform == ArchivePlatform::Instagram { "instagram" } else { "tiktok" }, "commit reads the serialized platform into a database CHECK constraint");
+            assert_eq!(serde_json::from_value::<ghostpost_backend::r#import::NormalizedArchiveRecord>(staged).unwrap(), *record);
+            assert!(record.created_at.is_some());
+            assert!(ids.insert(&record.source_revision_id), "distinct authored records must not overwrite staging");
+            let body = record.body.as_deref().unwrap();
+            assert!(!body.contains("PRIVATE") && !body.contains("DO_NOT_IMPORT"), "{root}: {body}");
+        }
+        let again = parse_fixture_tree(root, platform, family).unwrap();
+        assert_eq!(records, again, "archive identity and text must be deterministic");
+    }
+}
+
+#[test]
+fn no_authored_content_and_malformed_new_archives_fail_closed() {
+    for root in ["tiktok/json_missing", "tiktok/json_dm_ignored"] {
+        assert_eq!(parse_fixture_tree(root, ArchivePlatform::TikTok, FormatFamily::TikTokJson).unwrap_err().code, "no_supported_content");
+    }
+    for (root, family) in [("tiktok/json_malformed", FormatFamily::TikTokJson), ("tiktok/txt_malformed", FormatFamily::TikTokTxt)] {
+        assert_eq!(parse_fixture_tree(root, ArchivePlatform::TikTok, family).unwrap_err().code, "invalid_record");
+    }
+    assert_eq!(error_code(SafeArchive::index(Cursor::new(stored("your_instagram_activity/media/posts_1.html", b"<html>caption</html>")), ArchivePlatform::Instagram)), "no_supported_content");
+}
+
+#[test]
+fn new_platforms_enforce_entry_count_total_bytes_and_aggregate_ratio() {
+    let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+    for index in 0..=100_000 {
+        writer.start_file(format!("excluded/{index}.txt"), SimpleFileOptions::default()).unwrap();
+    }
+    let too_many = writer.finish().unwrap().into_inner();
+    for (platform, _) in new_platforms() {
+        assert_eq!(error_code(SafeArchive::index(Cursor::new(too_many.clone()), platform)), "zip_limit_exceeded");
+    }
+    for (platform, source) in new_platforms() {
+        // Central metadata can exceed aggregate limits without inflating huge payloads.
+        let names: Vec<String> = (0..5).map(|i| format!("root{i}/{source}")).collect();
+        for (uncompressed, compressed) in [(120_000_000u32, 120_000_000u32), (1_500u32, 10u32)] {
+            let entries: Vec<_> = names.iter().map(|name| ZipEntry { name, bytes: b"[]", compression: CompressionMethod::Stored }).collect();
+            let mut bytes = zip(&entries);
+            let offsets: Vec<_> = bytes.windows(4).enumerate().filter_map(|(i, w)| (w == b"PK\x01\x02").then_some(i)).collect();
+            for offset in offsets {
+                bytes[offset + 20..offset + 24].copy_from_slice(&compressed.to_le_bytes());
+                bytes[offset + 24..offset + 28].copy_from_slice(&uncompressed.to_le_bytes());
+            }
+            assert_eq!(error_code(SafeArchive::index(Cursor::new(bytes), platform)), "zip_limit_exceeded");
+        }
+    }
+}
+
+#[test]
+fn new_platform_selected_entry_count_is_bounded() {
+    for (platform, source) in new_platforms() {
+        let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+        for index in 0..=4_096 {
+            writer.start_file(format!("root{index}/{source}"), SimpleFileOptions::default()).unwrap();
+        }
+        let bytes = writer.finish().unwrap().into_inner();
+        assert_eq!(error_code(SafeArchive::index(Cursor::new(bytes), platform)), "zip_limit_exceeded");
+    }
 }

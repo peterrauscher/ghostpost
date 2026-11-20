@@ -1,0 +1,50 @@
+[
+  {
+    "media": [
+      {
+        "uri": "media/posts/202001/5000000000000000001.jpg",
+        "creation_timestamp": 1577923200,
+        "title": "",
+        "media_metadata": {
+          "photo_metadata": {
+            "exif_data": []
+          }
+        }
+      }
+    ],
+    "title": "Legacy caption",
+    "creation_timestamp": 1577923200
+  },
+  {
+    "media": [
+      {
+        "uri": "media/posts/202002/5000000000000000002.jpg",
+        "creation_timestamp": 1580515200,
+        "title": "Legacy media caption",
+        "media_metadata": {
+          "photo_metadata": {
+            "exif_data": []
+          }
+        }
+      }
+    ],
+    "title": "",
+    "creation_timestamp": 1580515200
+  },
+  {
+    "media": [
+      {
+        "uri": "media/posts/202003/5000000000000000003.jpg",
+        "creation_timestamp": 1583020800,
+        "title": "",
+        "media_metadata": {
+          "photo_metadata": {
+            "exif_data": []
+          }
+        }
+      }
+    ],
+    "title": "Legacy CafÃ©",
+    "creation_timestamp": 1583020800
+  }
+]

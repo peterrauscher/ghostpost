@@ -1,0 +1,12 @@
+Date: 2024-04-01 10:00:00
+Comment: First public TXT comment line one
+line two keeps its place
+
+line four follows a blank line
+Link: https://www.tiktok.com/@txt_fixture_owner/video/7300000000000000011
+Photo: None
+Url: https://www.tiktok.com/@txt_fixture_owner/video/7300000000000000011
+
+Date: 2024-04-02 11:00:00
+Comment: Second public TXT comment
+Link: https://www.tiktok.com/@friend_account/video/7300000000000000012

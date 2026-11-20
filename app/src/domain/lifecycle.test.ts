@@ -83,7 +83,7 @@ describe('deriveLifecycleGate', () => {
       expected: 'onboarding',
     },
     {
-      name: 'completed onboarding with no selected reddit/x → awaiting_import',
+      name: 'completed onboarding with facebook and missing instagram archive → awaiting_import',
       input: {
         authenticated: true,
         onboarding: onboarding('completed', ['facebook', 'instagram']),
@@ -119,10 +119,19 @@ describe('deriveLifecycleGate', () => {
       expected: 'awaiting_import',
     },
     {
-      name: 'all required reddit/x imports ready with no scan → awaiting import',
+      name: 'instagram and tiktok selected but only instagram ready → awaiting_import',
       input: {
         authenticated: true,
-        onboarding: onboarding('completed', ['reddit', 'x', 'instagram']),
+        onboarding: onboarding('completed', ['instagram', 'tiktok']),
+        imports: [archive('ready', 'instagram'), archive('queued', 'tiktok')],
+      },
+      expected: 'awaiting_import',
+    },
+    {
+      name: 'all selected imports ready with no scan → awaiting_import',
+      input: {
+        authenticated: true,
+        onboarding: onboarding('completed', ['reddit', 'x']),
         imports: [archive('ready', 'reddit'), archive('ready', 'x')],
         scan: null,
       },
@@ -160,11 +169,22 @@ describe('deriveLifecycleGate', () => {
       expected: 'awaiting_import',
     },
     {
-      name: 'succeeded scan with reviewAccess → app',
+      name: 'succeeded scan with reviewAccess ignores coming-soon facebook → app',
       input: {
         authenticated: true,
-        onboarding: onboarding('completed', ['reddit', 'x']),
+        onboarding: onboarding('completed', ['reddit', 'x', 'facebook']),
         imports: [archive('ready', 'reddit'), archive('ready', 'x')],
+        scan: scan('succeeded'),
+        entitlement: entitlement(true),
+      },
+      expected: 'app',
+    },
+    {
+      name: 'instagram and tiktok archives ready with succeeded scan → app',
+      input: {
+        authenticated: true,
+        onboarding: onboarding('completed', ['instagram', 'tiktok']),
+        imports: [archive('ready', 'instagram'), archive('ready', 'tiktok')],
         scan: scan('succeeded'),
         entitlement: entitlement(true),
       },

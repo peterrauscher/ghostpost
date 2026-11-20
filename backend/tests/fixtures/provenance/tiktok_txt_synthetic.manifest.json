@@ -1,0 +1,9 @@
+{
+  "family": "TikTokTxt",
+  "fixture": "tiktok/txt_full",
+  "fixtureSha256": "0b0900eb27d4e3220c8db6674f076dbb8087d216d069437fce8f2e33192e462f",
+  "exportGenerationDate": "2026-11-18",
+  "fixtureKind": "synthetic_tree",
+  "redactionTransform": "Synthetic only: invented dates, comments, captions, and links; example.invalid URLs; no real account data. A direct-message file is present only to prove it is ignored.",
+  "approvedForProduction": false
+}

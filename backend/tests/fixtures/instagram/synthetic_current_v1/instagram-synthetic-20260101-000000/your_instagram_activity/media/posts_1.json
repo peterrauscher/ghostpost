@@ -1,0 +1,118 @@
+[
+  {
+    "media": [
+      {
+        "uri": "media/posts/202601/1000000000000000001.jpg",
+        "creation_timestamp": 1767225600,
+        "title": "",
+        "media_metadata": {
+          "photo_metadata": {
+            "exif_data": [
+              {
+                "latitude": 45.5152,
+                "longitude": -122.6784,
+                "date_time_original": "2026:01:01 08:00:00"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "title": "Snow on the ridge #pdx",
+    "creation_timestamp": 1767225600
+  },
+  {
+    "media": [
+      {
+        "uri": "media/posts/202602/1000000000000000002.jpg",
+        "creation_timestamp": 1769904000,
+        "title": "",
+        "media_metadata": {
+          "photo_metadata": {
+            "exif_data": []
+          }
+        }
+      },
+      {
+        "uri": "media/posts/202602/1000000000000000003.jpg",
+        "creation_timestamp": 1769904000,
+        "title": "",
+        "media_metadata": {
+          "photo_metadata": {
+            "exif_data": []
+          }
+        }
+      }
+    ],
+    "title": "Two frames, one caption",
+    "creation_timestamp": 1769904000
+  },
+  {
+    "media": [
+      {
+        "uri": "media/posts/202603/1000000000000000004.jpg",
+        "creation_timestamp": 1772323200,
+        "title": "First frame caption",
+        "media_metadata": {
+          "photo_metadata": {
+            "exif_data": []
+          }
+        }
+      },
+      {
+        "uri": "media/posts/202603/1000000000000000005.jpg",
+        "creation_timestamp": 1772323200,
+        "title": "",
+        "media_metadata": {
+          "photo_metadata": {
+            "exif_data": []
+          }
+        }
+      },
+      {
+        "uri": "media/posts/202603/1000000000000000006.jpg",
+        "creation_timestamp": 1772323200,
+        "title": "Third frame caption",
+        "media_metadata": {
+          "photo_metadata": {
+            "exif_data": []
+          }
+        }
+      }
+    ],
+    "title": "",
+    "creation_timestamp": 1772323200
+  },
+  {
+    "media": [
+      {
+        "uri": "media/posts/202604/1000000000000000007.jpg",
+        "creation_timestamp": 1775001600,
+        "title": "",
+        "media_metadata": {
+          "photo_metadata": {
+            "exif_data": []
+          }
+        }
+      }
+    ],
+    "title": "",
+    "creation_timestamp": 1775001600
+  },
+  {
+    "media": [
+      {
+        "uri": "media/posts/202605/1000000000000000008.jpg",
+        "creation_timestamp": 1777593600,
+        "title": "",
+        "media_metadata": {
+          "photo_metadata": {
+            "exif_data": []
+          }
+        }
+      }
+    ],
+    "title": "CafÃ© by the lake",
+    "creation_timestamp": 1777593600
+  }
+]

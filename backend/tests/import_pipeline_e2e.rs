@@ -6,6 +6,8 @@
 //! `cargo test --locked --test import_pipeline_e2e -- --ignored --test-threads=1`
 //! The memory test writes `target/e2e-artifacts/import-memory.json`.
 mod common;
+#[path = "common/archive_fixtures.rs"]
+mod archive_fixtures;
 
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -412,5 +414,39 @@ async fn large_archives_import_with_bounded_peak_memory() {
             run.platform, growth >> 20, MAX_IMPORT_RSS_GROWTH >> 20, run.archive_bytes >> 20
         );
         assert!(run.committed_items > 0);
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "requires migrated local Postgres"]
+async fn instagram_and_tiktok_imports_commit_public_text_and_purge_raw_archives() {
+    let pool = migrated_pool().await;
+    let (tenant, user) = new_user(&pool).await;
+    for (platform, root) in [
+        ("instagram", "instagram/synthetic_current_v1"),
+        ("tiktok", "tiktok/json_full"),
+        ("tiktok", "tiktok/txt_full"),
+    ] {
+        let bytes = archive_fixtures::fixture_zip(root);
+        let blob = Arc::new(InMemoryBlobStore::default());
+        let (id, key, job) = queued_import(&pool, tenant, user, platform, bytes.len() as u64, "\"synthetic-export\"", "new-platform-owner").await;
+        blob.put(&key, "\"synthetic-export\"", "application/zip", bytes);
+        assert_eq!(normalize(&pool, blob.clone(), &job, "new-platform-owner").await.unwrap(), NormalizeOutcome::Completed);
+        let imported = state(&pool, tenant, id).await;
+        assert_eq!(imported.status, "ready");
+        assert!(imported.raw_purged && !blob.contains(&key));
+        let rows: Vec<(String, String, String, String)> = sqlx::query_as(
+            "SELECT c.platform,c.kind,c.authorship,c.body FROM content_items c JOIN archive_import_content_items l ON c.tenant_id=l.tenant_id AND c.id=l.content_item_id WHERE l.tenant_id=$1 AND l.import_id=$2"
+        ).bind(tenant).bind(id).fetch_all(&pool).await.unwrap();
+        assert!(rows.iter().any(|row| row.1 == "post"));
+        assert!(rows.iter().any(|row| row.1 == "comment"));
+        for (actual_platform, _, authorship, body) in rows {
+            assert_eq!(actual_platform, platform);
+            assert_eq!(authorship, "owner_authored");
+            assert!(!body.contains("PRIVATE") && !body.contains("DO_NOT_IMPORT"));
+        }
+        let leftovers: i64 = sqlx::query_scalar("SELECT count(*) FROM import_staging_records WHERE tenant_id=$1 AND import_id=$2")
+            .bind(tenant).bind(id).fetch_one(&pool).await.unwrap();
+        assert_eq!(leftovers, 0);
     }
 }

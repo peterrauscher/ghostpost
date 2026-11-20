@@ -56,6 +56,8 @@ fn allowed(platform: ArchivePlatform, name: &str) -> bool {
                 || valid_numbered(name, "data/tweet-part", ".js")
                 || valid_classic_month(name)
         }
+        ArchivePlatform::Instagram => super::instagram::supported_file(name),
+        ArchivePlatform::TikTok => super::tiktok::supported_file(name),
     }
 }
 
@@ -148,10 +150,8 @@ struct CentralEntry {
 }
 
 struct CentralScan {
-    has_reddit: bool,
-    has_x: bool,
-    /// Only entries allowlisted for either platform; everything else is
-    /// validated and forgotten.
+    platforms: [bool; 4],
+    /// Only allowlisted entries; everything else is validated and forgotten.
     allowlisted: Vec<CentralEntry>,
 }
 
@@ -165,7 +165,7 @@ fn scan_central<R: Read + Seek>(reader: &mut R, eocd: &Eocd) -> Result<CentralSc
     reader.seek(SeekFrom::Start(eocd.central_offset)).map_err(unsupported)?;
     let mut reader = BufReader::with_capacity(64 * 1024, reader);
     let mut canonical_names = HashSet::with_capacity(eocd.count);
-    let mut scan = CentralScan { has_reddit: false, has_x: false, allowlisted: Vec::new() };
+    let mut scan = CentralScan { platforms: [false; 4], allowlisted: Vec::new() };
     let mut header = [0u8; 46];
     let mut raw_name = Vec::with_capacity(MAX_ENTRY_NAME_BYTES);
     for _ in 0..eocd.count {
@@ -190,11 +190,14 @@ fn scan_central<R: Read + Seek>(reader: &mut R, eocd: &Eocd) -> Result<CentralSc
         if !canonical_names.insert(name_digest(&canonical)) {
             return Err(ImportErrorCode::DuplicateZipEntry.into());
         }
-        let reddit = allowed(ArchivePlatform::Reddit, name);
-        let x = allowed(ArchivePlatform::X, name);
-        scan.has_reddit |= reddit;
-        scan.has_x |= x;
-        if reddit || x {
+        let mut selected = false;
+        for (index, platform) in [ArchivePlatform::Reddit, ArchivePlatform::X, ArchivePlatform::Instagram, ArchivePlatform::TikTok].into_iter().enumerate() {
+            if allowed(platform, name) {
+                selected = true;
+                scan.platforms[index] = true;
+            }
+        }
+        if selected {
             scan.allowlisted.push(CentralEntry { name: name.to_owned(), flags, method });
         }
     }
@@ -245,13 +248,11 @@ impl<R: Read + Seek> SafeArchive<R> {
         }
         let eocd = read_exact_eocd(&mut reader, len)?;
         let central = scan_central(&mut reader, &eocd)?;
-        if central.has_reddit && central.has_x {
+        if central.platforms.iter().filter(|present| **present).count() > 1 {
             return Err(ImportErrorCode::AmbiguousArchive.into());
         }
-        let (declared_present, other_present) = match platform {
-            ArchivePlatform::Reddit => (central.has_reddit, central.has_x),
-            ArchivePlatform::X => (central.has_x, central.has_reddit),
-        };
+        let declared_present = central.platforms[match platform { ArchivePlatform::Reddit => 0, ArchivePlatform::X => 1, ArchivePlatform::Instagram => 2, ArchivePlatform::TikTok => 3 }];
+        let other_present = central.platforms.iter().any(|present| *present) && !declared_present;
         if !declared_present && other_present {
             return Err(ImportErrorCode::PlatformMismatch.into());
         }

@@ -44,7 +44,7 @@ impl FromRequestParts<AppState> for Mutation {
 #[derive(Serialize)] pub struct DeleteResponse { id:Uuid, status:&'static str }
 
 pub async fn reserve(State(state):State<AppState>, Extension(blob):Extension<Arc<dyn BlobStore>>, Mutation{session,key:idem}:Mutation, Json(req):Json<ReserveRequest>) -> ApiResult<impl IntoResponse> {
-    if req.platform != "reddit" && req.platform != "x" { return Err(problem(StatusCode::UNPROCESSABLE_ENTITY,"This platform is not available for archive import",Some("PLATFORM_COMING_SOON"))); }
+    if !crate::auth::catalog::is_archive_enabled_platform(&req.platform) { return Err(problem(StatusCode::UNPROCESSABLE_ENTITY,"This platform is not available for archive import",Some("PLATFORM_COMING_SOON"))); }
     if req.content_length == 0 || req.content_length > MAX_ARCHIVE_BYTES || !ALLOWED_TYPES.contains(&req.content_type.as_str()) { return Err(problem(StatusCode::UNPROCESSABLE_ENTITY,"Invalid archive size or content type",Some("INVALID_ARCHIVE_RESERVATION"))); }
     if let Some(payload)=sqlx::query_scalar::<_,serde_json::Value>("SELECT upload_reservation FROM archive_imports WHERE tenant_id=$1 AND user_id=$2 AND reserve_idempotency_key=$3").bind(session.tenant_id).bind(session.user_id).bind(&idem).fetch_optional(&state.pool).await.map_err(db_problem)? {
         return Ok((StatusCode::CREATED,Json(payload)));

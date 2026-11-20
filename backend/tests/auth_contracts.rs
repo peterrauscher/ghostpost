@@ -258,7 +258,7 @@ async fn onboarding_revision_conflict_and_platform_catalog() {
     let platforms = call(&app, Method::GET, "/v1/platforms", None, &[], None).await;
     assert_eq!(platforms.status, StatusCode::OK);
     let cat = platforms.json();
-    assert_eq!(cat["revision"], DISCLOSURE_VERSION);
+    assert_eq!(cat["revision"], ghostpost_backend::auth::catalog::PLATFORMS_REVISION);
     let ids: Vec<&str> = cat["platforms"]
         .as_array()
         .unwrap()
@@ -269,6 +269,10 @@ async fn onboarding_revision_conflict_and_platform_catalog() {
     let reddit = cat["platforms"].as_array().unwrap().iter().find(|p| p["id"] == "reddit").unwrap();
     let facebook = cat["platforms"].as_array().unwrap().iter().find(|p| p["id"] == "facebook").unwrap();
     assert_eq!(reddit["archiveEnabled"], true);
+    for id in ["instagram", "tiktok"] {
+        let platform = cat["platforms"].as_array().unwrap().iter().find(|p| p["id"] == id).unwrap();
+        assert_eq!(platform["archiveEnabled"], true);
+    }
     assert_eq!(facebook["archiveEnabled"], false);
 }
 

@@ -1,0 +1,20 @@
+{
+  "participants": [
+    {
+      "name": "Synthetic Friend"
+    },
+    {
+      "name": "Synthetic Owner"
+    }
+  ],
+  "messages": [
+    {
+      "sender_name": "Synthetic Friend",
+      "timestamp_ms": 1767614400000,
+      "content": "DO_NOT_IMPORT_DM: private direct message"
+    }
+  ],
+  "title": "Synthetic Friend",
+  "is_still_participant": true,
+  "thread_path": "your_instagram_activity/messages/inbox/synthetic_friend_123456"
+}

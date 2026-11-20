@@ -1,0 +1,18 @@
+[
+  {
+    "media": [
+      {
+        "uri": "media/posts/202606/1000000000000000009.jpg",
+        "creation_timestamp": 1780272000,
+        "title": "",
+        "media_metadata": {
+          "photo_metadata": {
+            "exif_data": []
+          }
+        }
+      }
+    ],
+    "title": "Second shard post",
+    "creation_timestamp": 1780272000
+  }
+]

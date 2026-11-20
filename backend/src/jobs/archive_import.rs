@@ -38,7 +38,7 @@ fn blob_error(err: BlobError) -> AppError { worker_error(format!("archive storag
 fn import_error(err: ImportError) -> AppError { worker_error(err.code) }
 
 fn platform(value: &str) -> Result<ArchivePlatform, ImportError> {
-    match value { "reddit" => Ok(ArchivePlatform::Reddit), "x" => Ok(ArchivePlatform::X), _ => Err(ImportErrorCode::PlatformMismatch.into()) }
+    match value { "reddit" => Ok(ArchivePlatform::Reddit), "x" => Ok(ArchivePlatform::X), "instagram" => Ok(ArchivePlatform::Instagram), "tiktok" => Ok(ArchivePlatform::TikTok), _ => Err(ImportErrorCode::PlatformMismatch.into()) }
 }
 
 fn fingerprint_key() -> Result<(i16, Vec<u8>), AppError> {
@@ -217,6 +217,11 @@ pub async fn normalize(pool: &PgPool, blob: Arc<dyn BlobStore>, item: &WorkItem,
             if names.iter().any(|name| name.starts_with("data/tweets/")) { FormatFamily::XClassic } else { FormatFamily::XGdpr },
             if names.contains(&"data/manifest.js") { FormatConfidence::Confirmed } else { FormatConfidence::Compatible },
         ),
+        ArchivePlatform::Instagram => (FormatFamily::InstagramJson, FormatConfidence::Compatible),
+        ArchivePlatform::TikTok => (
+            if names.iter().any(|name| name.ends_with(".json")) { FormatFamily::TikTokJson } else { FormatFamily::TikTokTxt },
+            FormatConfidence::Compatible,
+        ),
     };
 
     let (tx, mut rx) = tokio::sync::mpsc::channel(import::limits::PARSE_CHANNEL_CAPACITY);
@@ -227,7 +232,7 @@ pub async fn normalize(pool: &PgPool, blob: Arc<dyn BlobStore>, item: &WorkItem,
     let consumed: Result<(), ImportError> = async {
         while let Some(parsed) = rx.recv().await {
             match parsed {
-                ParsedItem::Reddit(record) => {
+                ParsedItem::Reddit(record) | ParsedItem::Instagram(record) | ParsedItem::TikTok(record) => {
                     let hmac = content_hmac(&secret, item.tenant_id, &record)?;
                     staging::stage(pool, item.tenant_id, import_id, &record, &hmac).await.map_err(staging_error)?;
                 }

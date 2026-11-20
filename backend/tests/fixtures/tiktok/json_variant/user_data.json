@@ -1,0 +1,47 @@
+{
+  "Your Activity": {
+    "Comments": {
+      "CommentsList": [
+        {
+          "Date": "2025-02-01 10:00:00",
+          "Comment": "Variant comment under Your Activity",
+          "Link": "https://example.invalid/video/variant-comment"
+        }
+      ]
+    },
+    "Watch History": {
+      "VideoList": [
+        {
+          "Date": "2025-02-04 10:00:00",
+          "Link": "https://example.invalid/video/watched"
+        }
+      ]
+    }
+  },
+  "Post": {
+    "Posts": {
+      "Video List": [
+        {
+          "Date": "2025-02-02 10:00:00",
+          "Description": "Variant post description",
+          "Link": "https://example.invalid/video/variant-post"
+        },
+        {
+          "Date": "2025-02-03 10:00:00",
+          "Link": "https://example.invalid/video/captionless"
+        }
+      ]
+    }
+  },
+  "Direct Messages": {
+    "Chat History": {
+      "Chat History with synthetic_friend": [
+        {
+          "Date": "2025-02-05 10:00:00",
+          "From": "synthetic_friend",
+          "Content": "Synthetic direct message"
+        }
+      ]
+    }
+  }
+}
