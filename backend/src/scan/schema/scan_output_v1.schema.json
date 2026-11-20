@@ -24,6 +24,9 @@
     "category": {
       "enum": [
         "inappropriate_language",
+        "hate",
+        "underage_drinking",
+        "drug_use",
         "drinking_drugs",
         "political_takes",
         "controversial_topics",
@@ -37,6 +40,10 @@
         "slur_or_dehumanization",
         "threat_or_incitement",
         "explicit_sexual_language",
+        "hateful_or_dehumanizing_content",
+        "targeted_harassment",
+        "underage_drinking_evidence",
+        "risky_drug_use",
         "risky_alcohol_or_drug_content",
         "political_advocacy",
         "polarizing_advocacy",

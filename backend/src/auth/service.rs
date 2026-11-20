@@ -1020,10 +1020,10 @@ fn validate_onboarding_put(body: &OnboardingState) -> Result<(), AuthProblem> {
             ));
         }
     }
-    if !(1..=4).contains(&body.current_step) {
+    if !(1..=3).contains(&body.current_step) {
         return Err(AuthProblem::unprocessable(
             "ONBOARDING_STEP",
-            "currentStep must be 1..=4",
+            "currentStep must be 1..=3",
         ));
     }
 
@@ -1044,13 +1044,13 @@ fn validate_onboarding_put(body: &OnboardingState) -> Result<(), AuthProblem> {
             if body.answers.coming_up.is_empty()
                 || body.answers.concerns.is_empty()
                 || body.answers.platforms.is_empty()
-                || body.current_step != 4
+                || body.current_step != 3
                 || !body.answers.disclosure_consent.accepted
                 || body.answers.disclosure_consent.version != CURRENT_DISCLOSURE_VERSION
             {
                 return Err(AuthProblem::unprocessable(
                     "ONBOARDING_INCOMPLETE",
-                    "completed requires answers, step 4, and current disclosure consent",
+                    "completed requires answers, step 3, and current disclosure consent",
                 ));
             }
         }

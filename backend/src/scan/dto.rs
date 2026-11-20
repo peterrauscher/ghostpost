@@ -1,17 +1,28 @@
 //! Scan batch input/output DTOs (camelCase, deny_unknown_fields).
 use serde::{Deserialize, Serialize};
 
+/// Frozen scan-input.v1 audience IDs; `sort_coming_up` drops anything else.
 pub const COMING_UP_ORDER: &[&str] = &[
     "rush",
     "college_apps",
     "job_interviews",
+    "internships",
+    "career_change",
+    "background_check",
     "friends_family",
     "just_concerned",
     "something_else",
 ];
 
+/// Concern IDs accepted by scan-input.v1; `sort_concerns` drops anything else, so
+/// every onboarding concern must be listed here or it silently never scans.
+/// `drinking_drugs` and `other` are legacy IDs kept for stored profiles, eval
+/// fixtures and scan history; onboarding no longer offers them.
 pub const CONCERNS_ORDER: &[&str] = &[
     "inappropriate_language",
+    "underage_drinking",
+    "drug_use",
+    "hate",
     "drinking_drugs",
     "political_takes",
     "controversial_topics",
@@ -20,8 +31,12 @@ pub const CONCERNS_ORDER: &[&str] = &[
     "other",
 ];
 
+/// Categories a scan result may carry, including legacy `drinking_drugs`.
 pub const CATEGORY_ORDER: &[&str] = &[
     "inappropriate_language",
+    "underage_drinking",
+    "drug_use",
+    "hate",
     "drinking_drugs",
     "political_takes",
     "controversial_topics",

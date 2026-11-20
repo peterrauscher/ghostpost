@@ -1,6 +1,6 @@
 {
   "model_id": "deepseek-flash",
-  "prompt_sha256": "eb714649864e91415e6c1cc5ba771122b8910623553c326db7a7de4ec3cc0dcd",
+  "prompt_sha256": "777072a66ebd594d9bb32e51f3461fafdf12ddfdcfd1588001c17e1744779529",
   "cases": {
     "core_reddit_inappropriate_language_00": {
       "response_sha256": "7998f3a9dc574d8e0052ecd5e38c87963606735741e80b3d14ab6bbf9d6b6e13",
@@ -1006,6 +1006,62 @@
     "edge_missing_index": {
       "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
       "response_path": "edge_missing_index.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_underage_explicit_age": {
+      "response_sha256": "d2ee1e990e0e4f300755e2b03f95fdba0e9e6c25f1d148877c7ba469f31b6b2c",
+      "response_path": "edge_underage_explicit_age.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_underage_age_not_inferred": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "edge_underage_age_not_inferred.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_underage_legal_age": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "edge_underage_legal_age.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_underage_unselected_when_only_drugs": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "edge_underage_unselected_when_only_drugs.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_drug_use_independent_of_underage": {
+      "response_sha256": "172c87b77e6cbf4da8616f225c3136f32795f876d0d5127fc03eb4c96cbc8e29",
+      "response_path": "edge_drug_use_independent_of_underage.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_drug_use_not_alcohol": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "edge_drug_use_not_alcohol.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_hate_dehumanizing_group": {
+      "response_sha256": "34a229d93f6aad16ab6a00080e2c386153a56b69ceb9ee12b7d12a568f4d71e0",
+      "response_path": "edge_hate_dehumanizing_group.response.json",
+      "input_tokens": 600,
+      "output_tokens": 120,
+      "cache_hit_tokens": 0
+    },
+    "edge_hate_condemnation_quote": {
+      "response_sha256": "3e7a042962284d79f2581ada18a0fa8ad456b1c24b68f4c1a2cdae1303805d28",
+      "response_path": "edge_hate_condemnation_quote.response.json",
       "input_tokens": 600,
       "output_tokens": 120,
       "cache_hit_tokens": 0

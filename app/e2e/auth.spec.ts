@@ -10,12 +10,12 @@ import { expect, test as base, type BrowserContext, type Page, type TestInfo } f
  * - Delete only hides the account: another session survives or WorkOS is never purged.
  * No intercepted responses, pre-issued app sessions, or test-only app endpoints.
  * WorkOS management calls stay in Node, outside browser traces. Only uniquely
- * generated @example.com identities can be queried for codes or cleaned up.
+ * generated @example.net identities can be queried for codes or cleaned up.
  */
 
 const appOrigin = new URL(process.env.E2E_BASE_URL!).origin;
 const workosKey = process.env.E2E_WORKOS_API_KEY!;
-const identityPattern = /^ghostpost-e2e-[0-9a-f-]+@example\.com$/;
+const identityPattern = /^ghostpost-e2e-[0-9a-f-]+@example\.net$/;
 
 type Profile = { id: string; email: string };
 type WorkosUser = { id: string; email: string };
@@ -118,7 +118,11 @@ async function authenticate(page: Page, account: Account, kind: 'sign-up' | 'sig
   const since = new Date(Date.now() - 2000).toISOString();
   await page.getByRole('textbox', { name: 'Email', exact: true }).fill(account.email);
   await page.getByRole('button', { name: 'Continue with email', exact: true }).click();
-  await expect(page.getByRole('textbox', { name: 'One-time code', exact: true })).toBeVisible();
+  const codeInput = page.getByRole('textbox', { name: 'One-time code', exact: true });
+  const emailCode = page.getByRole('button', { name: 'Email sign-in code', exact: true });
+  await expect(codeInput.or(emailCode)).toBeVisible();
+  if (await emailCode.isVisible()) await emailCode.click();
+  await expect(codeInput).toBeVisible();
   const code = await verificationCode(account, since);
   const exchange = page.waitForResponse((response) =>
     new URL(response.url()).pathname === '/v1/auth/exchange' && response.request().method() === 'POST');
@@ -135,14 +139,13 @@ async function authenticate(page: Page, account: Account, kind: 'sign-up' | 'sig
 }
 
 async function completeOnboarding(page: Page) {
-  await page.getByRole('button', { name: 'Job interviews', exact: true }).click();
-  await page.getByRole('button', { name: 'continue →', exact: true }).click();
-  await page.getByRole('button', { name: 'Negativity', exact: true }).click();
-  await page.getByRole('button', { name: 'continue →', exact: true }).click();
-  await page.getByText('X', { exact: true }).click();
-  await page.getByRole('checkbox').click();
-  await page.getByRole('button', { name: 'continue →', exact: true }).click();
-  await page.getByRole('button', { name: 'upload archives →', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Job interviews', exact: true }).check();
+  await page.getByRole('button', { name: 'continue', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Negative posts', exact: true }).check();
+  await page.getByRole('button', { name: 'continue', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'X (Twitter)', exact: true }).check();
+  await page.getByRole('checkbox', { name: /You are uploading a full platform export/ }).check();
+  await page.getByRole('button', { name: 'continue', exact: true }).click();
   await expect(page).toHaveURL((url) => url.origin === appOrigin && url.pathname === '/scan');
 }
 
@@ -196,7 +199,7 @@ async function cleanup(account: Account) {
 const test = base.extend<{ account: Account }>({
   account: [async ({ context }, use, info) => {
     const account: Account = {
-      email: `ghostpost-e2e-${randomUUID()}@example.com`,
+      email: `ghostpost-e2e-${randomUUID()}@example.net`,
       startedAt: new Date().toISOString(),
       contexts: [context],
       evidence: { scenario: info.title, browser: info.project.name, appOrigin, checks: {} },
@@ -224,17 +227,97 @@ const test = base.extend<{ account: Account }>({
   }, { timeout: 180_000 }],
 });
 
-test('sign up creates an authenticated account and survives reload', async ({ page, account }, info) => {
+test('sign up persists distinct onboarding choices through back, reload, and completion', async ({ page, account }, info) => {
   expect(await findProviderUser(account)).toBeUndefined();
   account.profile = await authenticate(page, account, 'sign-up');
   await expect(page).toHaveURL(/\/onboarding\/coming-up$/);
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Job interviews', exact: true })).toBeVisible();
+
   const persisted = await browserMe(page, account);
+
   expect(persisted.status).toBe(200);
   expect(persisted.user?.id).toBe(account.profile.id);
-  account.evidence.checks = { newAccount: true, callbackSession: 200, sameIdentityAfterReload: true };
-  await screenshot(page, info, 'signed-up');
+  await expect(page.getByRole('checkbox', { name: 'Underage drinking', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'continue', exact: true })).toBeDisabled();
+
+  for (const name of ['Job interviews', 'Internships', 'Rush']) {
+    await page.getByRole('checkbox', { name, exact: true }).check();
+  }
+
+  await screenshot(page, info, 'onboarding-upcoming');
+  await page.getByRole('button', { name: 'continue', exact: true }).click();
+  await expect(page).toHaveURL(/\/onboarding\/concerns$/);
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/onboarding\/concerns$/);
+  await expect(page.getByRole('checkbox', { name: 'Job interviews', exact: true })).toHaveCount(0);
+
+  for (const name of ['Underage drinking', 'Drug use', 'Hate or harassment']) {
+    await page.getByRole('checkbox', { name, exact: true }).check();
+  }
+
+  await page.getByRole('checkbox', { name: 'Drug use', exact: true }).uncheck();
+  await expect(page.getByRole('checkbox', { name: 'Underage drinking', exact: true })).toBeChecked();
+  await page.getByRole('checkbox', { name: 'Drug use', exact: true }).check();
+  await screenshot(page, info, 'onboarding-concerns');
+
+  const viewport = page.viewportSize()!;
+
+  await page.setViewportSize({ width: 320, height: 690 });
+  await expect(page.getByRole('button', { name: 'continue', exact: true })).toBeInViewport();
+  await page.getByRole('checkbox', { name: 'Risky or unprofessional behavior', exact: true }).scrollIntoViewIfNeeded();
+  await screenshot(page, info, 'onboarding-concerns-compact');
+  await page.setViewportSize(viewport);
+  await page.getByRole('button', { name: 'continue', exact: true }).click();
+  await expect(page).toHaveURL(/\/onboarding\/platforms$/);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+
+  for (const name of ['Underage drinking', 'Drug use', 'Hate or harassment']) {
+    await expect(page.getByRole('checkbox', { name, exact: true })).toBeChecked();
+  }
+
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page.getByRole('checkbox', { name: 'Internships', exact: true })).toBeChecked();
+  await expect(page.getByRole('checkbox', { name: 'Job interviews', exact: true })).toBeChecked();
+  await page.getByRole('button', { name: 'continue', exact: true }).click();
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/onboarding\/platforms$/);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.reload();
+
+  for (const name of ['Underage drinking', 'Drug use', 'Hate or harassment']) {
+    await expect(page.getByRole('checkbox', { name, exact: true })).toBeChecked();
+  }
+
+  await page.getByRole('button', { name: 'continue', exact: true }).click();
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/onboarding\/platforms$/);
+  await expect(page.getByRole('checkbox', { name: 'Instagram', exact: true })).toBeDisabled();
+  await page.getByRole('checkbox', { name: 'X (Twitter)', exact: true }).check();
+  await expect(page.getByRole('button', { name: 'continue', exact: true })).toBeDisabled();
+  await page.getByRole('checkbox', { name: /You are uploading a full platform export/ }).check();
+  await screenshot(page, info, 'onboarding-platforms');
+  await page.getByRole('button', { name: 'continue', exact: true }).click();
+  await expect(page).toHaveURL((url) => url.origin === appOrigin && url.pathname === '/scan');
+
+  const saved = await page.evaluate(async (origin) => {
+    const response = await fetch(`${origin}/v1/me/onboarding`, { credentials: 'include' });
+
+    if (!response.ok) throw new Error(`Onboarding returned ${response.status}`);
+
+    return response.json();
+  }, account.apiOrigin!);
+
+  expect(saved.status).toBe('completed');
+  expect(saved.currentStep).toBe(3);
+  expect(saved.answers.comingUp.sort()).toEqual(['internships', 'job_interviews', 'rush']);
+  expect(saved.answers.concerns.sort()).toEqual(['drug_use', 'hate', 'underage_drinking']);
+  expect(saved.answers.platforms).toEqual(['x']);
+  account.evidence.checks = {
+    newAccount: true, callbackSession: 200, sameIdentityAfterReload: true,
+    distinctAnswersPersisted: true, backNavigation: true, resumeSavedStep: true,
+    compactContinueVisible: true, consentRequired: true, completedStep: 3,
+  };
+  await screenshot(page, info, 'onboarding-completed');
 });
 
 test('sign in returns to the same existing account and saved onboarding', async ({ browser, page, account }, info) => {

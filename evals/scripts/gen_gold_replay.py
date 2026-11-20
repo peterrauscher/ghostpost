@@ -12,6 +12,9 @@ GOLD = ROOT / "manifests" / "gold"
 REPLAY = ROOT / "manifests" / "replay" / "deepseek-flash"
 PROMPT_SHA = (ROOT / "manifests" / "models" / "scan-v1.prompt.sha256").read_text().strip()
 
+# Core rotation IDs are frozen to the original v1 set so core gold stays byte-stable;
+# the granular onboarding IDs (internships, career_change, background_check,
+# underage_drinking, drug_use, hate) are covered by explicit edge cases below.
 COMING_UP = [
     "rush",
     "college_apps",
@@ -32,6 +35,9 @@ CONCERNS = [
 
 CAT_CODE = {
     "inappropriate_language": "targeted_insult",
+    "hate": "hateful_or_dehumanizing_content",
+    "underage_drinking": "underage_drinking_evidence",
+    "drug_use": "risky_drug_use",
     "drinking_drugs": "risky_alcohol_or_drug_content",
     "political_takes": "political_advocacy",
     "controversial_topics": "polarizing_advocacy",
@@ -707,6 +713,106 @@ def main():
     }
     add_edge(c, output_for([make_noflag(0)]))
     edge_cases[-1]["expect_invariant_failure"] = True
+
+    # 17. granular onboarding concerns: underage drinking and drug use are
+    # independent, and age is never inferred from context.
+    def add_granular(cid, coming, concerns, text, expect, result):
+        add_edge(
+            {
+                "case_id": cid,
+                "slice": "edge",
+                "input": batch(coming, concerns, [item(0, "x", "tweet", "authored", text)]),
+                "expect": expect,
+            },
+            output_for([result]),
+        )
+
+    explicit_age = "I'm 19 and got hammered at the bar last night"
+    add_granular(
+        "edge_underage_explicit_age",
+        ["rush"],
+        ["underage_drinking", "drug_use"],
+        explicit_age,
+        {
+            "decisions": {"0": "flag"},
+            "category": {"0": "underage_drinking"},
+            "risk_at_least": {"0": "low"},
+        },
+        make_flag_result(0, explicit_age, "underage_drinking", "medium", "authored"),
+    )
+
+    add_granular(
+        "edge_underage_age_not_inferred",
+        ["rush", "college_apps"],
+        ["underage_drinking"],
+        "Freshman dorm party during rush week and everyone got hammered",
+        {"decisions": {"0": "no_flag"}},
+        make_noflag(0),
+    )
+
+    add_granular(
+        "edge_underage_legal_age",
+        ["background_check"],
+        ["underage_drinking"],
+        "Finally 21 so I celebrated with a beer at the bar",
+        {"decisions": {"0": "no_flag"}},
+        make_noflag(0),
+    )
+
+    add_granular(
+        "edge_underage_unselected_when_only_drugs",
+        ["internships"],
+        ["drug_use"],
+        explicit_age,
+        {"decisions": {"0": "no_flag"}},
+        make_noflag(0),
+    )
+
+    drug_text = "Took molly and smoked meth all weekend with zero regrets"
+    add_granular(
+        "edge_drug_use_independent_of_underage",
+        ["career_change"],
+        ["underage_drinking", "drug_use"],
+        drug_text,
+        {
+            "decisions": {"0": "flag"},
+            "category": {"0": "drug_use"},
+            "risk_at_least": {"0": "medium"},
+        },
+        make_flag_result(0, drug_text, "drug_use", "medium", "authored"),
+    )
+
+    add_granular(
+        "edge_drug_use_not_alcohol",
+        ["job_interviews"],
+        ["drug_use"],
+        "Got blackout drunk again and drove home anyway haha",
+        {"decisions": {"0": "no_flag"}},
+        make_noflag(0),
+    )
+
+    hate_text = "Those people are subhuman vermin and should be driven out"
+    add_granular(
+        "edge_hate_dehumanizing_group",
+        ["background_check"],
+        ["hate"],
+        hate_text,
+        {
+            "decisions": {"0": "flag"},
+            "category": {"0": "hate"},
+            "risk_at_least": {"0": "medium"},
+        },
+        make_flag_result(0, hate_text, "hate", "high", "authored"),
+    )
+
+    add_granular(
+        "edge_hate_condemnation_quote",
+        ["internships"],
+        ["hate"],
+        'The report quoted the slur used against them and we condemn it',
+        {"decisions": {"0": "no_flag"}},
+        make_noflag(0),
+    )
 
     assert len(edge_cases) >= 15, len(edge_cases)
     assert len(core_cases) >= 120

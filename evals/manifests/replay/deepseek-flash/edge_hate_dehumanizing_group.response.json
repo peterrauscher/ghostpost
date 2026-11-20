@@ -1,0 +1,1 @@
+{"schemaVersion":"scan-output.v1","results":[{"itemIndex":0,"decision":"flag","risk":"high","category":"hate","confidence":0.91,"reasons":[{"code":"hateful_or_dehumanizing_content","summary":"text matches hate"}],"evidence":[{"text":"Those people are subhuman vermin and sho","supportsReasonCode":"hateful_or_dehumanizing_content"}]}]}

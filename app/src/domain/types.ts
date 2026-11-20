@@ -1,8 +1,8 @@
 export type RiskLevel = 'high' | 'medium' | 'low';
 export type OverallRiskLevel = RiskLevel | 'none';
 export type PlatformId = 'facebook' | 'reddit' | 'instagram' | 'tiktok' | 'x';
-export type ComingUpOption = 'rush'|'college_apps'|'job_interviews'|'friends_family'|'just_concerned'|'something_else';
-export type ConcernOption = 'inappropriate_language'|'drinking_drugs'|'political_takes'|'controversial_topics'|'negativity'|'public_image'|'other';
+export type ComingUpOption = 'rush'|'college_apps'|'job_interviews'|'friends_family'|'just_concerned'|'something_else'|'internships'|'career_change'|'background_check';
+export type ConcernOption = 'inappropriate_language'|'underage_drinking'|'drug_use'|'hate'|'political_takes'|'controversial_topics'|'negativity'|'public_image';
 export type ReviewAction = 'delete_local' | 'archive' | 'keep' | 'resolve';
 export type ScanPhase = 'connecting' | 'scanning' | 'flagging' | 'complete';
 export type ScanState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
@@ -26,14 +26,17 @@ export interface ScanStatus {
 }
 
 export const COMING_UP_OPTIONS: { id: ComingUpOption; label: string }[] = [
-  { id: 'rush', label: 'Rush' }, { id: 'college_apps', label: 'College apps' },
-  { id: 'job_interviews', label: 'Job interviews' }, { id: 'friends_family', label: 'Friends or family' },
-  { id: 'just_concerned', label: 'Just concerned' }, { id: 'something_else', label: 'Something else' },
+  { id: 'rush', label: 'Rush' }, { id: 'college_apps', label: 'College applications' },
+  { id: 'job_interviews', label: 'Job interviews' }, { id: 'friends_family', label: 'Social or family events' },
+  { id: 'just_concerned', label: 'Nothing specific yet' }, { id: 'something_else', label: 'Another upcoming event' },
+  { id: 'internships', label: 'Internships' }, { id: 'career_change', label: 'A new job or career move' },
+  { id: 'background_check', label: 'A background check' },
 ];
 export const CONCERN_OPTIONS: { id: ConcernOption; label: string }[] = [
-  { id: 'inappropriate_language', label: 'Inappropriate language' }, { id: 'drinking_drugs', label: 'Drinking / drugs' },
-  { id: 'political_takes', label: 'Political takes' }, { id: 'controversial_topics', label: 'Controversial topics' },
-  { id: 'negativity', label: 'Negativity' }, { id: 'public_image', label: 'Public image' }, { id: 'other', label: 'Other' },
+  { id: 'inappropriate_language', label: 'Inappropriate language' }, { id: 'underage_drinking', label: 'Underage drinking' },
+  { id: 'drug_use', label: 'Drug use' }, { id: 'hate', label: 'Hate or harassment' },
+  { id: 'political_takes', label: 'Political posts' }, { id: 'controversial_topics', label: 'Controversial posts' },
+  { id: 'negativity', label: 'Negative posts' }, { id: 'public_image', label: 'Risky or unprofessional behavior' },
 ];
 export const PLATFORM_OPTIONS = [
   { id: 'facebook', label: 'Facebook', glyph: 'f', color: '#0866FF' },

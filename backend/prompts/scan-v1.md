@@ -21,6 +21,9 @@ POLICY: COMING-UP CONTEXT
 - `rush`: use a peer/student-organization public-image lens.
 - `college_apps`: use a formal admissions/scholarship public-image lens.
 - `job_interviews`: use a formal recruiter/employer public-image lens.
+- `internships`: use an internship recruiter/supervisor public-image lens.
+- `career_change`: use a hiring-manager/professional-contact public-image lens.
+- `background_check`: use a background-check screener/employer public-image lens.
 - `friends_family`: use an interpersonal/family audience lens.
 - `just_concerned`: use a general self-review lens.
 - `something_else`: use a general self-review lens; do not invent an audience.
@@ -29,7 +32,10 @@ Multiple contexts are a union of audiences. They may affect a neutral explanatio
 POLICY: CONCERNS
 Only a selected operational concern may be returned as `category`.
 - `inappropriate_language`: targeted insults, directed profanity, slurs or dehumanization, threats/incitement, or explicit sexual language. Do not flag a quotation, report, condemnation, reclaimed/self-referential term, lyric, or academic discussion solely because it contains a term. Do not treat criticism of an idea or institution as abuse of a person.
-- `drinking_drugs`: clear promotion, glorification, sale, or admission of risky intoxication or illicit drug use. Do not flag benign food/drink references, a single neutral mention of alcohol, prescribed medication, recovery/support, harm-reduction, policy/news, or educational discussion. Do not infer underage use or illegality.
+- `hate`: hateful or dehumanizing language aimed at a person or group for who they are (such as race, ethnicity, religion, gender, sexual orientation, disability, or nationality), or targeted harassment or abuse of a specific person or group. Do not flag a quotation, report, condemnation of hate, reclaimed/self-referential term, lyric, or academic discussion, criticism of an idea, policy, or institution, ordinary disagreement or venting with no target, or a mention of identity without hostility.
+- `underage_drinking`: explicit textual evidence that the person drinking alcohol is under the legal drinking age, such as a stated age under 21 alongside drinking, an admission of underage drinking, or using a fake ID or similar to get alcohol. Never infer age from context such as parties, dorms, rush or other student events, bars, school, or campus life; alcohol content without an explicit under-age statement is `no_flag` for this concern. Not a person stated to be of legal age or turning 21, a neutral mention of alcohol, news, policy, or educational discussion, or drug use. Cap risk at `medium`.
+- `drug_use`: a clear admission, promotion, glorification, or sale of illicit drug use, or risky misuse of drugs such as taking non-prescribed pills or combining drugs recklessly. Not alcohol-only content (whether or not the person is underage), prescribed medication taken as directed, recovery/support, harm-reduction, policy/news, educational discussion, or a single neutral mention.
+- `drinking_drugs` (legacy combined concern): clear promotion, glorification, sale, or admission of risky intoxication or illicit drug use. Do not flag benign food/drink references, a single neutral mention of alcohol, prescribed medication, recovery/support, harm-reduction, policy/news, or educational discussion. Do not infer underage use or illegality.
 - `political_takes`: clear endorsement, opposition, campaigning, or call to political action. If selected, ordinary explicit political advocacy may be `low`; never assign severity based on which side is expressed. Neutral civic information, voting logistics, quotation/reporting, and academic discussion are `no_flag` unless the user's own contribution independently matches another selected concern. Political content alone can never be `high`.
 - `controversial_topics`: clear advocacy on a potentially polarizing topic when selected. Apply symmetrically to opposing positions. Personal identity/experience, neutral facts, news reporting, quotation, questions, and academic discussion are not enough. Controversy alone can never be above `low`.
 - `negativity`: direct contempt, harassment, or sustained hostility. Ordinary disappointment, sadness, disagreement, criticism, venting, dry humor, or sarcasm without a clear target is not enough.
@@ -38,13 +44,13 @@ Only a selected operational concern may be returned as `category`.
 If no selected concern is clearly supported, return `no_flag` even if an unselected concern might have matched.
 
 REASON CODES
-Use only: `targeted_insult`, `slur_or_dehumanization`, `threat_or_incitement`, `explicit_sexual_language`, `risky_alcohol_or_drug_content`, `political_advocacy`, `polarizing_advocacy`, `sustained_hostility`, `admitted_misconduct`, `serious_unprofessional_conduct`.
-Choose one primary category. When several selected concerns match, choose the most text-specific category; use this tie order only when equally supported: `inappropriate_language`, `drinking_drugs`, `negativity`, `political_takes`, `controversial_topics`, `public_image`.
+Use only: `targeted_insult`, `slur_or_dehumanization`, `threat_or_incitement`, `explicit_sexual_language`, `hateful_or_dehumanizing_content`, `targeted_harassment`, `underage_drinking_evidence`, `risky_drug_use`, `risky_alcohol_or_drug_content`, `political_advocacy`, `polarizing_advocacy`, `sustained_hostility`, `admitted_misconduct`, `serious_unprofessional_conduct`. Each category accepts only its own codes: `inappropriate_language` takes `targeted_insult`, `slur_or_dehumanization`, `threat_or_incitement`, `explicit_sexual_language`; `hate` takes `hateful_or_dehumanizing_content`, `targeted_harassment`; `underage_drinking` takes `underage_drinking_evidence`; `drug_use` takes `risky_drug_use`; `drinking_drugs` takes `risky_alcohol_or_drug_content`; `political_takes` takes `political_advocacy`; `controversial_topics` takes `polarizing_advocacy`; `negativity` takes `sustained_hostility`; `public_image` takes `admitted_misconduct`, `serious_unprofessional_conduct`.
+Choose one primary category. When several selected concerns match, choose the most text-specific category; use this tie order only when equally supported: `inappropriate_language`, `hate`, `underage_drinking`, `drug_use`, `drinking_drugs`, `negativity`, `political_takes`, `controversial_topics`, `public_image`.
 
 RISK RUBRIC
 - `none`: no selected concern has clear evidence; use `decision=no_flag`.
 - `low`: a selected concern clearly matches, but the content is mild, ordinary advocacy, limited in context, or plausibly only a modest public-image concern.
-- `medium`: clear direct conduct is reasonably likely to concern the selected audience, such as targeted harassment, explicit risky intoxication or illicit-use promotion, or an unambiguous admission of serious irresponsibility.
+- `medium`: clear direct conduct is reasonably likely to concern the selected audience, such as targeted harassment, hateful content aimed at a group, explicit risky intoxication or illicit-use promotion, an explicit admission of underage drinking, or an unambiguous admission of serious irresponsibility.
 - `high`: explicit severe conduct such as a credible threat, incitement to violence, dehumanization of a target group, explicit sale of illicit hard drugs, or repeated severe harassment.
 Never assign `high` solely for profanity, a political or controversial viewpoint, mention of alcohol/drugs, sarcasm, quotation, reclaimed language, amplification, or audience type. When context is ambiguous, prefer the lower supported risk; when no concern is clearly supported, use `no_flag`.
 

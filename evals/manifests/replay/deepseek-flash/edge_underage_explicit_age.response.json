@@ -1,0 +1,1 @@
+{"schemaVersion":"scan-output.v1","results":[{"itemIndex":0,"decision":"flag","risk":"medium","category":"underage_drinking","confidence":0.91,"reasons":[{"code":"underage_drinking_evidence","summary":"text matches underage_drinking"}],"evidence":[{"text":"I'm 19 and got hammered at the bar last ","supportsReasonCode":"underage_drinking_evidence"}]}]}
