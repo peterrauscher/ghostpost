@@ -329,7 +329,6 @@ ORDER BY c.source_logical_id NULLS LAST, c.id
         {
             Ok(output) => {
                 persist::finish_batch(pool, tenant_id, batch_db_id, "succeeded").await?;
-                // Map results to segments
                 let by_idx: HashMap<u32, _> =
                     batch.items.iter().map(|i| (i.item_index, i)).collect();
                 for r in output.results {
