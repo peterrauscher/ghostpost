@@ -61,6 +61,9 @@ impl ScanLlmProvider for StubDeterministicProvider {
                     .unwrap_or("negativity");
                 let (code, category) = match cat {
                     "inappropriate_language" => ("targeted_insult", "inappropriate_language"),
+                    "hate" => ("hateful_or_dehumanizing_content", "hate"),
+                    "underage_drinking" => ("underage_drinking_evidence", "underage_drinking"),
+                    "drug_use" => ("risky_drug_use", "drug_use"),
                     "drinking_drugs" => ("risky_alcohol_or_drug_content", "drinking_drugs"),
                     "political_takes" => ("political_advocacy", "political_takes"),
                     "controversial_topics" => ("polarizing_advocacy", "controversial_topics"),

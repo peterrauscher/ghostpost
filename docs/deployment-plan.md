@@ -238,15 +238,23 @@ already applied; whether that older binary works with the newer schema and data
 is the operator's responsibility.
 
 **The released commit is separate from unrelated work.** The VPS deploys a
-selected committed SHA (via `git archive`, not the working tree). The current
-production release is an infrastructure-only commit; the uncommitted onboarding,
-classifier and lint work in the working tree is not part of it, and `--worktree`
-snapshots are not a way to ship it. Deploy that work later as its own reviewed
-release.
+selected committed SHA via `git archive`, not a working-tree snapshot. Include the
+tested feature and all affected contracts; leave unrelated unfinished work out.
+The initial OVH move used an infrastructure-only commit. Application releases
+may update both backend and frontend, but the frontend stays on Cloudflare.
 
-The frontends are not part of this release. When app code does change, deploy
-the web app separately with `npm --prefix app run deploy:web`, which exports
-Expo, prepares dynamic-route assets and the 404 page, and deploys to Cloudflare.
+For a coordinated app release, build the selected commit's web export with
+`EXPO_PUBLIC_API_URL=https://api.getghostpost.com` and run
+`app/scripts/prepare-web-dist.mjs` before updating the backend. Then publish those
+prepared assets with Wrangler after the backend is healthy. The combined command
+`npm --prefix app run deploy:web` performs export, preparation and deployment
+when prebuilding separately is unnecessary.
+
+The three-step onboarding migration (17) changes saved answers and the step
+constraint. Deployment stops the API and worker after image builds and before
+migrations, preventing old-code writes during the schema change. This creates a
+brief maintenance window. The old four-step backend is not a compatible rollback
+target after migration 17; fix forward rather than restoring the old binary.
 
 ## Cutover requirements
 

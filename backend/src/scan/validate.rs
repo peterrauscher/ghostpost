@@ -24,6 +24,9 @@ const REASON_BY_CATEGORY: &[(&str, &[&str])] = &[
             "explicit_sexual_language",
         ],
     ),
+    ("hate", &["hateful_or_dehumanizing_content", "targeted_harassment"]),
+    ("underage_drinking", &["underage_drinking_evidence"]),
+    ("drug_use", &["risky_drug_use"]),
     ("drinking_drugs", &["risky_alcohol_or_drug_content"]),
     ("political_takes", &["political_advocacy"]),
     ("controversial_topics", &["polarizing_advocacy"]),
@@ -502,6 +505,73 @@ mod tests {
         assert_eq!(
             validate_scan_output(&input, &out).unwrap_err().code,
             "SCAN_OUTPUT_TEXT_LIMIT"
+        );
+    }
+
+    fn granular_input(concerns: &[&str], text: &str) -> ScanBatchInput {
+        let mut input = sample_input(text, "authored");
+        input.policy.concerns = concerns.iter().map(|c| c.to_string()).collect();
+        input
+    }
+
+    fn granular_flag(category: &str, code: &str, evidence: &str) -> ScanBatchOutput {
+        ScanBatchOutput {
+            schema_version: "scan-output.v1".into(),
+            results: vec![ScanResultItem {
+                item_index: 0,
+                decision: "flag".into(),
+                risk: "medium".into(),
+                category: Some(category.into()),
+                confidence: 0.8,
+                reasons: vec![ScanReason {
+                    code: code.into(),
+                    summary: "neutral summary".into(),
+                }],
+                evidence: vec![ScanEvidence {
+                    text: evidence.into(),
+                    supports_reason_code: code.into(),
+                }],
+            }],
+        }
+    }
+
+    #[test]
+    fn granular_categories_have_their_own_reason_codes() {
+        let text = "I'm 19 and got hammered at the bar";
+        let input = granular_input(&["underage_drinking", "drug_use", "hate"], text);
+        let ok = granular_flag("underage_drinking", "underage_drinking_evidence", "I'm 19");
+        assert!(validate_scan_output(&input, &ok).is_ok());
+
+        // Underage drinking and drug use are independent: neither borrows the other's
+        // reason code, nor the legacy combined `risky_alcohol_or_drug_content`.
+        for (category, code) in [
+            ("underage_drinking", "risky_drug_use"),
+            ("underage_drinking", "risky_alcohol_or_drug_content"),
+            ("drug_use", "underage_drinking_evidence"),
+            ("drug_use", "risky_alcohol_or_drug_content"),
+            ("hate", "sustained_hostility"),
+        ] {
+            let bad = granular_flag(category, code, "I'm 19");
+            assert_eq!(
+                validate_scan_output(&input, &bad).unwrap_err().code,
+                "SCAN_REASON_CATEGORY",
+                "{category} with {code}"
+            );
+        }
+
+        let hate = granular_flag("hate", "hateful_or_dehumanizing_content", "I'm 19");
+        assert!(validate_scan_output(&input, &hate).is_ok());
+        let harassment = granular_flag("hate", "targeted_harassment", "I'm 19");
+        assert!(validate_scan_output(&input, &harassment).is_ok());
+    }
+
+    #[test]
+    fn granular_category_must_be_selected() {
+        let input = granular_input(&["drug_use"], "I'm 19 and got hammered at the bar");
+        let out = granular_flag("underage_drinking", "underage_drinking_evidence", "I'm 19");
+        assert_eq!(
+            validate_scan_output(&input, &out).unwrap_err().code,
+            "SCAN_CATEGORY_NOT_SELECTED"
         );
     }
 }

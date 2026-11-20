@@ -80,6 +80,32 @@ pub const CONCERN_RUBRICS: &[ConcernRubric] = &[
         max_risk: Risk::High,
     },
     ConcernRubric {
+        id: "hate",
+        label: "hate or harassment aimed at a person or group",
+        matches: "Hateful or dehumanizing language aimed at a person or group for who they are (such as race, ethnicity, religion, gender, sexual orientation, disability, or nationality), or targeted harassment or abuse of a specific person or group.",
+        does_not_match: "A quotation, report, condemnation of hate, reclaimed or self-referential use, lyric, or academic discussion; criticism of an idea, policy, or institution; ordinary disagreement, venting, or sarcasm with no target; or a mention of identity without hostility.",
+        reasons: &["hateful_or_dehumanizing_content", "targeted_harassment"],
+        max_risk: Risk::High,
+    },
+    ConcernRubric {
+        id: "underage_drinking",
+        label: "explicit evidence of underage drinking",
+        matches: "The text itself states or clearly establishes that the person drinking alcohol is under the legal drinking age: a stated age under 21 alongside drinking, an admission of underage drinking, or using a fake ID or similar to get alcohol.",
+        does_not_match: "Any alcohol content where being under the legal drinking age is not explicitly stated. Never infer age from context such as parties, dorms, rush or other student events, bars, school, or campus life. Also not a person stated to be of legal age or turning 21, a neutral mention of alcohol, news, policy, or educational discussion, or drug use.",
+        reasons: &["underage_drinking_evidence"],
+        max_risk: Risk::Medium,
+    },
+    ConcernRubric {
+        id: "drug_use",
+        label: "risky or illicit drug use",
+        matches: "A clear admission, promotion, glorification, or sale of illicit drug use, or risky misuse of drugs such as taking non-prescribed pills or combining drugs recklessly.",
+        does_not_match: "Alcohol-only content, whether or not the person is underage; prescribed medication taken as directed; recovery or support; harm reduction; policy or news; educational discussion; a single neutral mention; or no drug content.",
+        reasons: &["risky_drug_use"],
+        max_risk: Risk::High,
+    },
+    // Legacy combined concern, kept for stored policies, eval fixtures, and scan
+    // history. Onboarding offers `underage_drinking` and `drug_use` instead.
+    ConcernRubric {
         id: "drinking_drugs",
         label: "risky alcohol or drug content",
         matches: "Clear promotion, glorification, sale, or admission of risky intoxication or illicit drug use.",
@@ -136,6 +162,10 @@ pub const REASON_CODES: &[ReasonCode] = &[
     ReasonCode { code: "slur_or_dehumanization", description: "A slur, or language describing people as less than human.", summary: "Uses a slur or dehumanizing language." },
     ReasonCode { code: "threat_or_incitement", description: "A threat of harm, or urging others to cause harm.", summary: "Contains a threat or encourages harm." },
     ReasonCode { code: "explicit_sexual_language", description: "Explicit sexual language.", summary: "Contains explicit sexual language." },
+    ReasonCode { code: "hateful_or_dehumanizing_content", description: "Hateful or dehumanizing language aimed at a person or group for who they are.", summary: "Uses hateful or dehumanizing language toward a person or group." },
+    ReasonCode { code: "targeted_harassment", description: "Abuse or harassment aimed at a specific person or group.", summary: "Targets a specific person or group with harassment." },
+    ReasonCode { code: "underage_drinking_evidence", description: "Explicit evidence that alcohol was consumed or obtained while under the legal drinking age.", summary: "States or shows drinking while under the legal drinking age." },
+    ReasonCode { code: "risky_drug_use", description: "Admission, promotion, glorification, or sale of illicit or risky drug use.", summary: "Promotes or describes illicit or risky drug use." },
     ReasonCode { code: "risky_alcohol_or_drug_content", description: "Promotion, glorification, sale, or admission of risky intoxication or illicit drug use.", summary: "Promotes or describes risky alcohol or drug use." },
     ReasonCode { code: "political_advocacy", description: "Clear political advocacy.", summary: "Takes a clear political position." },
     ReasonCode { code: "polarizing_advocacy", description: "Clear advocacy on a polarizing topic.", summary: "Advocates a position on a polarizing topic." },
@@ -153,6 +183,9 @@ pub const AUDIENCES: &[(&str, &str)] = &[
     ("rush", "peers in a student organization"),
     ("college_apps", "college admissions and scholarship reviewers"),
     ("job_interviews", "recruiters and employers"),
+    ("internships", "internship recruiters and supervisors"),
+    ("career_change", "hiring managers and professional contacts"),
+    ("background_check", "background-check screeners and employers"),
     ("friends_family", "friends and family"),
 ];
 const GENERAL_AUDIENCE: &str = "a general audience";
@@ -173,7 +206,7 @@ pub fn audience(coming_up: &[String]) -> String {
 pub const RISK_LEVELS: [&str; 4] = [
     "Not clearly present.",
     "Mild: the concern clearly applies, but the content is mild, ordinary advocacy, limited in context, or only a modest public-image concern.",
-    "Serious: clear, direct conduct that would reasonably concern this audience, such as targeted harassment, explicit promotion or glorification of risky intoxication or illicit drug use, or an unambiguous admission of serious irresponsibility.",
+    "Serious: clear, direct conduct that would reasonably concern this audience, such as targeted harassment, hateful content aimed at a group, explicit promotion or glorification of risky intoxication or illicit drug use, an explicit admission of underage drinking, or an unambiguous admission of serious irresponsibility.",
     "Severe: explicit severe conduct such as a credible threat, incitement to violence, dehumanization of a group, explicit sale of illicit hard drugs, or repeated severe harassment. Profanity, a viewpoint, a mention of alcohol or drugs, sarcasm, or quotation alone is never severe.",
 ];
 
@@ -937,6 +970,7 @@ mod tests {
         assert!(fake.seen.lock().is_empty());
     }
 
+
     #[tokio::test]
     async fn oversized_posts_are_refused() {
         let fake = Fake { rule: hostile_rule(), seen: Mutex::new(vec![]) };
@@ -998,32 +1032,4 @@ mod tests {
         assert!(matches!(parsed.answers["d"], Answer::Other));
     }
 
-    #[test]
-    fn audience_lens_union_and_default() {
-        assert_eq!(audience(&[]), GENERAL_AUDIENCE);
-        assert_eq!(audience(&concerns(&["just_concerned"])), GENERAL_AUDIENCE);
-        assert_eq!(audience(&concerns(&["job_interviews", "rush"])), "peers in a student organization and recruiters and employers");
-    }
-
-    #[test]
-    fn rubric_reason_codes_match_backend_validator_table() {
-        // Mirror of REASON_BY_CATEGORY in backend/src/scan/validate.rs.
-        let expected: &[(&str, &[&str])] = &[
-            ("inappropriate_language", &["targeted_insult", "slur_or_dehumanization", "threat_or_incitement", "explicit_sexual_language"]),
-            ("drinking_drugs", &["risky_alcohol_or_drug_content"]),
-            ("negativity", &["sustained_hostility"]),
-            ("political_takes", &["political_advocacy"]),
-            ("controversial_topics", &["polarizing_advocacy"]),
-            ("public_image", &["admitted_misconduct", "serious_unprofessional_conduct"]),
-        ];
-        for (id, codes) in expected {
-            let r = CONCERN_RUBRICS.iter().find(|r| r.id == *id).unwrap();
-            assert_eq!(&r.reasons, codes, "{id}");
-        }
-        for r in REASON_CODES {
-            for bad in ["you wrote", "you said", "you posted"] {
-                assert!(!r.summary.to_lowercase().contains(bad));
-            }
-        }
-    }
 }

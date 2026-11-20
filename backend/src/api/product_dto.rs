@@ -270,6 +270,9 @@ pub fn focus_symbol(id: &str) -> &'static str {
         "friends_family" => "👥",
         "just_concerned" => "🔍",
         "something_else" => "•",
+        "internships" => "🧑‍💻",
+        "career_change" => "🚀",
+        "background_check" => "📋",
         _ => "•",
     }
 }

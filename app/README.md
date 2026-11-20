@@ -29,6 +29,22 @@ EXPO_PUBLIC_API_URL=http://localhost:8080 npm run web
 - Native receives a server-issued one-time `exchangeSecret` from `GET /v1/auth/authorize?client=native`, stores that pending flow in SecureStore, and exchanges it once at `ghostpost://auth/callback`.
 - Native stores only the returned Ghostpost `session.token`; WorkOS tokens never reach the app.
 
+## Onboarding
+
+The wizard has three steps, with a `1 / 3` through `3 / 3` progress indicator:
+
+1. **Upcoming events:** college applications, job interviews, internships, rush,
+   career moves, background checks, and other upcoming contexts.
+2. **Post concerns:** inappropriate language, underage drinking, drug use, hate or
+   harassment, political or controversial posts, negativity, and risky behavior.
+   These are separate saved preferences, not upcoming events.
+3. **Social accounts:** choose supported archive uploads and accept the current
+   disclosure before completing onboarding. Unsupported networks say coming soon.
+
+Back navigation restores saved answers. Editing an earlier answer does not rewind
+server progress; returning to the app resumes the furthest saved step. Completing
+social accounts opens the scan tab directly, without a fourth introductory screen.
+
 ## Authentication browser E2E
 
 From `app/`, against the deployed frontend and its real API and WorkOS environment:
@@ -42,15 +58,40 @@ npm run test:e2e
 npx playwright show-report e2e/artifacts/report
 ```
 
+For the same journeys locally, start `bash scripts/local-up.sh` from the repo
+root and the app with `EXPO_PUBLIC_API_URL=http://localhost:8080 npm --prefix app run web -- --localhost`.
+Use WorkOS test credentials in the local `.env`, enable **Magic Auth** and
+**Sign-up** in that development environment, and register
+`http://localhost:8081/auth/callback`. Load its matching `E2E_WORKOS_API_KEY`
+into the test process. Do not change the production environment. Then run from `app/`:
+
+```bash
+E2E_BASE_URL=http://localhost:8081 npm run test:e2e
+```
+
+For real AI scanning rather than the offline scanner, set `SCAN_LLM_PROVIDER=jev`
+and `TYPESAFE_API_KEY` before starting the local stack (see `.env.example`).
+The local backend uses PostgreSQL and MinIO; these tests do not need the VPS or R2.
+
+
 `E2E_WORKOS_API_KEY` must belong to the same WorkOS environment as the API.
 Missing credentials fail the run rather than silently skipping it.
+
+Hosted AuthKit must support the suite's passwordless email-code flow.
+The suite uses `example.net`, because WorkOS's default staging Test Organization
+routes `example.com` to its demo SSO login. Both are reserved test domains whose
+mail WorkOS drops; see [WorkOS test-domain guidance](https://workos.com/blog/authkit-test-email-domains-deliverability-check).
+If passwords are also enabled, the suite clicks AuthKit's **Email sign-in code**
+option; it does not disable password login. Password-only staging settings cannot
+exercise these passwordless journeys.
 
 `e2e/auth.spec.ts` runs these journeys in desktop Chromium and iPhone-sized
 WebKit, with no intercepted API responses or fabricated app sessions:
 
 - **Sign up:** use the app's `get started` passwordless email-code flow with a
-  previously nonexistent identity; verify the callback, onboarding, and session
-  persistence after reload.
+  previously nonexistent identity; verify the callback, session persistence,
+  distinct onboarding answers, back editing, saved-step resume, consent, completion,
+  and a visible Continue action at a 320px viewport.
 - **Sign in:** return in a fresh browser context; verify the same account,
   completed onboarding, profile email, and persistence after reload.
 - **Log out:** use the profile action; verify a saved pre-logout cookie is
@@ -59,7 +100,7 @@ WebKit, with no intercepted API responses or fabricated app sessions:
   session is revoked, reloading stays signed out, and the real purge worker
   removes the WorkOS identity.
 
-Every scenario generates a unique `ghostpost-e2e-<uuid>@example.com` identity
+Every scenario generates a unique `ghostpost-e2e-<uuid>@example.net` identity
 and removes it afterwards. WorkOS accepts reserved example domains without
 delivering email. The Node runner retrieves that identity's one-time code from
 the real WorkOS Events/Magic Auth APIs; its management key never enters the
@@ -111,6 +152,5 @@ Jest owns the contracts that do not require a hosted authentication journey:
 - `domain/lifecycle.test.ts`: exact routing decisions for onboarding, import readiness, scan states, and review access. Add cases to the shared table rather than replaying a weaker allowed-gate assertion.
 - `features/query-keys.test.ts`: isolation in a real TanStack Query cache across users, session generations, resources, IDs, and filters. Reuse IDs across resource types to expose namespace collisions; do not pin internal tuple spelling or order.
 - `services/api/client.test.ts`: native transport results, typed HTTP errors, and single-flight refresh under concurrent 401s. Reload modules for isolated client state instead of exporting production reset hooks.
-- `domain/types.smoke.test.ts`: public onboarding/platform IDs accepted by the backend. These are independent protocol contracts, not disposable copies of internal implementation.
 
 Jest is a local gate; the deployed browser authentication journeys above remain separate proof.

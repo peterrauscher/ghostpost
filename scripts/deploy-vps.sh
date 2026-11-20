@@ -275,6 +275,8 @@ if [[ "$mode" == rollback ]]; then
   unapplied="$(comm -23 <(printf "%s\n" "$known") <(printf "%s\n" "$applied"))"
   [[ -z "$unapplied" ]] || die "release $short needs migrations missing from the database ($(echo $unapplied)); incompatible, not rolling back"
 else
+  echo "==> stop API and worker before migration"
+  dc stop --timeout 45 api
   echo "==> migrate"
   dc run --rm --interactive=false migrate
 fi

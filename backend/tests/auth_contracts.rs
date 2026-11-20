@@ -193,7 +193,7 @@ async fn onboarding_revision_conflict_and_platform_catalog() {
         &web_mutation_headers(&csrf),
         Some(json!({
             "status": "completed",
-            "currentStep": 4,
+            "currentStep": 3,
             "revision": 0,
             "answers": {
                 "comingUp": ["college_apps"],
@@ -217,7 +217,7 @@ async fn onboarding_revision_conflict_and_platform_catalog() {
         &web_mutation_headers(&csrf),
         Some(json!({
             "status": "completed",
-            "currentStep": 4,
+            "currentStep": 3,
             "revision": 0,
             "answers": {
                 "comingUp": ["college_apps"],
@@ -255,6 +255,78 @@ async fn onboarding_revision_conflict_and_platform_catalog() {
     .await;
     assert_eq!(disabled.status, StatusCode::UNPROCESSABLE_ENTITY, "{}", disabled.text());
 
+    macro_rules! put_onboarding {
+        ($body:expr) => {
+            call(
+                &app,
+                Method::PUT,
+                "/v1/me/onboarding",
+                Some(&mut jar),
+                &web_mutation_headers(&csrf),
+                Some($body),
+            )
+        };
+    }
+    let answers = |coming_up: serde_json::Value, concerns: serde_json::Value| {
+        json!({
+            "comingUp": coming_up,
+            "concerns": concerns,
+            "platforms": ["x"],
+            "disclosureConsent": { "version": DISCLOSURE_VERSION, "accepted": true }
+        })
+    };
+
+    // Obsolete onboarding concern ids and the retired fourth step are rejected.
+    for obsolete in ["drinking_drugs", "other"] {
+        let res = put_onboarding!(json!({
+            "status": "in_progress",
+            "currentStep": 2,
+            "revision": 1,
+            "answers": answers(json!(["college_apps"]), json!([obsolete])),
+        }))
+        .await;
+        assert_eq!(res.status, StatusCode::UNPROCESSABLE_ENTITY, "{obsolete}: {}", res.text());
+        assert_eq!(res.problem_code().as_deref(), Some("ONBOARDING_INVALID_ENUM"));
+    }
+    let step4 = put_onboarding!(json!({
+        "status": "completed",
+        "currentStep": 4,
+        "revision": 1,
+        "answers": answers(json!(["college_apps"]), json!(["public_image"])),
+    }))
+    .await;
+    assert_eq!(step4.status, StatusCode::UNPROCESSABLE_ENTITY, "{}", step4.text());
+    assert_eq!(step4.problem_code().as_deref(), Some("ONBOARDING_STEP"));
+    let early_complete = put_onboarding!(json!({
+        "status": "completed",
+        "currentStep": 2,
+        "revision": 1,
+        "answers": answers(json!(["college_apps"]), json!(["public_image"])),
+    }))
+    .await;
+    assert_eq!(early_complete.status, StatusCode::UNPROCESSABLE_ENTITY, "{}", early_complete.text());
+    assert_eq!(early_complete.problem_code().as_deref(), Some("ONBOARDING_INCOMPLETE"));
+
+    // Every new canonical choice is accepted and completes at step 3.
+    let all_coming_up = json!([
+        "rush", "college_apps", "job_interviews", "friends_family", "just_concerned",
+        "something_else", "internships", "career_change", "background_check"
+    ]);
+    let all_concerns = json!([
+        "inappropriate_language", "underage_drinking", "drug_use", "hate",
+        "political_takes", "controversial_topics", "negativity", "public_image"
+    ]);
+    let full = put_onboarding!(json!({
+        "status": "completed",
+        "currentStep": 3,
+        "revision": 1,
+        "answers": answers(all_coming_up, all_concerns),
+    }))
+    .await;
+    assert_eq!(full.status, StatusCode::OK, "{}", full.text());
+    assert_eq!(full.json()["revision"], 2);
+    assert_eq!(full.json()["status"], "completed");
+
     let platforms = call(&app, Method::GET, "/v1/platforms", None, &[], None).await;
     assert_eq!(platforms.status, StatusCode::OK);
     let cat = platforms.json();
@@ -270,6 +342,29 @@ async fn onboarding_revision_conflict_and_platform_catalog() {
     let facebook = cat["platforms"].as_array().unwrap().iter().find(|p| p["id"] == "facebook").unwrap();
     assert_eq!(reddit["archiveEnabled"], true);
     assert_eq!(facebook["archiveEnabled"], false);
+
+    let option_ids = |key: &str| -> Vec<String> {
+        cat[key]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|o| o["id"].as_str().unwrap().to_string())
+            .collect()
+    };
+    assert_eq!(
+        option_ids("comingUpOptions"),
+        [
+            "rush", "college_apps", "job_interviews", "friends_family", "just_concerned",
+            "something_else", "internships", "career_change", "background_check"
+        ]
+    );
+    assert_eq!(
+        option_ids("concernOptions"),
+        [
+            "inappropriate_language", "underage_drinking", "drug_use", "hate",
+            "political_takes", "controversial_topics", "negativity", "public_image"
+        ]
+    );
 }
 
 #[tokio::test]

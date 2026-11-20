@@ -1,0 +1,1 @@
+{"schemaVersion":"scan-output.v1","results":[{"itemIndex":0,"decision":"flag","risk":"medium","category":"drug_use","confidence":0.91,"reasons":[{"code":"risky_drug_use","summary":"text matches drug_use"}],"evidence":[{"text":"Took molly and smoked meth all weekend w","supportsReasonCode":"risky_drug_use"}]}]}

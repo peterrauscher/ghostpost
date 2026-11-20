@@ -19,7 +19,7 @@ function answers(platforms: PlatformId[]): OnboardingAnswers {
 function onboarding(
   status: OnboardingState['status'],
   platforms: PlatformId[] = ['reddit'],
-  currentStep = 4,
+  currentStep = 3,
 ): OnboardingState {
   return { status, currentStep, revision: 1, answers: answers(platforms) };
 }

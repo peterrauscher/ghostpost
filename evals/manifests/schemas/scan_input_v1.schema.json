@@ -27,6 +27,9 @@
               "rush",
               "college_apps",
               "job_interviews",
+              "internships",
+              "career_change",
+              "background_check",
               "friends_family",
               "just_concerned",
               "something_else"
@@ -40,6 +43,9 @@
           "items": {
             "enum": [
               "inappropriate_language",
+              "hate",
+              "underage_drinking",
+              "drug_use",
               "drinking_drugs",
               "political_takes",
               "controversial_topics",

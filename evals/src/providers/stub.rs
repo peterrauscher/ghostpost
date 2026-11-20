@@ -155,6 +155,9 @@ fn all_no_flag(input: &ScanBatchInput) -> ScanBatchOutput {
 pub fn category_to_code(cat: &str) -> String {
     match cat {
         "inappropriate_language" => "targeted_insult",
+        "hate" => "hateful_or_dehumanizing_content",
+        "underage_drinking" => "underage_drinking_evidence",
+        "drug_use" => "risky_drug_use",
         "drinking_drugs" => "risky_alcohol_or_drug_content",
         "political_takes" => "political_advocacy",
         "controversial_topics" => "polarizing_advocacy",

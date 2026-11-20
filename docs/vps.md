@@ -137,9 +137,9 @@ session, fingerprint and HMAC keys, and the Postgres role passwords, must be the
 
 Scripts deploy a selected immutable Git SHA (`git archive`), never the working
 tree. Release directories live in `/opt/ghostpost/releases/<short-sha>`. The
-current production release must be built from a commit that does not contain
-the unrelated uncommitted onboarding, classifier or lint work in the working
-tree; produce an infrastructure-only release commit and deploy that SHA.
+release commit must contain the tested feature and all its callers, while leaving
+unrelated unfinished work out. Use an infrastructure-only commit for a migration,
+or a matching app/backend feature commit for a coordinated application release.
 
 ### `bash scripts/deploy-vps.sh --prepare <sha>`
 
@@ -202,8 +202,10 @@ Normal deployment. On a fresh target it **refuses** unless
 `/opt/ghostpost/.database-restored` exists. Otherwise it builds, then:
 
 1. takes `/opt/ghostpost/.deploy.lock`,
-2. starts PostgreSQL and runs the `migrate` service with `--interactive=false`
-   (without that, Compose can swallow the rest of the SSH-fed script),
+2. starts PostgreSQL, stops the API/worker, and runs `migrate` with
+   `--interactive=false`; builds finish before this short maintenance window.
+   A migration failure leaves the old writer stopped rather than letting it
+   write against a partially changed schema,
 3. starts `api`, waits for its internal `/health/ready`, then starts `caddy`
    and `backup`,
 4. smokes the actual requested public API (`https://api.getghostpost.com`):
