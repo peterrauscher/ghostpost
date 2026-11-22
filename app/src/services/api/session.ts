@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 const SESSION_KEY = 'ghostpost.session.token';
 const PENDING_KEY = 'ghostpost.auth.pending';
 
-export interface PendingAuthFlow { state: string; expiresAt: string; exchangeSecret: string }
+export interface PendingAuthFlow { state: string; expiresAt: string; exchangeSecret: string; email?: string }
 
 let memoryToken: string | null = null;
 

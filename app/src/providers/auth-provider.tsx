@@ -5,15 +5,18 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/services/api';
 import { ApiError } from '@/services/api/problem';
-import { clearLocalSession, getBearerToken, getPendingAuthFlow, setBearerToken, setPendingAuthFlow } from '@/services/api/session';
+import { clearLocalSession, getBearerToken, getPendingAuthFlow, setBearerToken, setPendingAuthFlow, type PendingAuthFlow } from '@/services/api/session';
 import type { UserProfile } from '@/domain/types';
 
 WebBrowser.maybeCompleteAuthSession();
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
+interface MagicFlow { state: string; email: string; expiresAt: string; exchangeSecret?: string }
 interface AuthContextValue {
-  status: AuthStatus; user: UserProfile | null; sessionGeneration: number; error: string | null;
-  signIn(): Promise<void>; completeCallback(url: string): Promise<void>; signOut(): Promise<void>;
+  status: AuthStatus; user: UserProfile | null; sessionGeneration: number; error: string | null; pendingEmail: string | null;
+  signIn(): Promise<void>; completeCallback(url: string): Promise<void>;
+  requestCode(email: string): Promise<void>; verifyCode(code: string): Promise<void>;
+  signOut(): Promise<void>;
   localOnlySignOut(): Promise<void>; deleteAccount(): Promise<void>; refreshProfile(): Promise<void>;
 }
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -33,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [sessionGeneration, setGeneration] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const callbackFlight = useRef<Promise<void> | null>(null);
 
   const refreshProfile = useCallback(async () => {
@@ -84,11 +88,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     else { await setPendingAuthFlow(null); setError(result.type === 'cancel' ? 'Sign in was cancelled.' : 'Sign in was dismissed.'); }
   }, [completeCallback]);
 
+  const magicFlow = useRef<MagicFlow | null>(null);
+
+  /** Headless sign-in step 1: ask the backend to email a 6-digit code. */
+  const requestCode = useCallback(async (rawEmail: string) => {
+    const email = rawEmail.trim();
+    const kind = Platform.OS === 'web' ? 'web' : 'native';
+    const sent = await api.sendCode(kind, email);
+    const flow: MagicFlow = { state: sent.state, email, expiresAt: sent.expiresAt, exchangeSecret: sent.exchangeSecret };
+    magicFlow.current = flow;
+    if (kind === 'native') await setPendingAuthFlow(flow as PendingAuthFlow);
+    setPendingEmail(email);
+    setError(null);
+  }, []);
+
+  /** Headless sign-in step 2: verify the emailed code and mint the session.
+   * Throws so screens can show inline errors; the flow stays alive for
+   * AUTH_CODE_INVALID / AUTH_RATE_LIMITED retries and is discarded on 403/410. */
+  const verifyCode = useCallback(async (code: string) => {
+    const kind = Platform.OS === 'web' ? 'web' : 'native';
+    const stored = kind === 'native' ? await getPendingAuthFlow() : null;
+    const flow: MagicFlow | null = magicFlow.current
+      ?? (stored?.state && stored.email
+        ? { state: stored.state, email: stored.email, expiresAt: stored.expiresAt, exchangeSecret: stored.exchangeSecret }
+        : null);
+    if (!flow?.email || !flow.state || Date.parse(flow.expiresAt) <= Date.now()) {
+      magicFlow.current = null;
+      if (kind === 'native') await setPendingAuthFlow(null);
+      throw new Error('Your sign-in request expired. Start again with your email.');
+    }
+    try {
+      if (kind === 'web') {
+        await api.verifyCodeWeb(flow.state, flow.email, code);
+      } else {
+        if (!flow.exchangeSecret) throw new Error('Sign-in request is missing its proof');
+        const result = await api.verifyCodeNative(flow.state, flow.email, code, flow.exchangeSecret);
+        if (result.session.kind !== 'bearer') throw new Error('Unsupported session response');
+        await setBearerToken(result.session.token);
+        await setPendingAuthFlow(null);
+      }
+      magicFlow.current = null;
+      setPendingEmail(null);
+      const profile = await api.getProfile();
+      setUser(profile); setStatus('authenticated'); setGeneration((value) => value + 1); setError(null);
+    } catch (cause) {
+      const discard = cause instanceof ApiError && (cause.status === 403 || cause.status === 410);
+      if (discard) {
+        magicFlow.current = null;
+        setPendingEmail(null);
+        if (kind === 'native') await setPendingAuthFlow(null);
+      }
+      throw cause;
+    }
+  }, []);
+
   const signOut = useCallback(async () => { await api.logout(); await finishLocalLogout(); }, [finishLocalLogout]);
   const localOnlySignOut = useCallback(async () => { if (Platform.OS === 'web') throw new Error('Web sign-out requires server confirmation'); await finishLocalLogout(); }, [finishLocalLogout]);
   const deleteAccount = useCallback(async () => { await api.deleteAccount(Crypto.randomUUID()); await finishLocalLogout(); }, [finishLocalLogout]);
 
-  const value = useMemo(() => ({ status, user, sessionGeneration, error, signIn, completeCallback, signOut, localOnlySignOut, deleteAccount, refreshProfile }), [status, user, sessionGeneration, error, signIn, completeCallback, signOut, localOnlySignOut, deleteAccount, refreshProfile]);
+  const value = useMemo(() => ({ status, user, sessionGeneration, error, pendingEmail, signIn, completeCallback, requestCode, verifyCode, signOut, localOnlySignOut, deleteAccount, refreshProfile }), [status, user, sessionGeneration, error, pendingEmail, signIn, completeCallback, requestCode, verifyCode, signOut, localOnlySignOut, deleteAccount, refreshProfile]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

@@ -82,6 +82,33 @@ pub struct ExchangeRequest {
     pub exchange_secret: Option<String>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SendCodeRequest {
+    pub client: AuthClient,
+    pub email: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SendCodeResponse {
+    pub state: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exchange_secret: Option<String>,
+    pub expires_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VerifyCodeRequest {
+    pub client: AuthClient,
+    pub state: String,
+    pub email: String,
+    pub code: String,
+    #[serde(default)]
+    pub exchange_secret: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeExchangeResponse {

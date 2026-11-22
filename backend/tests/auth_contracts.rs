@@ -650,3 +650,232 @@ async fn fetch_metadata_and_missing_csrf_rejected() {
     .await;
     assert_eq!(bad_mode.status, StatusCode::FORBIDDEN);
 }
+
+#[tokio::test]
+async fn magic_web_flow_signs_up_single_use() {
+    ensure_migrated().await;
+    let pool = app_pool().await;
+    let mock = Arc::new(MockWorkos::new());
+    let app = build_app(pool, mock.clone(), KEY_K1_JSON);
+
+    let email = format!("{}@example.test", Uuid::new_v4());
+    let mut jar = CookieJar::new();
+    let sent = send_code_web(&app, &mut jar, &email).await;
+    let state = sent["state"].as_str().unwrap().to_string();
+    assert_eq!(mock.inner.lock().unwrap().send_calls, 1);
+
+    // Wrong code first: client-retryable rejection, provider not fooled.
+    let wrong = verify_code_web(&app, &mut jar, &state, &email, "000000").await;
+    assert_eq!(wrong.status, StatusCode::BAD_REQUEST, "{}", wrong.text());
+    assert_eq!(wrong.problem_code().as_deref(), Some("AUTH_CODE_INVALID"));
+
+    // Happy path: same workos user id, provider owns identity creation.
+    let user = unique_workos_id("magicweb");
+    let refresh = format!("refresh_{user}");
+    mock.register_magic_code(
+        &email,
+        "123456",
+        provider_session(&user, &email, "Magic User", &refresh),
+    );
+    let ok = verify_code_web(&app, &mut jar, &state, &email, "123456").await;
+    assert_eq!(ok.status, StatusCode::NO_CONTENT, "{}", ok.text());
+    assert!(
+        jar.get("gp_session").is_some(),
+        "web verify must set gp_session"
+    );
+    assert!(
+        jar.get("gp_auth_init").is_none(),
+        "gp_auth_init must be cleared after verify"
+    );
+
+    let me = call(&app, Method::GET, "/v1/me", Some(&mut jar), &[], None).await;
+    assert_eq!(me.status, StatusCode::OK, "{}", me.text());
+    assert_eq!(me.json()["user"]["email"], serde_json::json!(email));
+
+    // Flow is single-use: replay must be gone.
+    let replay = verify_code_web(&app, &mut jar, &state, &email, "123456").await;
+    assert_eq!(replay.status, StatusCode::GONE);
+    assert_eq!(replay.problem_code().as_deref(), Some("AUTH_FLOW_GONE"));
+}
+
+#[tokio::test]
+async fn magic_native_flow_returns_bearer_session() {
+    ensure_migrated().await;
+    let pool = app_pool().await;
+    let mock = Arc::new(MockWorkos::new());
+    let app = build_app(pool, mock.clone(), KEY_K1_JSON);
+
+    let email = format!("{}@example.test", Uuid::new_v4());
+    let sent = send_code_native(&app, &email).await;
+    let state = sent["state"].as_str().unwrap().to_string();
+    let secret = sent["exchangeSecret"].as_str().unwrap().to_string();
+
+    let user = unique_workos_id("magicnative");
+    let refresh = format!("refresh_{user}");
+    mock.register_magic_code(
+        &email,
+        "654321",
+        provider_session(&user, &email, "Native Magic", &refresh),
+    );
+    let ok = verify_code_native(&app, &state, &email, "654321", &secret).await;
+    assert_eq!(ok.status, StatusCode::OK, "{}", ok.text());
+    let body = ok.json();
+    assert_eq!(body["session"]["kind"], "bearer");
+    assert!(body["session"]["token"].as_str().is_some());
+
+    let token = body["session"]["token"].as_str().unwrap().to_string();
+    let me = call(&app, Method::GET, "/v1/me", None, &bearer_headers(&token), None).await;
+    assert_eq!(me.status, StatusCode::OK, "{}", me.text());
+    assert_eq!(me.json()["user"]["email"], serde_json::json!(email));
+
+    let replay = verify_code_native(&app, &state, &email, "654321", &secret).await;
+    assert_eq!(replay.status, StatusCode::GONE);
+}
+
+#[tokio::test]
+async fn magic_verify_rejects_email_and_proof_mixups() {
+    ensure_migrated().await;
+    let pool = app_pool().await;
+    let mock = Arc::new(MockWorkos::new());
+    let app = build_app(pool, mock.clone(), KEY_K1_JSON);
+
+    let email = format!("{}@example.test", Uuid::new_v4());
+    let mut jar = CookieJar::new();
+    let sent = send_code_web(&app, &mut jar, &email).await;
+    let state = sent["state"].as_str().unwrap().to_string();
+    let user = unique_workos_id("magicmix");
+    mock.register_magic_code(
+        &email,
+        "111222",
+        provider_session(&user, &email, "Mix", &format!("refresh_{user}")),
+    );
+
+    // Different email against the same flow.
+    let other_email = format!("{}@example.test", Uuid::new_v4());
+    let wrong_email = verify_code_web(&app, &mut jar, &state, &other_email, "111222").await;
+    assert_eq!(wrong_email.status, StatusCode::FORBIDDEN, "{}", wrong_email.text());
+
+    // Missing cookie proof.
+    let mut empty_jar = CookieJar::new();
+    let no_proof = verify_code_web(&app, &mut empty_jar, &state, &email, "111222").await;
+    assert_eq!(no_proof.status, StatusCode::FORBIDDEN, "{}", no_proof.text());
+
+    // Native client on a web flow.
+    let native_on_web = verify_code_native(&app, &state, &email, "111222", "whatever").await;
+    assert_eq!(native_on_web.status, StatusCode::FORBIDDEN, "{}", native_on_web.text());
+
+    // Web body must not carry exchangeSecret.
+    let body_secret = call(
+        &app,
+        Method::POST,
+        "/v1/auth/verify-code",
+        Some(&mut jar),
+        &[],
+        Some(json!({
+            "client": "web",
+            "state": state,
+            "email": email,
+            "code": "111222",
+            "exchangeSecret": "nope"
+        })),
+    )
+    .await;
+    assert_eq!(body_secret.status, StatusCode::FORBIDDEN, "{}", body_secret.text());
+
+    // After all rejections the flow is still usable: correct call succeeds.
+    let ok = verify_code_web(&app, &mut jar, &state, &email, "111222").await;
+    assert_eq!(ok.status, StatusCode::NO_CONTENT, "{}", ok.text());
+    assert_eq!(mock.inner.lock().unwrap().magic_auth_calls, 1);
+}
+
+#[tokio::test]
+async fn magic_send_and_verify_input_guards() {
+    ensure_migrated().await;
+    let pool = app_pool().await;
+    let mock = Arc::new(MockWorkos::new());
+    let app = build_app(pool, mock.clone(), KEY_K1_JSON);
+
+    // Invalid emails never reach the provider.
+    for bad in ["not-an-email", "a@b", "a b@example.test", "@example.test"] {
+        let mut jar = CookieJar::new();
+        let res = call(
+            &app,
+            Method::POST,
+            "/v1/auth/send-code",
+            Some(&mut jar),
+            &[],
+            Some(json!({ "client": "web", "email": bad })),
+        )
+        .await;
+        assert_eq!(res.status, StatusCode::BAD_REQUEST, "{bad}: {}", res.text());
+        assert_eq!(res.problem_code().as_deref(), Some("INVALID_EMAIL"));
+    }
+    assert_eq!(mock.inner.lock().unwrap().send_calls, 0);
+
+    // Emails are normalized: case and surrounding spaces match the same flow.
+    let email = format!("{}@example.test", Uuid::new_v4());
+    let mut jar = CookieJar::new();
+    let sent = send_code_web(&app, &mut jar, &email).await;
+    let state = sent["state"].as_str().unwrap().to_string();
+    let user = unique_workos_id("magicnorm");
+    mock.register_magic_code(
+        &email,
+        "223344",
+        provider_session(&user, &email, "Norm", &format!("refresh_{user}")),
+    );
+    let ok = verify_code_web(&app, &mut jar, &state, &format!("  {} ", email.to_uppercase()), "223344").await;
+    assert_eq!(ok.status, StatusCode::NO_CONTENT, "{}", ok.text());
+
+    // Non-6-digit codes are rejected without a provider round trip.
+    let mut jar2 = CookieJar::new();
+    let sent2 = send_code_web(&app, &mut jar2, &email).await;
+    let state2 = sent2["state"].as_str().unwrap().to_string();
+    let short = verify_code_web(&app, &mut jar2, &state2, &email, "12345").await;
+    assert_eq!(short.status, StatusCode::BAD_REQUEST);
+    assert_eq!(short.problem_code().as_deref(), Some("AUTH_CODE_INVALID"));
+    assert_eq!(mock.inner.lock().unwrap().magic_auth_calls, 1);
+}
+
+#[tokio::test]
+async fn magic_send_provider_failures_are_sanitized() {
+    ensure_migrated().await;
+    let pool = app_pool().await;
+    let mock = Arc::new(MockWorkos::new());
+    let app = build_app(pool, mock.clone(), KEY_K1_JSON);
+
+    mock.inner.lock().unwrap().force_send_err = Some("boom secret sk_live_xyz".into());
+    let mut jar = CookieJar::new();
+    let res = call(
+        &app,
+        Method::POST,
+        "/v1/auth/send-code",
+        Some(&mut jar),
+        &[],
+        Some(json!({ "client": "web", "email": "x@example.test" })),
+    )
+    .await;
+    assert_eq!(res.status, StatusCode::INTERNAL_SERVER_ERROR, "{}", res.text());
+    assert!(!res.text().contains("sk_live"), "provider detail must not leak");
+    assert_eq!(
+        mock.inner.lock().unwrap().send_calls,
+        1,
+        "flow row already consumed only by expiry; provider attempted once"
+    );
+
+    mock.inner.lock().unwrap().force_send_rate_limited = true;
+    let mut jar2 = CookieJar::new();
+    let limited = call(
+        &app,
+        Method::POST,
+        "/v1/auth/send-code",
+        Some(&mut jar2),
+        &[],
+        Some(json!({ "client": "web", "email": "x@example.test" })),
+    )
+    .await;
+    assert_eq!(limited.status, StatusCode::TOO_MANY_REQUESTS, "{}", limited.text());
+    assert_eq!(
+        limited.problem_code().as_deref(),
+        Some("AUTH_RATE_LIMITED")
+    );
+}

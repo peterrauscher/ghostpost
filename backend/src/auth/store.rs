@@ -15,6 +15,8 @@ pub struct AuthFlowRow {
     pub exchange_secret_hash: Vec<u8>,
     pub client: String,
     pub redirect_uri: String,
+    /// Email the Magic Auth code was sent to; None for hosted OAuth flows.
+    pub email: Option<String>,
     pub tenant_id: Option<Uuid>,
     pub user_id: Option<Uuid>,
     pub consumed_at: Option<DateTime<Utc>>,
@@ -123,6 +125,40 @@ pub async fn load_auth_flow_by_state(
     )
     .bind(state)
     .fetch_optional(pool)
+    .await
+}
+
+/// Insert a Magic Auth flow. The PKCE verifier columns are unused for magic
+/// codes (email + code are the only provider credential), but the columns are
+/// NOT NULL, so empty values are stored; the magic verify path never reads
+/// them.
+pub async fn insert_magic_flow(
+    pool: &PgPool,
+    state: &str,
+    exchange_secret_hash: &[u8],
+    client: AuthClient,
+    email: &str,
+    expires_at: DateTime<Utc>,
+) -> Result<AuthFlowRow, sqlx::Error> {
+    sqlx::query_as::<_, AuthFlowRow>(
+        r#"
+INSERT INTO auth_flows (
+  state, code_verifier_hash, code_verifier_enc, exchange_secret_hash,
+  client, redirect_uri, email, expires_at
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING *
+"#,
+    )
+    .bind(state)
+    .bind(Vec::<u8>::new())
+    .bind(Vec::<u8>::new())
+    .bind(exchange_secret_hash)
+    .bind(client.as_str())
+    .bind("")
+    .bind(email)
+    .bind(expires_at)
+    .fetch_one(pool)
     .await
 }
 

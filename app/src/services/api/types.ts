@@ -3,6 +3,7 @@ import type { OnboardingState } from '@/domain/onboarding';
 
 export type ClientKind = 'web' | 'native';
 export interface AuthorizeResponse { authorizationUrl: string; state: string; expiresAt: string; exchangeSecret?: string }
+export interface SendCodeResponse { state: string; expiresAt: string; exchangeSecret?: string }
 export interface NativeSession { kind: 'bearer'; token: string; expiresAt: string }
 export interface NativeExchangeResponse { user: UserProfile; session: NativeSession }
 export interface PlatformCatalogItem { id: PlatformId; label: string; archiveEnabled: boolean; status?: string; glyph?: string; color?: string }
@@ -17,6 +18,9 @@ export interface ReviewListQuery { scanId?: string; risk?: 'all'|'high'|'medium'
 
 export interface GhostpostApi {
   authorize(client: ClientKind): Promise<AuthorizeResponse>;
+  sendCode(client: ClientKind, email: string): Promise<SendCodeResponse>;
+  verifyCodeWeb(state: string, email: string, code: string): Promise<void>;
+  verifyCodeNative(state: string, email: string, code: string, exchangeSecret: string): Promise<NativeExchangeResponse>;
   exchangeWeb(code: string, state: string): Promise<void>;
   exchangeNative(code: string, state: string, exchangeSecret: string): Promise<NativeExchangeResponse>;
   logout(): Promise<void>;

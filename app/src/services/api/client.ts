@@ -44,7 +44,11 @@ export interface ApiRequestOptions extends RequestInit { idempotencyKey?: string
 
 export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   const method = (options.method ?? 'GET').toUpperCase();
-  const requiresCsrf = Platform.OS === 'web' && isMutation(method) && path !== '/v1/auth/exchange';
+  // Pre-auth endpoints carry their own proof (auth-init cookie / body secret),
+  // so they cannot bootstrap the session-bound CSRF token.
+  const requiresCsrf = Platform.OS === 'web'
+    && isMutation(method)
+    && !['/v1/auth/exchange', '/v1/auth/send-code', '/v1/auth/verify-code'].includes(path);
   const execute = async (csrfRetry: boolean): Promise<Response> => {
     const headers = new Headers(options.headers);
     if (options.body != null && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');

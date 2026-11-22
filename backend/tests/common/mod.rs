@@ -44,15 +44,21 @@ pub const KEY_K2_FRONT_JSON: &str = concat!(
 pub struct MockInner {
     pub sessions_by_code: HashMap<String, ProviderAuthSession>,
     pub refresh_by_token: HashMap<String, ProviderAuthSession>,
+    pub magic_by_email_code: HashMap<(String, String), ProviderAuthSession>,
     pub force_exchange_err: Option<String>,
     pub force_refresh_err: Option<String>,
     pub force_verify_err: Option<String>,
+    pub force_send_err: Option<String>,
+    pub force_send_rate_limited: bool,
+    pub force_magic_auth_err: Option<String>,
     pub auth_url_calls: u64,
     pub exchange_calls: u64,
     pub refresh_calls: u64,
     pub revoke_calls: u64,
     pub delete_calls: u64,
     pub verify_calls: u64,
+    pub send_calls: u64,
+    pub magic_auth_calls: u64,
 }
 
 #[derive(Clone, Default)]
@@ -71,6 +77,14 @@ impl MockWorkos {
             .unwrap()
             .sessions_by_code
             .insert(code.to_string(), session);
+    }
+
+    pub fn register_magic_code(&self, email: &str, code: &str, session: ProviderAuthSession) {
+        self.inner
+            .lock()
+            .unwrap()
+            .magic_by_email_code
+            .insert((email.to_ascii_lowercase(), code.to_string()), session);
     }
 
     pub fn register_refresh(&self, refresh_token: &str, session: ProviderAuthSession) {
@@ -117,6 +131,34 @@ impl WorkosIdentityProvider for MockWorkos {
             .get(code)
             .cloned()
             .ok_or_else(|| ProviderError::Request(format!("unknown code {code}")))
+    }
+
+    async fn send_magic_code(&self, _email: &str) -> Result<(), ProviderError> {
+        let mut g = self.inner.lock().unwrap();
+        g.send_calls += 1;
+        if g.force_send_rate_limited {
+            return Err(ProviderError::RateLimited);
+        }
+        if let Some(msg) = g.force_send_err.clone() {
+            return Err(ProviderError::Request(msg));
+        }
+        Ok(())
+    }
+
+    async fn authenticate_with_magic_code(
+        &self,
+        email: &str,
+        code: &str,
+    ) -> Result<ProviderAuthSession, ProviderError> {
+        let mut g = self.inner.lock().unwrap();
+        g.magic_auth_calls += 1;
+        if let Some(msg) = g.force_magic_auth_err.clone() {
+            return Err(ProviderError::Request(msg));
+        }
+        g.magic_by_email_code
+            .get(&(email.to_ascii_lowercase(), code.to_string()))
+            .cloned()
+            .ok_or(ProviderError::Auth)
     }
 
     async fn refresh_session(
@@ -592,6 +634,102 @@ pub async fn exchange_native(
             "client": "native",
             "code": code,
             "state": state,
+            "exchangeSecret": exchange_secret
+        })),
+    )
+    .await
+}
+
+pub async fn send_code_web(app: &Router, jar: &mut CookieJar, email: &str) -> Value {
+    let res = call(
+        app,
+        Method::POST,
+        "/v1/auth/send-code",
+        Some(jar),
+        &[],
+        Some(json!({ "client": "web", "email": email })),
+    )
+    .await;
+    assert_eq!(res.status, StatusCode::OK, "web send-code: {}", res.text());
+    assert!(
+        jar.get("gp_auth_init").is_some(),
+        "web send-code must set gp_auth_init"
+    );
+    let body = res.json();
+    assert!(body.get("state").is_some(), "send-code returns state");
+    assert!(body.get("expiresAt").is_some(), "send-code returns expiresAt");
+    assert!(
+        body.get("exchangeSecret").is_none(),
+        "web must not leak exchangeSecret in JSON"
+    );
+    body
+}
+
+pub async fn send_code_native(app: &Router, email: &str) -> Value {
+    let res = call(
+        app,
+        Method::POST,
+        "/v1/auth/send-code",
+        None,
+        &[],
+        Some(json!({ "client": "native", "email": email })),
+    )
+    .await;
+    assert_eq!(
+        res.status,
+        StatusCode::OK,
+        "native send-code: {}",
+        res.text()
+    );
+    let body = res.json();
+    assert!(
+        body.get("exchangeSecret").and_then(|v| v.as_str()).is_some(),
+        "native send-code must include exchangeSecret"
+    );
+    body
+}
+
+pub async fn verify_code_web(
+    app: &Router,
+    jar: &mut CookieJar,
+    state: &str,
+    email: &str,
+    code: &str,
+) -> TestResponse {
+    call(
+        app,
+        Method::POST,
+        "/v1/auth/verify-code",
+        Some(jar),
+        &[],
+        Some(json!({
+            "client": "web",
+            "state": state,
+            "email": email,
+            "code": code
+        })),
+    )
+    .await
+}
+
+pub async fn verify_code_native(
+    app: &Router,
+    state: &str,
+    email: &str,
+    code: &str,
+    exchange_secret: &str,
+) -> TestResponse {
+    call(
+        app,
+        Method::POST,
+        "/v1/auth/verify-code",
+        None,
+        &[],
+        Some(json!({
+            "client": "native",
+            "state": state,
+            "email": email,
+            "code": code,
             "exchangeSecret": exchange_secret
         })),
     )

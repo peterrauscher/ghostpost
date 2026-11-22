@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 
 import { Button, CarouselDots, Screen, AppText } from '@/components';
-import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme';
 
 const { width: windowWidth } = Dimensions.get('window');
@@ -159,7 +158,6 @@ function SlideArt({ slideKey }: { slideKey: (typeof SLIDE_COPY)[number]['key'] }
 }
 
 export default function WelcomeScreen() {
-  const auth = useAuth();
   const [index, setIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -210,7 +208,7 @@ export default function WelcomeScreen() {
 
       <View style={styles.footer}>
         <CarouselDots count={SLIDE_COPY.length} index={index} />
-        <Button label="get started" variant="dark" onPress={() => void auth.signIn()} />
+        <Button label="get started" variant="dark" onPress={() => router.push('/login')} />
         <Pressable
           accessibilityRole="link"
           onPress={() => router.push('/login')}

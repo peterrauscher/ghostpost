@@ -7,7 +7,7 @@ use crate::auth::cookies::{
 use crate::auth::extract::{enforce_web_mutation_guards, AuthSession};
 use crate::auth::problem::AuthProblem;
 use crate::auth::types::{
-    AuthClient, ExchangeRequest, OnboardingState, WebhookOk,
+    AuthClient, ExchangeRequest, OnboardingState, SendCodeRequest, VerifyCodeRequest, WebhookOk,
 };
 use axum::body::Bytes;
 use axum::extract::{Query, State};
@@ -35,6 +35,69 @@ pub async fn authorize(
             &mut res,
             &secret,
             state.auth.config.auth_init_cookie_max_age_secs,
+            state.auth.config.secure_cookies,
+        );
+    }
+    Ok(res)
+}
+
+/// Headless Magic Auth, step 1. Mirrors `authorize`: web gets the exchange
+/// proof via the auth-init cookie, native via the response body.
+pub async fn send_code(
+    State(state): State<AppState>,
+    Json(body): Json<SendCodeRequest>,
+) -> Result<Response, AuthProblem> {
+    let (response, cookie_secret) = state.auth.send_magic_code(body.client, &body.email).await?;
+    let mut res = (StatusCode::OK, Json(response)).into_response();
+    if let Some(secret) = cookie_secret {
+        set_auth_init_cookie(
+            &mut res,
+            &secret,
+            state.auth.config.auth_init_cookie_max_age_secs,
+            state.auth.config.secure_cookies,
+        );
+    }
+    Ok(res)
+}
+
+/// Headless Magic Auth, step 2. Mirrors `exchange`: same proof rules, same
+/// session minting, same response shapes.
+pub async fn verify_code(
+    State(state): State<AppState>,
+    parts: Parts,
+    Json(body): Json<VerifyCodeRequest>,
+) -> Result<Response, AuthProblem> {
+    if body.client == AuthClient::Web && body.exchange_secret.is_some() {
+        return Err(AuthProblem::forbidden(
+            "web verify must not include exchangeSecret body field",
+        ));
+    }
+    let proof = match body.client {
+        AuthClient::Web => {
+            let cookie = parts
+                .headers
+                .get(header::COOKIE)
+                .and_then(|v| v.to_str().ok());
+            parse_cookie(cookie, AUTH_INIT_COOKIE).map(|s| s.to_string())
+        }
+        AuthClient::Native => body.exchange_secret.clone(),
+    };
+    let (native, web_cookie) = state
+        .auth
+        .verify_magic_code(body.client, &body.state, &body.email, &body.code, proof.as_deref())
+        .await?;
+
+    let mut res = if let Some(payload) = native {
+        (StatusCode::OK, Json(payload)).into_response()
+    } else {
+        StatusCode::NO_CONTENT.into_response()
+    };
+    clear_auth_init_cookie(&mut res, state.auth.config.secure_cookies);
+    if let Some((token, max_age)) = web_cookie {
+        set_session_cookie(
+            &mut res,
+            &token,
+            max_age.num_seconds().max(0) as u64,
             state.auth.config.secure_cookies,
         );
     }

@@ -3,8 +3,8 @@ import { writeFile } from 'node:fs/promises';
 import { expect, test as base, type BrowserContext, type Page, type TestInfo } from '@playwright/test';
 
 /* Consumer failures protected at the real browser/provider/backend boundary:
- * - Sign-up disabled, wrong redirects, missing exchange cookies, failed callback,
- *   or a session that disappears after reloading.
+ * - A backend send/verify round trip that mints no session, or a session that
+ *   disappears after reloading.
  * - Sign-in creates another account or loses an existing user's onboarding.
  * - Logout clears the UI/cookie but leaves the server session usable.
  * - Delete only hides the account: another session survives or WorkOS is never purged.
@@ -106,29 +106,29 @@ async function browserMe(page: Page, account: Account): Promise<{ status: number
 async function authenticate(page: Page, account: Account, kind: 'sign-up' | 'sign-in') {
   assertSynthetic(account);
   await page.goto(kind === 'sign-up' ? '/' : '/login');
-  const authorization = page.waitForResponse((response) =>
-    new URL(response.url()).pathname === '/v1/auth/authorize' && response.request().method() === 'GET');
-  await page.getByRole('button', { name: kind === 'sign-up' ? 'get started' : 'continue securely →', exact: true }).click();
-  const authorizeResponse = await authorization;
-  expect(authorizeResponse.status(), 'app starts a real authorization flow').toBe(200);
-  account.apiOrigin = new URL(authorizeResponse.url()).origin;
-  await page.waitForURL((url) => url.hostname.endsWith('.authkit.app'));
-  // The app's Get started action uses AuthKit's passwordless entry form.
-  // Verifying an unknown email creates the account; an existing email signs in.
+  if (kind === 'sign-up') {
+    await page.getByRole('button', { name: 'get started', exact: true }).click();
+    await expect(page).toHaveURL(/\/login$/);
+  }
+  // The app's own login screen posts the email to the backend, which asks
+  // WorkOS to email the code. Verifying an unknown email creates the account;
+  // an existing email signs in.
   const since = new Date(Date.now() - 2000).toISOString();
-  await page.getByRole('textbox', { name: 'Email', exact: true }).fill(account.email);
-  await page.getByRole('button', { name: 'Continue with email', exact: true }).click();
-  const codeInput = page.getByRole('textbox', { name: 'One-time code', exact: true });
-  const emailCode = page.getByRole('button', { name: 'Email sign-in code', exact: true });
-  await expect(codeInput.or(emailCode)).toBeVisible();
-  if (await emailCode.isVisible()) await emailCode.click();
-  await expect(codeInput).toBeVisible();
+  const sendCode = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === '/v1/auth/send-code' && response.request().method() === 'POST');
+  await page.getByRole('textbox', { name: 'Email address', exact: true }).fill(account.email);
+  await page.getByRole('button', { name: 'send code', exact: true }).click();
+  const sendResponse = await sendCode;
+  expect(sendResponse.status(), 'backend starts a real email code flow').toBe(200);
+  account.apiOrigin = new URL(sendResponse.url()).origin;
+  await expect(page).toHaveURL(/\/login\/code$/);
   const code = await verificationCode(account, since);
-  const exchange = page.waitForResponse((response) =>
-    new URL(response.url()).pathname === '/v1/auth/exchange' && response.request().method() === 'POST');
-  await page.getByRole('textbox', { name: 'One-time code', exact: true }).fill(code);
-  expect((await exchange).status(), 'real WorkOS code exchanges for a web session').toBe(204);
-  await page.waitForURL((url) => url.origin === appOrigin && !url.pathname.startsWith('/auth/'));
+  const verify = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === '/v1/auth/verify-code' && response.request().method() === 'POST');
+  await page.getByRole('textbox', { name: 'Sign-in code', exact: true }).fill(code);
+  await page.getByRole('button', { name: 'verify and continue', exact: true }).click();
+  expect((await verify).status(), 'real WorkOS code verifies for a web session').toBe(204);
+  await page.waitForURL((url) => url.origin === appOrigin && !url.pathname.startsWith('/login'));
   await expect.poll(async () => (await browserMe(page, account)).status).toBe(200);
   const profile = (await browserMe(page, account)).user!;
   expect(profile.email).toBe(account.email);

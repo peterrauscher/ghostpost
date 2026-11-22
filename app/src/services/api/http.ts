@@ -1,5 +1,5 @@
 import { apiRequest } from './client';
-import type { GhostpostApi, NativeExchangeResponse, PlatformCatalog, ArchiveImport, ArchiveImportList, Entitlement, ReviewListQuery, ReserveArchiveResponse } from './types';
+import type { GhostpostApi, NativeExchangeResponse, PlatformCatalog, ArchiveImport, ArchiveImportList, Entitlement, ReviewListQuery, ReserveArchiveResponse, SendCodeResponse } from './types';
 import type { DashboardData, FlaggedPost, ReviewListData, ScanStatus, UserProfile } from '@/domain/types';
 import type { OnboardingState } from '@/domain/onboarding';
 
@@ -12,6 +12,9 @@ const query = (values: object) => {
 
 export const httpApi: GhostpostApi = {
   authorize: (client) => apiRequest(`/v1/auth/authorize?client=${client}`, { skipAuthRefresh: true }),
+  sendCode: (client, email) => apiRequest<SendCodeResponse>('/v1/auth/send-code', { method: 'POST', body: JSON.stringify({ client, email }), skipAuthRefresh: true }),
+  verifyCodeWeb: (state, email, code) => apiRequest<void>('/v1/auth/verify-code', { method: 'POST', body: JSON.stringify({ client: 'web', state, email, code }), skipAuthRefresh: true }),
+  verifyCodeNative: (state, email, code, exchangeSecret) => apiRequest<NativeExchangeResponse>('/v1/auth/verify-code', { method: 'POST', body: JSON.stringify({ client: 'native', state, email, code, exchangeSecret }), skipAuthRefresh: true }),
   exchangeWeb: (code, state) => apiRequest<void>('/v1/auth/exchange', { method: 'POST', body: JSON.stringify({ client: 'web', code, state }), skipAuthRefresh: true }),
   exchangeNative: (code, state, exchangeSecret) => apiRequest<NativeExchangeResponse>('/v1/auth/exchange', { method: 'POST', body: JSON.stringify({ client: 'native', code, state, exchangeSecret }), skipAuthRefresh: true }),
   logout: () => apiRequest<void>('/v1/auth/logout', { method: 'POST' }),

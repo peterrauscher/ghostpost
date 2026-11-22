@@ -53,6 +53,8 @@ pub fn build_with_blob_store(state: AppState, blob_store: Arc<dyn BlobStore>) ->
         .route("/health/live", get(health::live))
         .route("/health/ready", get(health::ready))
         .route("/v1/auth/authorize", get(auth_routes::authorize))
+        .route("/v1/auth/send-code", post(auth_routes::send_code))
+        .route("/v1/auth/verify-code", post(auth_routes::verify_code))
         .route("/v1/auth/exchange", post(auth_routes::exchange))
         .route("/v1/auth/refresh", post(auth_routes::refresh))
         .route("/v1/auth/logout", post(auth_routes::logout))

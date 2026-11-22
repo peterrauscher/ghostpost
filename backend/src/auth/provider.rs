@@ -41,6 +41,13 @@ pub enum ProviderError {
     Config(String),
     #[error("provider request failed: {0}")]
     Request(String),
+    /// Provider rejected the credential itself (wrong/expired one-time code).
+    /// Never echo the inner message to clients; map to AUTH_CODE_INVALID.
+    #[error("provider rejected credentials")]
+    Auth,
+    /// Provider rate limit hit while issuing one-time codes.
+    #[error("provider rate limited")]
+    RateLimited,
     #[error("provider not found")]
     NotFound,
     #[error("webhook verification failed: {0}")]
@@ -55,6 +62,18 @@ pub trait WorkosIdentityProvider: Send + Sync {
         &self,
         code: &str,
         code_verifier: &str,
+    ) -> Result<ProviderAuthSession, ProviderError>;
+
+    /// Headless Magic Auth: issue (and email) a 6-digit one-time code.
+    /// The provider email-delivers the code; callers must never handle it.
+    async fn send_magic_code(&self, email: &str) -> Result<(), ProviderError>;
+
+    /// Verify a Magic Auth code. Signs in an existing user or signs up a new
+    /// one, mirroring the hosted AuthKit email-code path.
+    async fn authenticate_with_magic_code(
+        &self,
+        email: &str,
+        code: &str,
     ) -> Result<ProviderAuthSession, ProviderError>;
 
     async fn refresh_session(
@@ -139,6 +158,21 @@ pub mod sdk {
         }
     }
 
+    /// Classify a WorkOS API failure. Credential rejections (wrong/expired one-time
+    /// code, unknown user for the grant) are surfaced as [`ProviderError::Auth`]
+    /// without the provider message; everything else stays a generic request error.
+    fn map_workos_error(err: workos::Error) -> ProviderError {
+        match &err {
+            workos::Error::Api(api) if api.status == 429 => ProviderError::RateLimited,
+            workos::Error::Api(api) if (400..500).contains(&api.status) => {
+                // 400/401/403/404 on authenticate grants: wrong or expired code,
+                // disabled user, unknown email. All client-retryable rejections.
+                ProviderError::Auth
+            }
+            _ => ProviderError::Request(err.to_string()),
+        }
+    }
+
     fn display_name_from_user(user: &workos::User) -> String {
         if let Some(name) = user.name.as_ref().filter(|s| !s.trim().is_empty()) {
             return name.clone();
@@ -208,9 +242,55 @@ pub mod sdk {
                         .user_management()
                         .authenticate_with_code(params)
                         .await
-                        .map_err(|err| ProviderError::Request(err.to_string()))?
+                        .map_err(map_workos_error)?
                 }
             };
+            Self::map_auth_response(resp)
+        }
+
+        async fn send_magic_code(&self, email: &str) -> Result<(), ProviderError> {
+            // POST /user_management/magic_auth: creates the 6-digit code and
+            // emails it to the user. The response body contains the raw code;
+            // drop it so it can never leak into logs or responses.
+            let params = workos::user_management::CreateMagicAuthParams::new(
+                workos::CreateMagicCodeAndReturn {
+                    email: email.to_string(),
+                    invitation_token: None,
+                    ip_address: None,
+                    user_agent: None,
+                    radar_auth_attempt_id: None,
+                    signals_id: None,
+                },
+            );
+            self.client
+                .user_management()
+                .create_magic_auth(params)
+                .await
+                .map(|_| ())
+                .map_err(map_workos_error)
+        }
+
+        async fn authenticate_with_magic_code(
+            &self,
+            email: &str,
+            code: &str,
+        ) -> Result<ProviderAuthSession, ProviderError> {
+            let resp = self
+                .client
+                .user_management()
+                .authenticate_with_magic_auth(
+                    workos::user_management::AuthenticateWithMagicAuthParams {
+                        code: code.to_string(),
+                        email: email.to_string(),
+                        invitation_token: None,
+                        ip_address: None,
+                        device_id: None,
+                        user_agent: None,
+                        radar_auth_attempt_id: None,
+                    },
+                )
+                .await
+                .map_err(map_workos_error)?;
             Self::map_auth_response(resp)
         }
 

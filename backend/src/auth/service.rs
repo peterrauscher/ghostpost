@@ -11,13 +11,13 @@ use crate::auth::crypto::{
 };
 use crate::auth::problem::AuthProblem;
 use crate::auth::provider::{
-    AuthorizeUrlRequest, ProviderAuthSession, WorkosIdentityProvider,
+    AuthorizeUrlRequest, ProviderAuthSession, ProviderError, WorkosIdentityProvider,
 };
 use crate::auth::store::{self, AuthSessionRow, OnboardingRow, UserRow};
 use crate::auth::types::{
     AppSession, AuthClient, AuthorizeResponse, CsrfResponse, DeletionScheduled, DisclosureConsent,
     MeResponse, NativeExchangeResponse, NativeRefreshResponse, OnboardingAnswersDto,
-    OnboardingState, SessionDto, UserDto,
+    OnboardingState, SendCodeResponse, SessionDto, UserDto,
 };
 use chrono::{Duration as ChronoDuration, Utc};
 use serde::{Deserialize, Serialize};
@@ -48,6 +48,45 @@ fn greeting_name(display_name: &str, email: &str) -> String {
         .filter(|s| !s.is_empty())
         .unwrap_or_else(|| email.split('@').next().unwrap_or("user"));
     token.to_ascii_lowercase()
+}
+
+/// Normalize a sign-in email: trim + lowercase, with a minimal shape check.
+/// Returns None when the address cannot plausibly deliver mail.
+fn normalize_email(raw: &str) -> Option<String> {
+    let email = raw.trim().to_ascii_lowercase();
+    let (local, domain) = email.split_once('@')?;
+    if local.is_empty() || domain.is_empty() {
+        return None;
+    }
+    if email.len() > 254 || local.len() > 64 {
+        return None;
+    }
+    let (host, _port) = domain.split_once(':').unwrap_or((domain, ""));
+    if !host.contains('.') || host.starts_with('.') || host.ends_with('.') || host.contains("..") {
+        return None;
+    }
+    if email.chars().any(|c| c.is_whitespace() || c.is_control()) {
+        return None;
+    }
+    Some(email)
+}
+
+/// Map provider failures from the magic-code paths. Credential rejections are
+/// client-retryable problems; the provider's own message is never forwarded.
+fn provider_code_error(err: ProviderError) -> AuthProblem {
+    match err {
+        ProviderError::Auth => AuthProblem::bad_request(
+            "AUTH_CODE_INVALID",
+            "that code did not match or has expired",
+        ),
+        ProviderError::RateLimited => AuthProblem::new(
+            axum::http::StatusCode::TOO_MANY_REQUESTS,
+            "AUTH_RATE_LIMITED",
+            "Too Many Requests",
+            "too many codes requested; wait a minute and try again",
+        ),
+        other => AuthProblem::provider_error(other),
+    }
 }
 
 fn user_dto(row: &UserRow) -> Result<UserDto, AuthProblem> {
@@ -245,6 +284,117 @@ impl AuthService {
             .exchange_code(code, &verifier)
             .await
             .map_err(AuthProblem::provider_error)?;
+
+        self.complete_login(flow.id, flow_client, provider_session)
+            .await
+    }
+
+    /// Headless Magic Auth, step 1: validate the email, create a single-use
+    /// flow, and ask the provider to email the one-time code.
+    pub async fn send_magic_code(
+        &self,
+        client: AuthClient,
+        email: &str,
+    ) -> Result<(SendCodeResponse, Option<String>), AuthProblem> {
+        let email = normalize_email(email).ok_or_else(|| {
+            AuthProblem::bad_request("INVALID_EMAIL", "a valid email address is required")
+        })?;
+
+        let state = random_token_b64(16);
+        let exchange_secret = random_token_b64(32);
+        let exchange_hash = hash_token(exchange_secret.as_bytes());
+        let expires_at = Utc::now()
+            + ChronoDuration::seconds(self.config.auth_init_cookie_max_age_secs as i64);
+
+        store::insert_magic_flow(
+            &self.pool,
+            &state,
+            &exchange_hash,
+            client,
+            &email,
+            expires_at,
+        )
+        .await
+        .map_err(|err| AuthProblem::internal_sanitized(err, "database or crypto error"))?;
+
+        // Email delivery is the provider's job; the issued code is never
+        // returned to or stored by us.
+        self.provider
+            .send_magic_code(&email)
+            .await
+            .map_err(provider_code_error)?;
+
+        let body = SendCodeResponse {
+            state,
+            exchange_secret: match client {
+                AuthClient::Native => Some(exchange_secret.clone()),
+                AuthClient::Web => None,
+            },
+            expires_at,
+        };
+        let cookie_secret = match client {
+            AuthClient::Web => Some(exchange_secret),
+            AuthClient::Native => None,
+        };
+        Ok((body, cookie_secret))
+    }
+
+    /// Headless Magic Auth, step 2: verify the emailed code and mint the same
+    /// session shape as the hosted exchange path.
+    pub async fn verify_magic_code(
+        &self,
+        req_client: AuthClient,
+        state: &str,
+        email: &str,
+        code: &str,
+        exchange_proof: Option<&str>,
+    ) -> Result<(Option<NativeExchangeResponse>, Option<(String, ChronoDuration)>), AuthProblem>
+    {
+        let flow = store::load_auth_flow_by_state(&self.pool, state)
+            .await
+            .map_err(|err| AuthProblem::internal_sanitized(err, "database or crypto error"))?
+            .ok_or_else(|| {
+                AuthProblem::gone("AUTH_FLOW_GONE", "Authorization flow missing or consumed")
+            })?;
+
+        if flow.consumed_at.is_some() || flow.expires_at <= Utc::now() {
+            return Err(AuthProblem::gone(
+                "AUTH_FLOW_GONE",
+                "Authorization flow expired or already used",
+            ));
+        }
+        let flow_client = AuthClient::parse(&flow.client)
+            .ok_or_else(|| AuthProblem::internal("stored auth flow client invalid"))?;
+        if flow_client != req_client {
+            return Err(AuthProblem::forbidden("client mismatch"));
+        }
+
+        let proof = exchange_proof.ok_or_else(|| AuthProblem::forbidden("missing exchange proof"))?;
+        let proof_hash = hash_token(proof.as_bytes());
+        if !constant_time_eq(&proof_hash, &flow.exchange_secret_hash) {
+            return Err(AuthProblem::forbidden("invalid exchange proof"));
+        }
+
+        let email = normalize_email(email).ok_or_else(|| {
+            AuthProblem::bad_request("INVALID_EMAIL", "a valid email address is required")
+        })?;
+        match flow.email.as_deref() {
+            Some(flow_email) if flow_email.eq_ignore_ascii_case(&email) => {}
+            _ => return Err(AuthProblem::forbidden("email does not match flow")),
+        }
+        let code = code.trim();
+        if code.len() != 6 || !code.bytes().all(|b| b.is_ascii_digit()) {
+            return Err(AuthProblem::bad_request(
+                "AUTH_CODE_INVALID",
+                "enter the six digit code from your email",
+            ));
+        }
+
+        let provider_session = self
+            .provider
+            .authenticate_with_magic_code(&email, code)
+            .await
+            .map_err(provider_code_error)?;
 
         self.complete_login(flow.id, flow_client, provider_session)
             .await
