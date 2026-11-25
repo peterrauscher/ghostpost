@@ -3,9 +3,9 @@
 #
 # Run from the operator machine through an ALREADY-VERIFIED SSH key session:
 #
-#   ssh "$GHOSTPOST_HOST" 'sudo bash -s -- <deploy-user>' < scripts/bootstrap-vps.sh
+#   ssh "$GHOSTPOST_HOST" 'sudo bash -s' < scripts/bootstrap-vps.sh
 #
-# Argument 1 is the deploy user that will own /opt/ghostpost and run
+# Optional argument 1 is the deploy user that will own /opt/ghostpost and run
 # scripts/deploy-vps.sh (default: the sudo-invoking user). Must run as root
 # (via sudo); the deploy user must already exist, hold >=1 authorized SSH key
 # and have sudo rights, otherwise SSH password/root hardening is skipped.

@@ -26,7 +26,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-HOST="${GHOSTPOST_HOST:?GHOSTPOST_HOST must be set to the SSH target}"
+HOST="${GHOSTPOST_HOST:?set it to the SSH target (user@host)}"
 ENV_SRC="${GHOSTPOST_ENV_FILE:-$HOME/.config/ghostpost/production.env}"
 APP=/opt/ghostpost
 LEDGER_RETENTION_SECS=$((21 * 86400))

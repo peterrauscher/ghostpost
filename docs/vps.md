@@ -60,16 +60,17 @@ Run once on a fresh host, after the SSH key session below is verified. Use the
 script; the manual list after it only explains what it does.
 
 ```bash
-ssh "$GHOSTPOST_HOST" 'sudo bash -s -- <deploy-user>' < scripts/bootstrap-vps.sh
+ssh "$GHOSTPOST_HOST" 'sudo bash -s' < scripts/bootstrap-vps.sh
 ```
 
-Argument 1 is the deploy user (the `<deploy-user>` placeholder above). It must
-already exist, hold an authorized SSH key and have sudo rights, and will own
-`/opt/ghostpost` and run the deploy scripts. The script is idempotent and safe
-to re-run: it checks state first, never resets the firewall, never rewrites
-`authorized_keys`, and only hardens
-`sshd` after validating key access and `sshd -t` (it reloads `sshd`, it does
-not restart it, so the open session survives). It does not print secrets.
+Argument 1 is optional: it names the deploy user that will own
+`/opt/ghostpost` and run the deploy scripts, and defaults to the sudo-invoking
+user (the SSH login). It must already exist, hold an authorized SSH key and
+have sudo rights. The script is idempotent and safe to re-run: it checks state
+first, never resets the firewall, never rewrites `authorized_keys`, and only
+hardens `sshd` after validating key access and `sshd -t` (it reloads `sshd`,
+it does not restart it, so the open session survives). It does not print
+secrets.
 
 What it does, for Debian bullseye, bookworm or trixie on amd64 or arm64 only:
 

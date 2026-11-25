@@ -145,7 +145,7 @@ device upload.
      from outside. See [DNS](vps.md#dns).
 3. **VPS**: run `scripts/bootstrap-vps.sh` from your laptop through an
    already-verified key-only SSH session:
-   `ssh "$GHOSTPOST_HOST" 'sudo bash -s -- <deploy-user>' < scripts/bootstrap-vps.sh`.
+   `ssh "$GHOSTPOST_HOST" 'sudo bash -s' < scripts/bootstrap-vps.sh`.
    It installs Debian's Docker Engine and Compose plugin, `jq` and the other
    base packages, enables unattended security updates, configures `ufw` for TCP
    22/80/443 only, creates `/opt/ghostpost` (mode 0750), and hardens SSH once key
